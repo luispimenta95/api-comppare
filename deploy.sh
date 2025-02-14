@@ -22,10 +22,7 @@ check_artisan_exists() {
 run_artisan_commands() {
     echo $SEPARATOR
     echo "Limpando os caches da aplicação"
-
-    # Clear application cache
-    php $ARTISAN cache:clear
-
+  echo $SEPARATOR
     # Clear config cache
     php $ARTISAN config:clear
 
@@ -34,13 +31,13 @@ run_artisan_commands() {
 
     # Clear compiled views
     php $ARTISAN view:clear
+    echo $SEPARATOR
     echo "Aplicação atualizada com sucesso"
     echo $SEPARATOR
     echo "Iniciando a atualização do banco de dados"
-
+  echo $SEPARATOR
     # Run database migrations
     php $ARTISAN migrate --force
-echo "Iniciando a atualização do banco de dados"
     echo $SEPARATOR
     echo "Processo finalizado com sucesso!"
 }
