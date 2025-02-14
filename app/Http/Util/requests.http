@@ -1,0 +1,70 @@
+@baseUrl = http://localhost:8000/api
+
+### GET request para testar a api
+GET {{baseUrl}}/test
+
+###cadastrar
+POST {{baseUrl}}/usuarios/cadastrar
+Content-Type: application/json
+
+{
+    "nome": "Teste",
+    "cpf": "57300805060",
+    "senha": "13151319",
+    "telefone": "61998690313",
+    "idPlano": 1
+}
+
+
+###listar
+GET {{baseUrl}}/usuarios/listar
+
+
+###Autenticar
+POST {{baseUrl}}/usuarios/autenticar
+Content-Type: application/json
+
+{
+    "cpf": "02342288140",
+    "senha": "13151319"
+}
+
+###recuperar
+POST {{baseUrl}}/usuarios/recuperar
+Content-Type: application/json
+
+{
+    "idUsuario": 3
+}
+
+###checarExistencia
+POST {{baseUrl}}/usuarios/valida-existencia-usuario
+Content-Type: application/json
+
+{
+    "cpf": "42708782070"
+}
+
+###checarExistencia
+POST {{baseUrl}}/usuarios/atualizar-senha
+Content-Type: application/json
+
+{
+    "cpf": "42708782070",
+    "senha": "123"
+}
+
+
+###Requests planos
+
+###cadastrarPlanos
+POST {{baseUrl}}/planos/cadastrar
+Content-Type: application/json
+
+{
+    "nome": "Teste plano",
+    "descricao": "Teste",
+    "valor": 99.90,
+    "tipoPlano": 1,
+    "gratuidade" : 3
+}
