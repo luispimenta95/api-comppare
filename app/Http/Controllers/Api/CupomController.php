@@ -9,6 +9,7 @@ use App\Models\Cupom;
 
 class CupomController extends Controller
 {
+    //update server
     private $codes = [];
     //teste server
     private int $gratuidade = 0;
