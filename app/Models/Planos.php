@@ -15,8 +15,4 @@ class Planos extends Model
     {
         return $this->hasMany(Usuarios::class);
     }
-
-    public function tipoPlano() {
-        return $this->belongsTo(TipoPlano::class);
-    }
 }

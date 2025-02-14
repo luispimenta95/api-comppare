@@ -17,8 +17,7 @@ return new class extends Migration
             $table->string('descricao');
             $table->float('valor');
             $table->integer('tempoGratuidade');
-            $table->unsignedBigInteger('idTipoPlano');
-            $table->foreign('idTipoPlano')->references('id')->on('tipoPlanos');
+            $table->integer('quantidadeTags');
             $table->boolean('status')->default(true);
             $table->timestamps();
         });

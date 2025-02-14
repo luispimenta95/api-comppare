@@ -32,7 +32,7 @@ class PlanoController extends Controller
             'nome' => $request->nome,
             'descricao' => $request->descricao,
             'valor' => $request->valor,
-            'idTipoPlano' => $request->tipoPlano,
+            'quantidadeTags' => $request->quantidadeTags,
             'tempoGratuidade' => $request->gratuidade
         ]);
         isset($plano->id) ?
@@ -70,7 +70,7 @@ class PlanoController extends Controller
             $plano->descricao = $request->descricao;
             $plano->valor = $request->valor;
             $plano->tempoGratuidade = $request->gratuidade;
-            $plano->idTipoPlano = $request->tipoPlano;
+            $plano->quantidadeTags = $request->quantidadeTags;
             $plano->save();
             $response = [
                 'codRetorno' => 200,
