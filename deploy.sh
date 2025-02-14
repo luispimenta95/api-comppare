@@ -4,6 +4,7 @@
 ARTISAN="./artisan"
 
 # Exit script on any error
+#Update sed : sed -i -e 's/\r$//' nome-script.sh
 set -e
 
 # Print a separator for better readability
