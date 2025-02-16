@@ -1,4 +1,4 @@
-#@baseUrl = https://api.comppare.com.br/api
+#baseUrl = https://api.comppare.com.br/api
 @baseUrl = http://127.0.0.1:8000/api
 ### GET request para testar a api
 GET {{baseUrl}}/test
@@ -63,11 +63,10 @@ POST {{baseUrl}}/planos/cadastrar
 Content-Type: application/json
 
 {
-    "nome": "Teste plano",
+    "nome": "Teste plano gratuito 02",
     "descricao": "Teste",
-    "valor": 99.90,
-    "quantidadeTags": 1,
-    "gratuidade" : 3
+    "valor": 0,
+    "quantidadeTags": 1
 }
 
 
