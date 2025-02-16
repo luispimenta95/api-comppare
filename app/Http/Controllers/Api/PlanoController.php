@@ -19,9 +19,12 @@ class PlanoController extends Controller
 
     public function index() : object
     {
+        $planosAtivos = Planos::where('status', 1)->count();
         $response = [
             'codRetorno' => 200,
             'message' => $this->codes[200],
+            'totalPlanos' => Planos::count(),
+            'planosAtivos' => $planosAtivos,
             'data' => Planos::all()
 
         ];
