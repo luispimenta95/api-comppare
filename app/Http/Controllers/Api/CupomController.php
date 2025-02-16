@@ -20,9 +20,12 @@ class CupomController extends Controller
 
     public function index() : object
     {
+        $cuponsAtivos = Cupom::where('status', 1)->count();
         $response = [
             'codRetorno' => 200,
             'message' => $this->codes[200],
+            'totalCupons' => Cupom::count(),
+            'cuponsAtivos' => $cuponsAtivos,
             'data' => Cupom::all()
 
         ];
