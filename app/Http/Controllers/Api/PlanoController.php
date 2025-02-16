@@ -14,7 +14,7 @@ class PlanoController extends Controller
     public function __construct()
     {
         $this->codes = Helper::getHttpCodes();
-        $this->gratuidade = config('app.validadePlano');
+        $this->gratuidade = config('app.gratuidadePlano');
     }
 
     public function index() : object
@@ -30,10 +30,9 @@ class PlanoController extends Controller
 
     public function cadastrarPlano(Request $request) : object
     {
-        $campos = ['nomePlano', 'descricao', 'valor', 'quantidadeTags',];
+        $campos = ['nome', 'descricao', 'valor', 'quantidadeTags'];
 
         $campos = Helper::validarRequest($request, $campos);
-
         if ($campos !== true) {
             $response = [
                 'codRetorno' => 400,
@@ -82,7 +81,7 @@ class PlanoController extends Controller
 
     public function atualizarDados(Request $request): object
     {
-        $campos = ['nomePlano', 'descricao', 'valor', 'quantidadeTags',];
+        $campos = ['nome', 'descricao', 'valor', 'quantidadeTags',];
 
         $campos = Helper::validarRequest($request, $campos);
 
@@ -96,7 +95,7 @@ class PlanoController extends Controller
         }
         $plano = Planos::findOrFail($request->idPlano);
         if(isset($plano->id)){
-            $plano->nome = $request->nomePlano;
+            $plano->nome = $request->nome;
             $plano->descricao = $request->descricao;
             $plano->valor = $request->valor;
             $plano->quantidadeTags = $request->quantidadeTags;
