@@ -2,6 +2,8 @@
 
 namespace App\Http\Util;
 
+use Illuminate\Http\Request;
+
 class Helper
 {
     /**
@@ -9,7 +11,7 @@ class Helper
      *
      * @return array
      */
-    public static function getHttpCodes()
+    public static function getHttpCodes(): array
     {
         return [
             100 => 'Continue',
@@ -81,7 +83,8 @@ class Helper
             -5 => 'Error: Erro ao validar Telefone',
             -6 => 'Error: CPF já cadastrado no banco de dados',
             -7 => 'Error: Período de gratuidade expirado. Por favor, atualize sua assinatura adquirindo um novo plano.',
-            -8 => 'Error: Assinatura exiprada. Por favor, atualize sua assinatura adquirindo um novo plano.'
+            -8 => 'Error: Assinatura exiprada. Por favor, atualize sua assinatura adquirindo um novo plano.',
+            '-9' => 'Error: A request possui campos obrigatórios não preenchidos ou inválidos.'
         ];
     }
 
@@ -113,4 +116,18 @@ class Helper
         }
         return true;
     }
+
+    public static function validarRequest(Request $request, array $requiredFields): mixed
+    {
+        $camposNulos = [];
+
+        foreach ($requiredFields as $field) {
+            if (is_null($request->input($field))) {
+                $camposNulos[] = $field; // Add the field to the null fields array
+            }
+        }
+
+        return empty($camposNulos) ? true : $camposNulos; // Return true if valid, otherwise return all null fields
+    }
+
 }
