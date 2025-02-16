@@ -17,10 +17,6 @@ class UsuarioController extends Controller
 {
     private array $codes= [];
     private int $planoGratuito = 1;
-    private int $planoPremium = 2;
-
-    private int $planoEmpresarial = 3;
-
     private int $tempoRenovacao = 30;
 
 
@@ -46,6 +42,18 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Request $request): object
     {
+        $campos = ['nome', 'senha', 'cpf', 'telefone', 'idPlano', 'email'];
+
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
 
         if (!Helper::validaCPF($request->cpf)) {
             $response = [
@@ -69,6 +77,7 @@ class UsuarioController extends Controller
                     'senha' => bcrypt($request->senha), //
                     'cpf' => $request->cpf,
                     'telefone' => $request->telefone,
+                    'email' => $request->email,
                     'idPlano' => $request->idPlano
                 ]);
                 $token = JWTAuth::fromUser($usuario);
@@ -98,6 +107,18 @@ class UsuarioController extends Controller
 
     public function getUser(Request $request): object
     {
+        $campos = ['idUsuario'];
+
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
         $usuario = Usuarios::find($request->idUsuario);
         isset($usuario->id) ?
             $response = [
@@ -113,6 +134,18 @@ class UsuarioController extends Controller
 
     public function atualizarDados(Request $request): object
     {
+        $campos = ['nome', 'senha', 'email','cpf', 'telefone'];
+
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
         if (!Helper::validaCPF($request->cpf)) {
             $response = [
                 'codRetorno' => 400,
@@ -126,6 +159,7 @@ class UsuarioController extends Controller
                 $usuario->senha = bcrypt($request->senha);
                 $usuario->cpf = $request->cpf;
                 $usuario->telefone = $request->telefone;
+                $usuario->email = $request->email;
                 $usuario->save();
                 $response = [
                     'codRetorno' => 200,
@@ -166,21 +200,47 @@ class UsuarioController extends Controller
     {
 
         // Validar os dados de entrada
-        $request->validate([
-            'cpf' => 'required|string',
-            'senha' => 'required|string',
-        ]);
+        $campos = ['cpf', 'senha'];
 
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
         // Recuperar o usuário com base no CPF
         $user = Usuarios::where('cpf', $request->input('cpf'))->first();
+        if(!$user){
+            $response = [
+                'codRetorno' => 404,
+                'message' => $this->codes[404]
+            ];
+            return response()->json($response);
+        }
 
        $response = $this->checaPermissoes($user, $request);
 
         return response()->json($response);
     }
 
-    private function confirmaUser(Request $request): bool
+    private function confirmaUser(Request $request): mixed
     {
+        $campos = ['cpf'];
+
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
         $exists = Usuarios::where('cpf', $request->cpf)->exists();
         return $exists;
 
@@ -203,6 +263,19 @@ class UsuarioController extends Controller
 
     public function atualizarSenha(Request $request): object
     {
+        $campos = ['cpf', 'senha'];
+
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
+
         $usuario = Usuarios::findOrFail($request->cpf);
         if (isset($usuario->cpf)) {
             $usuario->senha = bcrypt($request->senha);
@@ -264,5 +337,4 @@ class UsuarioController extends Controller
         return response()->json($response);
     }
 
-    //Criar metodo para recuperar informações de pagamento com base no retorno da API de pagamentos
 }

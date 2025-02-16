@@ -11,13 +11,11 @@ class CupomController extends Controller
 {
     //update server
     private $codes = [];
-    //teste server
-    private int $gratuidade = 0;
+
 
     public function __construct()
     {
         $this->codes = Helper::getHttpCodes();
-        $this->gratuidade = config('app.validadeCupom');
     }
 
     public function index() : object
@@ -33,6 +31,19 @@ class CupomController extends Controller
 
     public function saveTicket(Request $request) : object
     {
+        $campos = ['cupom', 'percentualDesconto', 'quantidadeDias'];
+
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
+
         $cupom = Cupom::create([
             'cupom' => $request->cupom,
             'percentualDesconto' => $request->percentualDesconto
@@ -72,11 +83,24 @@ class CupomController extends Controller
 
     public function atualizarDados(Request $request) : object
     {
+        $campos = ['idCupom', 'percentualDesconto', 'quantidadeDias'];
+
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
         $cupom = Cupom::findOrFail($request->idCupom);
 
         if (isset($cupom->id)) {
             $cupom->cupom = $request->cupom;
             $cupom->percentualDesconto = $request->percentualDesconto;
+            $cupom->quantidadeDias = $request->quantidadeDias;
             $cupom->save();
             $response = [
                 'codRetorno' => 200,
@@ -94,6 +118,18 @@ class CupomController extends Controller
 
     public function atualizarStatus(Request $request) : object
     {
+        $campos = ['idCupom', 'status'];
+
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
         $cupom = Cupom::findOrFail($request->idCupom);
         if (isset($cupom->id)) {
             $cupom->status = $request->status;

@@ -10,9 +10,11 @@ use App\Http\Util\Helper;
 class PlanoController extends Controller
 {
     private $codes = [];
+    private int $gratuidade = 0;
     public function __construct()
     {
         $this->codes = Helper::getHttpCodes();
+        $this->gratuidade = config('app.validadePlano');
     }
 
     public function index() : object
@@ -28,12 +30,28 @@ class PlanoController extends Controller
 
     public function cadastrarPlano(Request $request) : object
     {
-        $plano = Planos::create([
+        $campos = ['nomePlano', 'descricao', 'valor', 'quantidadeTags',];
+
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
+        if (str_contains(strtolower($request->nome), 'gratuito')) {
+            $this->gratuidade = 730;
+        }
+
+            $plano = Planos::create([
             'nome' => $request->nome,
             'descricao' => $request->descricao,
             'valor' => $request->valor,
             'quantidadeTags' => $request->quantidadeTags,
-            'tempoGratuidade' => $request->gratuidade
+            'tempoGratuidade' => $this->gratuidade
         ]);
         isset($plano->id) ?
             $response = [
@@ -64,12 +82,23 @@ class PlanoController extends Controller
 
     public function atualizarDados(Request $request): object
     {
+        $campos = ['nomePlano', 'descricao', 'valor', 'quantidadeTags',];
+
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
         $plano = Planos::findOrFail($request->idPlano);
         if(isset($plano->id)){
             $plano->nome = $request->nomePlano;
             $plano->descricao = $request->descricao;
             $plano->valor = $request->valor;
-            $plano->tempoGratuidade = $request->gratuidade;
             $plano->quantidadeTags = $request->quantidadeTags;
             $plano->save();
             $response = [
@@ -88,6 +117,19 @@ class PlanoController extends Controller
 
     public function atualizarStatus(Request $request) : object
     {
+        $campos = ['idPlano', 'status'];
+
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
+
         $plano = Planos::findOrFail($request->idPlano);
         if(isset($plano->id)){
             $plano->status = $request->status;

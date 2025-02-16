@@ -1,8 +1,9 @@
-@baseUrl = http://localhost:8000/api
-
+#@baseUrl = https://api.comppare.com.br/api
+@baseUrl = http://127.0.0.1:8000/api
 ### GET request para testar a api
 GET {{baseUrl}}/test
 
+#usuarios
 ###cadastrar
 POST {{baseUrl}}/usuarios/cadastrar
 Content-Type: application/json
@@ -45,7 +46,7 @@ Content-Type: application/json
     "cpf": "42708782070"
 }
 
-###checarExistencia
+###atualizar senha
 POST {{baseUrl}}/usuarios/atualizar-senha
 Content-Type: application/json
 
@@ -65,6 +66,43 @@ Content-Type: application/json
     "nome": "Teste plano",
     "descricao": "Teste",
     "valor": 99.90,
-    "tipoPlano": 1,
+    "quantidadeTags": 1,
     "gratuidade" : 3
 }
+
+
+###recuperar
+POST {{baseUrl}}/planos/recuperar
+Content-Type: application/json
+
+{
+    "idPlano" : 3
+}
+
+###listar
+GET {{baseUrl}}/planos/listar
+
+
+##Cupons
+###recuperar
+POST {{baseUrl}}/cupons/recuperar
+Content-Type: application/json
+
+{
+    "idCupom" : 3
+}
+
+###listar
+GET {{baseUrl}}/cupons/listar
+
+###Cadastro de cupons
+
+POST {{baseUrl}}/cupons/cadastrar
+Content-Type: application/json
+
+{
+    "cupom": "Teste",
+    "percentualDesconto": 1
+}
+
+
