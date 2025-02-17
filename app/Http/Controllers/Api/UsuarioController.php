@@ -84,7 +84,8 @@ class UsuarioController extends Controller
 
                 if (isset($usuario->id)) {
                     $idPlano = $usuario->idPlano;
-                    if ($idPlano != $this->planoGratuito) {
+                   $nomePlano = Planos::find($idPlano)->nome;
+                    if (!str_contains(strtolower($nomePlano), 'gratuito')) {
                         $usuario->dataLimiteCompra = $usuario->created_at->addDays(Planos::find($idPlano)->tempoGratuidade)->setTimezone('America/Recife');;
                         $usuario->save();
                     }
