@@ -167,7 +167,7 @@ class PlanoController extends Controller
 
         $plano = Planos::findOrFail($request->idPlano);
         if(isset($plano->id)){
-          $plano->funcionalidades()->attach($request->funcionalidades);
+          $plano->funcionalidades()->sync($request->funcionalidades);
             $response = [
                 'codRetorno' => 200,
                 'message' => $this->codes[200]
