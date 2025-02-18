@@ -9,8 +9,8 @@ use App\Http\Util\Helper;
 
 class PlanoController extends Controller
 {
-    private $codes = [];
-    private int $gratuidade = 0;
+    private  array $codes;
+    private int $gratuidade;
     public function __construct()
     {
         $this->codes = Helper::getHttpCodes();

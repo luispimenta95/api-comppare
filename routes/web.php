@@ -4,7 +4,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UsuarioController;
 use App\Http\Controllers\Api\PlanoController;
 use App\Http\Controllers\Api\CupomController;
-use App\Http\Controllers\Api\TipoPlanoController;
 Route::middleware('api')->group(function () {
     Route::get('/api/test', function () {
         $apiVersion = env('APP_VERSION');  // 'default_version' é o valor padrão caso a variável não exista
@@ -26,18 +25,11 @@ Route::middleware('api')->group(function () {
     Route::post('/api/planos/cadastrar', [PlanoController::class, 'cadastrarPlano']);
     Route::post('/api/planos/atualizar-status', [PlanoController::class, 'atualizarStatus']);
     Route::post('/api/planos/atualizar-dados', [PlanoController::class, 'atualizarDados']);
+    Route::post('/api/planos/atualizar-funcionalidades', [PlanoController::class, 'adicionarFuncionalidades']);
     //Rotas cupons
     Route::post('/api/cupons/cadastrar', [CupomController::class, 'saveTicket']);
     Route::get('/api/cupons/listar', [CupomController::class, 'index']);
     Route::post('/api/cupons/recuperar', [CupomController::class, 'getTicketDiscount']);
     Route::post('/api/cupons/atualizar-status', [CupomController::class, 'atualizarStatus']);
     Route::post('/api/cupons/atualizar-dados', [CupomController::class, 'atualizarDados']);
-// Rotas tipo plano
-    Route::get('/api/tipo-planos/listar', [TipoPlanoController::class, 'index']);
-    Route::post('/api/tipo-planos/recuperar', [TipoPlanoController::class, 'getTipoPlano']);
-    Route::post('/api/tipo-planos/cadastrar', [TipoPlanoController::class, 'cadastrarTipoPlano']);
-    Route::post('/api/tipo-planos/atualizar-status', [TipoPlanoController::class, 'atualizarStatus']);
-    Route::post('/api/tipo-planos/atualizar-dados', [TipoPlanoController::class, 'atualizarDados']);
-
-
 });
