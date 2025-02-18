@@ -149,4 +149,36 @@ class PlanoController extends Controller
         return response()->json($response);
 
     }
+
+    public function adicionarFuncionalidades(Request $request) : object
+    {
+        $campos = ['idPlano', 'funcionalidades'];
+
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
+
+        $plano = Planos::findOrFail($request->idPlano);
+        if(isset($plano->id)){
+          $plano->funcionalidades()->attach($request->funcionalidades);
+            $response = [
+                'codRetorno' => 200,
+                'message' => $this->codes[200]
+            ];
+        }else{
+            $response = [
+                'codRetorno' => 500,
+                'message' => $this->codes[500]
+            ];
+        }
+        return response()->json($response);
+
+    }
 }

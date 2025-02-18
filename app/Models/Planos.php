@@ -15,4 +15,9 @@ class Planos extends Model
     {
         return $this->hasMany(Usuarios::class);
     }
+
+    public function funcionalidades()
+    {
+        return $this->belongsToMany(Funcionalidades::class);
+    }
 }
