@@ -338,7 +338,6 @@ class UsuarioController extends Controller
                     return response()->json($response);
                 }
 
-
             } else {
                 $response = [
                     'codRetorno' => 200,
