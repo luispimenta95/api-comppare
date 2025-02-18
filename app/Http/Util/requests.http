@@ -12,9 +12,7 @@ Content-Type: application/json
     "nome": "Luis Pimenta",
     "cpf": "12345678909",
     "senha": "13151319",
-    "telefone": "61998690313",
-    "idPlano": 1,
-    "email": "luis.pimenta@comppare.com.br"
+    "telefone": "61998690313"
 }
 
 
