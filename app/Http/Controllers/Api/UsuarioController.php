@@ -320,7 +320,14 @@ class UsuarioController extends Controller
                 return response()->json($response);
             }
             //Verifica data do ultimo pagamento
-            if ( $user->idPlano != $this->planoGratuito) {
+            if (($user->idPlano != $this->planoGratuito) && $user->dataUltimoPagamento == null) {
+                $response = [
+                    'codRetorno' => 400,
+                    'message' => $this->codes[-7]
+                ];
+                return response()->json($response);
+            }
+            if ($user->idPlano != $this->planoGratuito) {
                 $daLimiteAcesso = $user->dataUltimoPagamento->addDays($this->tempoRenovacao)->setTimezone('America/Recife');
 
                 if (($user->idPlano != $this->planoGratuito) && $daLimiteAcesso > $osTime) {
@@ -331,9 +338,7 @@ class UsuarioController extends Controller
                     return response()->json($response);
                 }
 
-
-
-            }else{
+            } else {
                 $response = [
                     'codRetorno' => 200,
                     'message' => $this->codes[200],
@@ -341,7 +346,9 @@ class UsuarioController extends Controller
                     'data' => $user->only('id', 'nome', 'cpf', 'telefone')
                 ];
             }
-            return response()->json($response);
+
         }
-}
+        return response()->json($response);
+    }
+
 }
