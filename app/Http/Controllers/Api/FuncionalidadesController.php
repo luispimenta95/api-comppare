@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
-use App\Models\Funcionalidades;
 use App\Http\Controllers\Controller;
+use App\Models\Funcionalidades;
 use Illuminate\Http\Request;
 
 class FuncionalidadesController extends Controller

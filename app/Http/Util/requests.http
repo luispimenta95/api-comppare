@@ -25,8 +25,8 @@ POST {{baseUrl}}/usuarios/autenticar
 Content-Type: application/json
 
 {
-    "cpf": "02342288140",
-    "senha": "13151319"
+    "cpf": "12929503742",
+    "senha": "123"
 }
 
 ###recuperar
