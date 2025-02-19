@@ -9,8 +9,8 @@ use App\Http\Util\Helper;
 
 class PlanoController extends Controller
 {
-    private $codes = [];
-    private int $gratuidade = 0;
+    private  array $codes;
+    private int $gratuidade;
     public function __construct()
     {
         $this->codes = Helper::getHttpCodes();
@@ -167,7 +167,7 @@ class PlanoController extends Controller
 
         $plano = Planos::findOrFail($request->idPlano);
         if(isset($plano->id)){
-          $plano->funcionalidades()->attach($request->funcionalidades);
+          $plano->funcionalidades()->sync($request->funcionalidades);
             $response = [
                 'codRetorno' => 200,
                 'message' => $this->codes[200]
