@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UsuarioController;
 use App\Http\Controllers\Api\PlanoController;
 use App\Http\Controllers\Api\CupomController;
+use App\Http\Controllers\Api\VendasController;
 Route::middleware('api')->group(function () {
     Route::get('/api/test', function () {
         $apiVersion = env('APP_VERSION');  // 'default_version' é o valor padrão caso a variável não exista
@@ -32,4 +33,8 @@ Route::middleware('api')->group(function () {
     Route::post('/api/cupons/recuperar', [CupomController::class, 'getTicketDiscount']);
     Route::post('/api/cupons/atualizar-status', [CupomController::class, 'atualizarStatus']);
     Route::post('/api/cupons/atualizar-dados', [CupomController::class, 'atualizarDados']);
+
+    //Pagamentos
+    Route::get('/api/vendas/listar', [VendasController::class, 'index']);
+
 });
