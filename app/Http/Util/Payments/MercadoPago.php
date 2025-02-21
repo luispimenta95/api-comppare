@@ -19,6 +19,7 @@ class MercadoPago
 
         $this->_client = new PreferenceClient();
         $this->_options = new RequestOptions();
+        // mudança pra tirar do env
         $this->_options->setCustomHeaders(["X-Idempotency-Key: " . uniqid()]);
     }
 
