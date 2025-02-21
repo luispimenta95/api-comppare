@@ -19,7 +19,7 @@ class MercadoPago
 
         $this->_client = new PreferenceClient();
         $this->_options = new RequestOptions();
-        $this->_options->setCustomHeaders(["X-Idempotency-Key: " . getenv("MERCADOPAGO_KEY")]);
+        $this->_options->setCustomHeaders(["X-Idempotency-Key: " . uniqid()]);
     }
 
     public function paymentPreference()
