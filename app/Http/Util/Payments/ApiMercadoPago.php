@@ -168,6 +168,10 @@ class ApiMercadoPago
         MercadoPagoConfig::setAccessToken("ACCESS_TOKEN");
 
         $client = new PaymentClient();
-         dd ($client->get($idPagamento));
+        try {
+            return $client->get($idPagamento);
+        }catch (MPApiException $e) {
+            return "Erro desconhecido: " . $e->getMessage();
+        }
     }
 }
