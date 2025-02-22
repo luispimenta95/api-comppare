@@ -7,7 +7,7 @@ use MercadoPago\Client\Preference\PreferenceClient;
 use MercadoPago\Exceptions\MPApiException;
 
 
-class MercadoPago
+class ApiMercadoPago
 {
     private $_client;
     private $_options;

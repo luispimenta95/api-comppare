@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Util\Helper;
 use Illuminate\Http\Request;
 use App\Models\Cupom;
-use App\Http\Util\Payments\MercadoPago;
 
-class VendasController extends MercadoPago
+use MercadoPago\MercadoPagoConfig;
+use MercadoPago\Client\Common\RequestOptions;
+use App\Http\Util\Payments\ApiMercadoPago;
+
+class VendasController extends Controller
 {
     //update server
     private $apiMercadoPago;
@@ -16,10 +19,10 @@ class VendasController extends MercadoPago
 
     public function __construct()
     {
-        $this->apiMercadoPago = new MercadoPago();
+        $this->apiMercadoPago = new ApiMercadoPago();
     }
 
-    public function index()
+    public function realizarVenda()
     {
         MercadoPagoConfig::setAccessToken(env('ACCESS_TOTKEN_TST'));
 
@@ -94,7 +97,7 @@ class VendasController extends MercadoPago
             "transaction_amount" => 58,
         ];
 
-        $res = $client->create($createRequest, $request_options);
+        $client->create($createRequest, $request_options);
 
 
     }
