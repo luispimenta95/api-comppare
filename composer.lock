@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "506760397568afd9d06441837162caf0",
+    "content-hash": "5a0d545f2d2534af3f281c150e4069bc",
     "packages": [
         {
             "name": "brick/math",
@@ -2143,6 +2143,66 @@
                 }
             ],
             "time": "2024-12-08T08:18:47+00:00"
+        },
+        {
+            "name": "liveecommerce/dx-php",
+            "version": "3.0.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/liveecommerce/dx-php.git",
+                "reference": "0a109638d41efa10f6bed5d8399658f8113c35c8"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/liveecommerce/dx-php/zipball/0a109638d41efa10f6bed5d8399658f8113c35c8",
+                "reference": "0a109638d41efa10f6bed5d8399658f8113c35c8",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.0.0"
+            },
+            "require-dev": {
+                "phpmd/phpmd": "@stable",
+                "phpunit/phpunit": "^5",
+                "sebastian/phpcpd": "*",
+                "squizlabs/php_codesniffer": "2.3.*",
+                "symfony/yaml": "~2.5",
+                "vlucas/phpdotenv": "^2.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "MercadoPago\\": [
+                        "src/MercadoPago/",
+                        "tests/",
+                        "src/MercadoPago/Generic/",
+                        "src/MercadoPago/Entities/",
+                        "src/MercadoPago/Entities/Shared/"
+                    ]
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "imasson",
+                    "homepage": "https://github.com/imasson",
+                    "role": "Developer"
+                },
+                {
+                    "name": "joelibaceta",
+                    "homepage": "https://github.com/joelibaceta",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Fork from mercadopago/dx-php changing the dependencies versions.",
+            "homepage": "https://github.com/liveecommerce/dx-php",
+            "support": {
+                "source": "https://github.com/liveecommerce/dx-php/tree/3.0.4"
+            },
+            "time": "2021-11-04T14:23:15+00:00"
         },
         {
             "name": "mercadopago/dx-php",
