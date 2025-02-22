@@ -8,7 +8,7 @@ use MercadoPago\Client\Preference\PreferenceClient;
 use MercadoPago\Exceptions\MPApiException;
 use MercadoPago\Net\MPSearchRequest;
 use MercadoPago\Client\Payment\PaymentClient;
-
+//fix types
 class ApiMercadoPago
 {
     private $_client;
