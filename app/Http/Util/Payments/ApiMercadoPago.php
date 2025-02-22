@@ -14,7 +14,7 @@ class ApiMercadoPago
 
     public function __construct()
     {
-        MercadoPagoConfig::setAccessToken(getenv("MERCADOPAGO_TOKEN"));
+        MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOTKEN_TST"));
         MercadoPagoConfig::setRuntimeEnviroment(MercadoPagoConfig::LOCAL);
 
         $this->_client = new PreferenceClient();
