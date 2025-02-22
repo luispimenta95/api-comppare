@@ -30,7 +30,8 @@ class VendasController extends Controller
         MercadoPagoConfig::setAccessToken(env('ACCESS_TOTKEN_TST'));
 
       $response = $this->apiMercadoPago->salvarVenda();
-      echo $response;
+        $data= json_decode( json_encode($response), true);
+      echo $data;
 
     }
 
