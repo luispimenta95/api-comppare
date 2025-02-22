@@ -9,7 +9,6 @@ use App\Models\Cupom;
 
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Client\Common\RequestOptions;
-use MercadoPago\SDK;
 
 // Inicializar chave do Mercado Pago
 
@@ -28,7 +27,7 @@ class VendasController extends Controller
 
     public function realizarVenda()
     {
-        SDK::setAccessToken(env('ACCESS_TOTKEN_TST'));
+        MercadoPagoConfig::setAccessToken(env('ACCESS_TOTKEN_TST'));
 
       $this->apiMercadoPago->salvarVenda();
 
