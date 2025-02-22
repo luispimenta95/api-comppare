@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Planos extends Model
 {
@@ -19,5 +20,10 @@ class Planos extends Model
     public function funcionalidades()
     {
         return $this->belongsToMany(Funcionalidades::class);
+    }
+
+    public function transacoesFinanceiras(): BelongsTo
+    {
+        return $this->belongsTo(TransacaoFinanceira::class);
     }
 }
