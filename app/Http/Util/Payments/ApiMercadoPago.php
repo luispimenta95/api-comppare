@@ -15,17 +15,17 @@ class ApiMercadoPago
 
     public function __construct()
     {
-        MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOTKEN_TST"));
-        MercadoPagoConfig::setRuntimeEnviroment(MercadoPagoConfig::LOCAL);
 
-        $this->_client = new PreferenceClient();
-        $this->_options = new RequestOptions();
-        // mudança pra tirar do env
-        $this->_options->setCustomHeaders(["X-Idempotency-Key: " . uniqid()]);
+
+
     }
 
-    public function paymentPreference()
+    public function salvarVenda()
     {
+        MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOTKEN_TST"));
+        $this->_client = new PreferenceClient();
+        $this->_options = new RequestOptions();
+        $this->_options->setCustomHeaders(["X-Idempotency-Key: " . uniqid()]);
         $createRequest = [
             "external_reference" => 3,
             "notification_url" => "https://google.com",
