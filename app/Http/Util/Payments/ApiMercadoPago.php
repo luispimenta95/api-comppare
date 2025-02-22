@@ -52,9 +52,8 @@ class ApiMercadoPago
         try
         {
 
-            $preference = $this->_client->create($createRequest);
+            return $this->_client->create($createRequest);
 
-            return $preference->sandbox_init_point;
 
         }
         catch (MPApiException $e)
