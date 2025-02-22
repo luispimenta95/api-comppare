@@ -168,6 +168,6 @@ class ApiMercadoPago
         MercadoPagoConfig::setAccessToken("ACCESS_TOKEN");
 
         $client = new PaymentClient();
-         return $client->get($idPagamento)->getResponse();
+         dd ($client->get($idPagamento));
     }
 }
