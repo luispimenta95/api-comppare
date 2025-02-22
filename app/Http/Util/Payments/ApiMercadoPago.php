@@ -1,7 +1,7 @@
 <?php
 namespace App\Http\Util\Payments;
 
-use http\Client\Request;
+use Illuminate\Http\Request;
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Client\Common\RequestOptions;
 use MercadoPago\Client\Preference\PreferenceClient;
