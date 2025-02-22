@@ -165,7 +165,6 @@ class ApiMercadoPago
     }
     public function getPaymentById(Request $request)
     {
-        dd($request);
         MercadoPagoConfig::setAccessToken("ACCESS_TOKEN");
 
         $client = new PaymentClient();
