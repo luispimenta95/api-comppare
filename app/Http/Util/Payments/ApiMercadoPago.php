@@ -1,14 +1,14 @@
 <?php
 namespace App\Http\Util\Payments;
 
-use http\Client\Request;
+use Illuminate\Http\Request;
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Client\Common\RequestOptions;
 use MercadoPago\Client\Preference\PreferenceClient;
 use MercadoPago\Exceptions\MPApiException;
 use MercadoPago\Net\MPSearchRequest;
 use MercadoPago\Client\Payment\PaymentClient;
-
+//fix types
 class ApiMercadoPago
 {
     private $_client;
