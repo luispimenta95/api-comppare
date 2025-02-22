@@ -127,7 +127,7 @@ class ApiMercadoPago
 
             return [
               'link' => $preference->init_point,
-              'id' => $preference->id,
+              'id' => $preference->collector_id
             ] ;
 
 
