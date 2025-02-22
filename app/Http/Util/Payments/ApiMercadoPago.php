@@ -23,7 +23,7 @@ class ApiMercadoPago
 
     }
 
-    public function salvarVenda():string
+    public function salvarVenda():array
     {
         MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOTKEN_TST"));
         //MercadoPagoConfig::setRuntimeEnviroment(MercadoPagoConfig::SERVER);
@@ -125,13 +125,19 @@ class ApiMercadoPago
 
             $preference = $this->_client->create($createRequest);
 
-            return $preference->sandbox_init_point;
+            return [
+              'link' => $preference->init_point,
+              'id' => $preference->id,
+            ] ;
+
 
         }
         catch (MPApiException $e)
         {
 
-            return $e->getMessage();
+            return[
+                "Erro" =>$e->getMessage()
+            ];
 
         }
 
@@ -147,7 +153,7 @@ class ApiMercadoPago
         $searchRequest = new MPSearchRequest(30, 0, [
             "sort" => "date_created",
             "criteria" => "desc",
-            "external_reference" => "MLB2907679857",
+            "external_reference" => "ID_REF",
             "range" => "date_created",
             "begin_date" => "NOW-30DAYS",
             "end_date" => "NOW",
@@ -156,5 +162,12 @@ class ApiMercadoPago
         ]);
         $client = new PaymentClient();
         return $client->search($searchRequest);
+    }
+    public function getPaymentById(Request $request)
+    {
+        MercadoPagoConfig::setAccessToken("ACCESS_TOKEN");
+
+        $client = new PaymentClient();
+         return $client->get($request->idPagamento);
     }
 }
