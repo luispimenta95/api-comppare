@@ -163,12 +163,11 @@ class ApiMercadoPago
         $client = new PaymentClient();
         return $client->search($searchRequest);
     }
-    public function getPaymentById(Request $request)
+    public function getPaymentById(int $idPagamento)
     {
-        dd($request);
         MercadoPagoConfig::setAccessToken("ACCESS_TOKEN");
 
         $client = new PaymentClient();
-         return $client->get($request->idPagamento);
+         return $client->get($idPagamento);
     }
 }
