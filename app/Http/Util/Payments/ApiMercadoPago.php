@@ -11,11 +11,13 @@ class ApiMercadoPago
 {
     private $_client;
     private $_options;
+    private $configs;
 
     public function __construct()
     {
-        MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOTKEN_TST"));
-        MercadoPagoConfig::setRuntimeEnviroment(MercadoPagoConfig::LOCAL);
+        $this->configs = new MercadoPagoConfig();
+        $this->configs::setAccessToken(getenv("ACCESS_TOTKEN_TST"));
+        $this->configs::setRuntimeEnviroment($this->configs::LOCAL);
 
         $this->_client = new PreferenceClient();
         $this->_options = new RequestOptions();
