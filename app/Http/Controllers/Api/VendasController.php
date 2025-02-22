@@ -34,7 +34,16 @@ class VendasController extends Controller
 
     }
 
-    public function recuperarVenda()
+    public function recuperarVenda(Request $request)
+    {
+        MercadoPagoConfig::setAccessToken(env('ACCESS_TOTKEN_TST'));
+
+        $response = $this->apiMercadoPago->getPaymentById($request);
+        echo json_encode($response);
+
+    }
+
+    public function listarVendas()
     {
         MercadoPagoConfig::setAccessToken(env('ACCESS_TOTKEN_TST'));
 
