@@ -98,7 +98,7 @@ class ApiMercadoPago
         $client = new PaymentClient();
         return $client->search($searchRequest);
     }
-    public function getPaymentById(int $idPagamento):mixed
+    public function getPaymentById(int $idPagamento):array
     {
         // Configurar o token de acesso do Mercado Pago
         MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOTKEN_TST"));
