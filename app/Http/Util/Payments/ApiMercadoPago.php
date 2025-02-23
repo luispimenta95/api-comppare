@@ -24,7 +24,7 @@ class ApiMercadoPago
 
     }
 
-public function salvarVenda(): mixed
+public function salvarVenda(Request $request): mixed
 {
     MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOKEN_TST"));
 
@@ -35,14 +35,14 @@ public function salvarVenda(): mixed
         "notification_url" => "https://google.com",
         "items" => [
             [
-                "id" => "1789",
-                "title" => "Compras do Carrinho",
-                "description" => "Dummy description",
+                "id" => $request->id,
+                "title" => $request->title,
+                "description" => $request->description,
                 "picture_url" => "http://www.myapp.com/myimage.jpg",
-                "category_id" => "eletronico",
-                "quantity" => 1,
+                "category_id" => "  SERVICES",
+                "quantity" => $request->quantity,
                 "currency_id" => "BRL",
-                "unit_price" => 30.0
+                "unit_price" => $request->price
             ]
         ],
         "payment_methods" => [

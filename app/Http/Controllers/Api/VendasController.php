@@ -25,11 +25,11 @@ class VendasController extends Controller
         $this->apiMercadoPago = new ApiMercadoPago();
     }
 
-    public function realizarVenda()
+    public function realizarVenda(Request $request)
     {
         MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
 
-      $response = $this->apiMercadoPago->salvarVenda();
+      $response = $this->apiMercadoPago->salvarVenda($request);
         echo json_encode($response);
 
     }
