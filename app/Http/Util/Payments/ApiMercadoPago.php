@@ -52,7 +52,9 @@ public function salvarVenda(Request $request): mixed
 
     try {
         $preference = $this->_client->create($createRequest);
-        return $preference;
+        return [
+            'link' => $preference->init_point
+        ] ;
     } catch (MPApiException $e) {
         return ["Erro" => $e->getMessage()];
     }
