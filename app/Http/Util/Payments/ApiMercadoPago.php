@@ -30,23 +30,28 @@ public function salvarVenda(Request $request): mixed
 
     $this->_options->setCustomHeaders(["X-Idempotency-Key: " . uniqid()]);
 
+
+
     $createRequest = [
-        "external_reference" => "3", // Correção: deve ser string
+        "external_reference" => 3,
         "notification_url" => "https://google.com",
         "items" => [
             [
-                "id" => $request->id,
-                "title" => $request->title,
-                "description" => $request->description,
+                "id" => "18",
+                "title" => "Um produto",
+                "description" => "descript",
                 "picture_url" => "http://www.myapp.com/myimage.jpg",
-                "category_id" => "  SERVICES",
-                "quantity" => $request->quantity,
+                "category_id" => "services",
+                "quantity" => 1,
                 "currency_id" => "BRL",
-                "unit_price" => $request->price
-            ]
+                "unit_price" => 31.25
+            ],
         ],
-        "payment_methods" => [
-            "excluded_payment_types" => [["id" => "ticket"]] // Correção no formato
+        "default_payment_method_id" => "master",
+        "excluded_payment_types" => [
+            [
+                "id" => "ticket"
+            ]
         ]
     ];
 
