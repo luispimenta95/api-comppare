@@ -97,13 +97,13 @@ class UsuarioController extends Controller
                         'idPlano' => $idPlano,
                         'valorPlano' => $plano->valor,
                         'idUsuario' => $usuario->id,
-                        'idPagamento' => $responseApi->idPagamento
+                        'idPagamento' => $responseApi['idPagamento']
                     ]);
                     $response = [
                         'codRetorno' => 200,
                         'message' => $this->codes[200],
                         'token' => $token,
-                        'link' => $responseApi->link,
+                        'link' => $responseApi['link'],
                     ];
                 } else {
                     $response = [
