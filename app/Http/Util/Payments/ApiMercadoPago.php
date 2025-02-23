@@ -33,7 +33,7 @@ public function salvarVenda(Request $request): mixed
 
 
     $createRequest = [
-        "external_reference" => 3,
+        "external_reference" => "3",
         "notification_url" => "https://google.com",
         "items" => [
             [
