@@ -21,7 +21,7 @@ return new class extends Migration
             $table->float('valorPlano');
             $table->float('valorFinalPago')->nullable();
             $table->string('idPagamento');
-            $table->bolean('pagamentoEfetuado')->default(false);
+            $table->boolean('pagamentoEfetuado')->default(false);
 
             $table->timestamps();
         });
