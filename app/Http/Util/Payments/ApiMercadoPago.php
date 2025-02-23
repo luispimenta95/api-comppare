@@ -8,6 +8,8 @@ use MercadoPago\Client\Preference\PreferenceClient;
 use MercadoPago\Exceptions\MPApiException;
 use MercadoPago\Net\MPSearchRequest;
 use MercadoPago\Client\Payment\PaymentClient;
+use MercadoPago\Preference;
+
 //fix types
 class ApiMercadoPago
 {
@@ -23,7 +25,7 @@ class ApiMercadoPago
 
     }
 
-    public function salvarVenda():array
+    public function salvarVenda(): mixed
     {
         MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOTKEN_TST"));
         //MercadoPagoConfig::setRuntimeEnviroment(MercadoPagoConfig::SERVER);
@@ -58,12 +60,9 @@ class ApiMercadoPago
         try
         {
 
-            $preference = $this->_client->create($createRequest);
+            return $this->_client->create($createRequest);
 
-            return [
-              'link' => $preference->init_point,
-              'id' => $preference->collector_id
-            ] ;
+
 
 
         }
