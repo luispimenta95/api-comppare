@@ -59,7 +59,7 @@ class ApiMercadoPago
         try
         {
             $preference = $this->_client->create($createRequest);
-            $preference->collector_id;
+            return $preference;
         }
         catch (MPApiException $e)
         {
