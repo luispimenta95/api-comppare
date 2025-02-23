@@ -37,14 +37,14 @@ public function salvarVenda(Request $request): mixed
         "notification_url" => "https://google.com",
         "items"=> array(
             array(
-                "id" => "17890",
-                "title" => "Compras do Carrinho1",
-                "description" => "Dummy description02",
+                "id" => $request->id,
+                "title" => $request->title,
+                "description" => $request->description,
                 "picture_url" => "http://www.myapp.com/myimage.jpg",
-                "category_id" => "eletronico",
-                "quantity" => 1,
+                "category_id" => "  SERVICES",
+                "quantity" => $request->quantity,
                 "currency_id" => "BRL",
-                "unit_price" => 30.25
+                "unit_price" => $request->price
             )
         ),
         "default_payment_method_id" => "master",
