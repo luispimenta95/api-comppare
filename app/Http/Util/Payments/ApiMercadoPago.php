@@ -71,12 +71,8 @@ public function salvarVenda(Request $request): mixed
 
         $searchRequest = new MPSearchRequest(30, 0, [
             "sort" => "date_created",
-            "criteria" => "desc",
-            "external_reference" => "3",
-            "range" => "date_created",
-            "begin_date" => date("Y-m-d\TH:i:s\Z", strtotime("-30 days")), // Correção no formato
-            "end_date" => date("Y-m-d\TH:i:s\Z")
-        ]);
+            "criteria" => "desc"
+            ]);
 
         $client = new PaymentClient();
         return $client->search($searchRequest);
