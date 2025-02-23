@@ -56,15 +56,10 @@ class ApiMercadoPago
                 )
             )
         ];
-
         try
         {
-
-            return $this->_client->create($createRequest);
-
-
-
-
+            $preference = $this->_client->create($createRequest);
+            $preference->collector_id;
         }
         catch (MPApiException $e)
         {
@@ -87,7 +82,7 @@ class ApiMercadoPago
         $searchRequest = new MPSearchRequest(30, 0, [
             "sort" => "date_created",
             "criteria" => "desc",
-            "external_reference" => "ID_REF",
+            "external_reference" => "3",
             "range" => "date_created",
             "begin_date" => "NOW-30DAYS",
             "end_date" => "NOW",
