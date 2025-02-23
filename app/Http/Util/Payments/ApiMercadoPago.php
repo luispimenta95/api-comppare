@@ -33,26 +33,26 @@ public function salvarVenda(Request $request): mixed
 
 
     $createRequest = [
-        "external_reference" => "3",
+        "external_reference" => 3,
         "notification_url" => "https://google.com",
-        "items" => [
-            [
-                "id" => "18",
-                "title" => "Um produto",
-                "description" => "descript",
+        "items"=> array(
+            array(
+                "id" => "17890",
+                "title" => "Compras do Carrinho1",
+                "description" => "Dummy description02",
                 "picture_url" => "http://www.myapp.com/myimage.jpg",
-                "category_id" => "services",
+                "category_id" => "eletronico",
                 "quantity" => 1,
                 "currency_id" => "BRL",
-                "unit_price" => 31.25
-            ],
-        ],
+                "unit_price" => 30.25
+            )
+        ),
         "default_payment_method_id" => "master",
-        "excluded_payment_types" => [
-            [
+        "excluded_payment_types" => array(
+            array(
                 "id" => "ticket"
-            ]
-        ]
+            )
+        )
     ];
 
     try {
