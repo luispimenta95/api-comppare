@@ -24,7 +24,7 @@ class ApiMercadoPago
 
     }
 
-public function salvarVenda(Request $request): mixed
+public function salvarVenda(Array $data): mixed
 {
     MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOKEN_TST"));
 
@@ -37,14 +37,14 @@ public function salvarVenda(Request $request): mixed
         "notification_url" => "https://google.com",
         "items"=> array(
             array(
-                "id" => $request->id,
-                "title" => $request->title,
-                "description" => $request->description,
+                "id" => $data['id'],
+                "title" => $data['title'],
+                "description" => $data['description'],
                 "picture_url" => "http://www.myapp.com/myimage.jpg",
-                "category_id" => "  SERVICES",
-                "quantity" => $request->quantity,
+                "category_id" => "SERVICES",
+                "quantity" => 1,
                 "currency_id" => "BRL",
-                "unit_price" => $request->price
+                "unit_price" => $data['price'],
             )
         ),
         "default_payment_method_id" => "master",
@@ -58,8 +58,9 @@ public function salvarVenda(Request $request): mixed
     try {
         $preference = $this->_client->create($createRequest);
         return [
-            'link' => $preference->init_point
-        ] ;
+            'link' => $preference->init_point,
+            "idPagamento" => $preference->id
+        ];
     } catch (MPApiException $e) {
         return ["Erro" => $e->getMessage()];
     }

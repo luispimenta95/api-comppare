@@ -12,16 +12,13 @@ class TransacaoFinanceira extends Model
     use HasFactory;
 
     protected $fillable = [
-        'formaPagamento',
-        'codigoPix',
-        'numeroCartao',
-        'nomeTitular',
-        'cpfTitular',
-        'codigoVerificador',
-        'idUsuario',
         'idPlano',
-        'valor',
-        'cupom'
+        'idUsuario',
+        'formaPagamento',
+        'valorPlano',
+        'valorFinalPago',
+        'idPagamento',
+        'pagamentoEfetuado',
     ];
     public function usuario(): BelongsTo
     {

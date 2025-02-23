@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Planos;
+use App\Models\TransacaoFinanceira;
 use Illuminate\Http\Request;
 use App\Models\Usuarios;
 use Illuminate\Support\Facades\Hash;
@@ -80,19 +81,29 @@ class UsuarioController extends Controller
                     'email' => $request->email,
                     'idPlano' => $request->idPlano
                 ]);
+
                 $token = JWTAuth::fromUser($usuario);
 
                 if (isset($usuario->id)) {
                     $idPlano = $usuario->idPlano;
-                   $nomePlano = Planos::find($idPlano)->nome;
-                    if (!str_contains(strtolower($nomePlano), 'gratuito')) {
+                    $plano = Planos::find($idPlano);
+                    $vendasController = new VendasController();
+                    $responseApi = $vendasController->realizarVenda($usuario, $plano);
+                    if (!str_contains(strtolower($plano->nome), 'gratuito')) {
                         $usuario->dataLimiteCompra = $usuario->created_at->addDays(Planos::find($idPlano)->tempoGratuidade)->setTimezone('America/Recife');;
                         $usuario->save();
                     }
+                    TransacaoFinanceira::create([
+                        'idPlano' => $idPlano,
+                        'valorPlano' => $plano->valor,
+                        'idUsuario' => $usuario->id,
+                        'idPagamento' => $responseApi->id,
+                    ]);
                     $response = [
                         'codRetorno' => 200,
                         'message' => $this->codes[200],
-                        'token' => $token
+                        'token' => $token,
+                        'link' => $responseApi->link,
                     ];
                 } else {
                     $response = [

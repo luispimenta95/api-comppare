@@ -17,14 +17,12 @@ return new class extends Migration
             $table->foreign('idPlano')->references('id')->on('planos');
             $table->unsignedBigInteger('idUsuario'); //
             $table->foreign('idUsuario')->references('id')->on('usuarios');
-            $table->string('cupom')->nullable();
-            $table->string('formaPagamento');
-            $table->float('valor');
-            $table->string('codigoPix')->nullable();
-            $table->string('numeroCartao')->nullable();
-            $table->string('nomeTitular')->nullable();
-            $table->string('cpfTitular')->nullable();
-            $table->string('codigoVerificador')->nullable();
+            $table->string('formaPagamento')->nullable();
+            $table->float('valorPlano');
+            $table->float('valorFinalPago')->nullable();
+            $table->string('idPagamento');
+            $table->bolean('pagamentoEfetuado')->default(false);
+
             $table->timestamps();
         });
     }
