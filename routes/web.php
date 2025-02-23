@@ -35,7 +35,7 @@ Route::middleware('api')->group(function () {
     Route::post('/api/cupons/atualizar-dados', [CupomController::class, 'atualizarDados']);
 
     //Pagamentos
-    Route::get('/api/vendas/salvar-pagamento', [VendasController::class, 'realizarVenda']);
+    Route::post('/api/vendas/salvar-pagamento', [VendasController::class, 'realizarVenda']);
     Route::post('/api/vendas/recuperar', [VendasController::class, 'recuperarVenda']);
     Route::get('/api/vendas/listar', [VendasController::class, 'listarVendas']);
 
