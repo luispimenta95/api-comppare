@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Util\Helper;
+use App\Models\Planos;
+use App\Models\Usuarios;
 use Illuminate\Http\Request;
 use App\Models\Cupom;
 
@@ -25,12 +27,17 @@ class VendasController extends Controller
         $this->apiMercadoPago = new ApiMercadoPago();
     }
 
-    public function realizarVenda(Request $request)
+    public function realizarVenda(Usuarios $usuario, Planos $plano)
     {
+        $data = [
+            "id" => $plano->id,
+            "title" => $plano->nome,
+            "description" => $plano->descricao,
+            "price" => $plano->valor
+        ];
         MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
 
-      $response = $this->apiMercadoPago->salvarVenda($request);
-        echo json_encode($response);
+      return $this->apiMercadoPago->salvarVenda($data);
 
     }
 
