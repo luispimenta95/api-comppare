@@ -21,106 +21,89 @@ class ApiMercadoPago
     {
         $this->_client = new PreferenceClient();
         $this->_options = new RequestOptions();
-        $this->token = MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOTKEN_TST"));
 
     }
 
-    public function salvarVenda(): mixed
-    {
-        MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOTKEN_TST"));
-        //MercadoPagoConfig::setRuntimeEnviroment(MercadoPagoConfig::SERVER);
+public function salvarVenda(): mixed
+{
+    MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOKEN_TST"));
 
-        $this->_options->setCustomHeaders(["X-Idempotency-Key: " . uniqid()]);
+    $this->_options->setCustomHeaders(["X-Idempotency-Key: " . uniqid()]);
 
+    $createRequest = [
+        "external_reference" => "3", // Correção: deve ser string
+        "notification_url" => "https://google.com",
+        "items" => [
+            [
+                "id" => "1789",
+                "title" => "Compras do Carrinho",
+                "description" => "Dummy description",
+                "picture_url" => "http://www.myapp.com/myimage.jpg",
+                "category_id" => "eletronico",
+                "quantity" => 1,
+                "currency_id" => "BRL",
+                "unit_price" => 30.0
+            ]
+        ],
+        "payment_methods" => [
+            "excluded_payment_types" => [["id" => "ticket"]] // Correção no formato
+        ]
+    ];
 
-
-        $createRequest = [
-            "external_reference" => 3,
-            "notification_url" => "https://google.com",
-            "items"=> array(
-                array(
-                    "id" => "1789",
-                    "title" => "Compras do Carrinho",
-                    "description" => "Dummy description",
-                    "picture_url" => "http://www.myapp.com/myimage.jpg",
-                    "category_id" => "eletronico",
-                    "quantity" => 1,
-                    "currency_id" => "BRL",
-                    "unit_price" => 30.0
-                )
-            ),
-            "default_payment_method_id" => "master",
-            "excluded_payment_types" => array(
-                array(
-                    "id" => "ticket"
-                )
-            )
-        ];
-        try
-        {
-            $preference = $this->_client->create($createRequest);
-            return $preference;
-        }
-        catch (MPApiException $e)
-        {
-
-            return[
-                "Erro" =>$e->getMessage()
-            ];
-
-        }
-
-
+    try {
+        $preference = $this->_client->create($createRequest);
+        return $preference;
+    } catch (MPApiException $e) {
+        return ["Erro" => $e->getMessage()];
     }
+}
 
-    /**
-     * @return mixed
-     */
     public function getPayments()
     {
-        MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOTKEN_TST"));
+        MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOKEN_TST"));
+
         $searchRequest = new MPSearchRequest(30, 0, [
             "sort" => "date_created",
             "criteria" => "desc",
             "external_reference" => "3",
             "range" => "date_created",
-            "begin_date" => "NOW-30DAYS",
-            "end_date" => "NOW",
-            "store_id" => "47792478",
-            "pos_id" => "58930090"
+            "begin_date" => date("Y-m-d\TH:i:s\Z", strtotime("-30 days")), // Correção no formato
+            "end_date" => date("Y-m-d\TH:i:s\Z")
         ]);
+
         $client = new PaymentClient();
         return $client->search($searchRequest);
     }
-    public function getPaymentById(int $idPagamento):array
+
+    public function getPaymentById(int $idPagamento): array
     {
         try {
-            MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOTKEN_TST"));
-            // Instanciar o PaymentClient
+            MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOKEN_TST"));
             $client = new PaymentClient();
-
-            // Obter os detalhes do pagamento pelo ID
             $payment = $client->get($idPagamento);
 
-            // Retornar informações relevantes do pagamento
+            if (!$payment) {
+                return [
+                    "Erro" => "Pagamento não encontrado.",
+                    "id" => $idPagamento
+                ];
+            }
+
             return [
-                'status' => $payment->status, // status geral do pagamento (ex.: "approved", "pending")
-                'status_detail' => $payment->status_detail, // detalhes mais específicos
-                'payment_method' => $payment->payment_method_id, // método de pagamento (ex.: "visa")
-                'id' => $payment->id // ID do pagamento
+                'status' => $payment->status,
+                'status_detail' => $payment->status_detail,
+                'payment_method' => $payment->payment_method_id,
+                'id' => $payment->id
             ];
         } catch (MPApiException $e) {
-            // Capturar resposta da API e erros detalhados
-            $response = $e->getApiResponse(); // Resposta detalhada da API, se disponível
-            $statusCode = $e->getStatusCode(); // Código HTTP da resposta
+            $response = $e->getApiResponse();
+            $statusCode = $e->getStatusCode();
 
-            // Retornar informações de erro mais detalhadas
             return [
                 "Erro" => "Api error. Check response for details.",
-                "Detalhes" => $response->getContent() ?? 'Nenhuma informação detalhada disponível', // Detalhes da resposta
+                "Detalhes" => $response ? $response->getContent() : "Nenhuma informação detalhada disponível",
                 "Codigo HTTP" => $statusCode
             ];
         }
-
     }
 }
