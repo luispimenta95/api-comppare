@@ -100,28 +100,33 @@ class ApiMercadoPago
     }
     public function getPaymentById(int $idPagamento):array
     {
-        // Configurar o token de acesso do Mercado Pago
-        MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOTKEN_TST"));
-
-        // Instanciar o PaymentClient
-        $client = new PaymentClient();
-
         try {
+            MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOTKEN_TST"));
+            // Instanciar o PaymentClient
+            $client = new PaymentClient();
+
             // Obter os detalhes do pagamento pelo ID
             $payment = $client->get($idPagamento);
 
             // Retornar informações relevantes do pagamento
             return [
-                'status' => $payment->status, // status geral do pagamento (exemplo: "approved", "pending")
-                'status_detail' => $payment->status_detail, // detalhes mais específicos do status
-                'payment_method' => $payment->payment_method_id, // método de pagamento utilizado
+                'status' => $payment->status, // status geral do pagamento (ex.: "approved", "pending")
+                'status_detail' => $payment->status_detail, // detalhes mais específicos
+                'payment_method' => $payment->payment_method_id, // método de pagamento (ex.: "visa")
                 'id' => $payment->id // ID do pagamento
             ];
         } catch (MPApiException $e) {
-            // Em caso de erro, retornar a mensagem
+            // Capturar resposta da API e erros detalhados
+            $response = $e->getResponse(); // Resposta detalhada da API, se disponível
+            $statusCode = $e->getStatusCode(); // Código HTTP da resposta
+
+            // Retornar informações de erro mais detalhadas
             return [
-                "Erro" => $e->getMessage()
+                "Erro" => "Api error. Check response for details.",
+                "Detalhes" => $response->getBody() ?? 'Nenhuma informação detalhada disponível', // Detalhes da resposta
+                "Codigo HTTP" => $statusCode
             ];
         }
+
     }
 }
