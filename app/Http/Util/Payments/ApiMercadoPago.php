@@ -117,13 +117,13 @@ class ApiMercadoPago
             ];
         } catch (MPApiException $e) {
             // Capturar resposta da API e erros detalhados
-            $response = $e->getResponse(); // Resposta detalhada da API, se disponível
+            $response = $e->getApiResponse(); // Resposta detalhada da API, se disponível
             $statusCode = $e->getStatusCode(); // Código HTTP da resposta
 
             // Retornar informações de erro mais detalhadas
             return [
                 "Erro" => "Api error. Check response for details.",
-                "Detalhes" => $response->getBody() ?? 'Nenhuma informação detalhada disponível', // Detalhes da resposta
+                "Detalhes" => $response->getContent() ?? 'Nenhuma informação detalhada disponível', // Detalhes da resposta
                 "Codigo HTTP" => $statusCode
             ];
         }
