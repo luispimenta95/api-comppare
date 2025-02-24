@@ -63,6 +63,14 @@ public function salvarVenda(Array $data): mixed
 
     try {
         $preference = $this->_client->create($createRequest);
+        $preferenceJson = json_encode($preference, JSON_PRETTY_PRINT);
+
+// Nome do arquivo onde o conteúdo será salvo
+        $filePath = storage_path('app/preference_log.txt'); // Diretório seguro no Laravel
+
+// Salvar o JSON no arquivo
+        file_put_contents($filePath, $preferenceJson);
+
         return [
             'link' => $preference->init_point,
             "idPagamento" => $preference->id
