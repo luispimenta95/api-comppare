@@ -102,9 +102,15 @@ class UsuarioController extends Controller
                     $response = [
                         'codRetorno' => 200,
                         'message' => $this->codes[200],
-                        'token' => $token,
-                        'link' => $responseApi['link'],
+                        'token' => $token
                     ];
+                    $dadosEmail = [
+                        'nome' => $usuario->nome,
+                        'url' => $responseApi['link'],
+                        'nomePlano' => $plano->nome,
+                        'to' => $request->email
+                    ];
+                    Helper::enviarEmailBoasVindas($dadosEmail);
                 } else {
                     $response = [
                         'codRetorno' => 500,

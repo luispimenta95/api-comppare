@@ -2,7 +2,9 @@
 
 namespace App\Http\Util;
 
+use App\Mail\ComppareEmailWelcome;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class Helper
 {
@@ -129,5 +131,19 @@ class Helper
 
         return empty($camposNulos) ? true : $camposNulos; // Return true if valid, otherwise return all null fields
     }
+
+    public static function enviarEmailBoasVindas(Array $dados)
+    {
+        $dados = [
+            'body' => [
+            'nomeUsuario' => $dados['nome'],
+            'url' => $dados['url'],
+            'nomePlano' => $dados['nomePlano']
+            ]
+        ];
+
+        Mail::to($dados['to'])->send(new ComppareEmailWelcome($dados));
+    }
+
 
 }
