@@ -52,6 +52,7 @@ public function salvarVenda(Array $data): mixed
             "failure" => "https://api.comppare.com.br/api/vendas/update-payment",
             "pending" => "https://api.comppare.com.br/api/vendas/update-payment"
         ),
+        "auto_return" => "all",
         "default_payment_method_id" => "master",
         "excluded_payment_types" => array(
             array(
