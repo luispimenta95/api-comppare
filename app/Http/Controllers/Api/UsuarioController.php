@@ -108,9 +108,9 @@ class UsuarioController extends Controller
                         'nome' => $usuario->nome,
                         'url' => $responseApi['link'],
                         'nomePlano' => $plano->nome,
-                        'to' => $request->email
+
                     ];
-                    Helper::enviarEmailBoasVindas($dadosEmail);
+                    Helper::enviarEmailBoasVindas($dadosEmail,$request->email);
                 } else {
                     $response = [
                         'codRetorno' => 500,

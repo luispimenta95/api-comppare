@@ -1,31 +1,43 @@
 <?php
+
 namespace App\Mail;
 
+use Illuminate\Bus\Queueable;
+use Illuminate\Mail\Mailable;
+use Illuminate\Queue\SerializesModels;
 
-class ComppareEmailWelcome extends BaseEmail{
+class ComppareEmailWelcome extends Mailable
+{
+    use Queueable, SerializesModels;
 
-    public $dados; // Dados que você deseja passar para o e-mail
-    public $to;
-    public $subject = 'Bem vindo ao Comppare!';
-
+    protected $dados; // Dados do e-mail
+    protected $fromName = 'Comppare'; // Nome padrão do remetente
+    public $subject = 'Assinatura solicitada com sucesso'; // Assunto padrão do e-mail
+    public $to; // Destinatário
 
     /**
-    * Cria uma nova instância do e-mail.
-    */
-    public function __construct(Array $dados)
+     * Cria uma nova instância do e-mail.
+     *
+     * @param array $dados
+     */
+    public function __construct(array $dados)
     {
-    $this->dados = $dados['body'];
-    $this->to = $dados['to'];
+        if (!isset($dados['to']) || !filter_var($dados['to'], FILTER_VALIDATE_EMAIL)) {
+            throw new \InvalidArgumentException("O campo 'to' deve conter um endereço de e-mail válido.");
+        }
+
+        $this->dados = $dados['body'] ?? []; // Inicializa os dados do corpo do e-mail
+        $this->to = $dados['to']; // Inicializa o destinatário
     }
 
     /**
-    * Constrói o conteúdo da mensagem.
-    */
+     * Constrói o conteúdo do e-mail.
+     */
     public function build()
     {
-    return $this->from( $this->to, $this->fromName)
-    ->subject($this->subject)
-    ->markdown('emails.template_welcome') // O template criado
-    ->with('dados', $this->dados); // Passando dados para o template
+        return $this->from($this->to, $this->fromName)
+            ->subject($this->subject)
+            ->markdown('emails.template_welcome') // Usa o template de markdown
+            ->with('dados', $this->dados); // Passa os dados ao template
     }
 }
