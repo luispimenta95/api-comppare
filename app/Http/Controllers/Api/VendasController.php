@@ -11,6 +11,7 @@ use App\Models\Cupom;
 
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Client\Common\RequestOptions;
+use App\Models\TransacaoFinanceira;
 
 // Inicializar chave do Mercado Pago
 
