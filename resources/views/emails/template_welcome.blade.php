@@ -1,5 +1,5 @@
 @component('mail::message')
-    Olá, **{{ $dados['nomeUsuario'] }}**!
+    Olá, **{{ $dados['nome'] }}**!
 
     Estamos felizes pela sua compra no nosso site do **{{ $dados['nomePlano'] }}**.
 

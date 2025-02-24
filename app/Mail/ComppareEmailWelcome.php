@@ -13,7 +13,7 @@ class ComppareEmailWelcome extends Mailable
     protected $dados; // Dados do e-mail
     protected $fromName = 'Comppare'; // Nome padrão do remetente
     public $subject = 'Assinatura solicitada com sucesso'; // Assunto padrão do e-mail
-    public $to; // Destinatário
+    public $mailTo; // Destinatário
 
     /**
      * Cria uma nova instância do e-mail.
@@ -27,7 +27,7 @@ class ComppareEmailWelcome extends Mailable
         }
 
         $this->dados = $dados['body'] ?? []; // Inicializa os dados do corpo do e-mail
-        $this->to = $dados['to']; // Inicializa o destinatário
+        $this->mailTo = $dados['to']; // Inicializa o destinatário
     }
 
     /**
@@ -35,7 +35,7 @@ class ComppareEmailWelcome extends Mailable
      */
     public function build()
     {
-        return $this->from($this->to, $this->fromName)
+        return $this->from($this, $this->fromName)
             ->subject($this->subject)
             ->markdown('emails.template_welcome') // Usa o template de markdown
             ->with('dados', $this->dados); // Passa os dados ao template

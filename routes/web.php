@@ -38,5 +38,6 @@ Route::middleware('api')->group(function () {
     Route::post('/api/vendas/salvar-pagamento', [VendasController::class, 'realizarVenda']);
     Route::post('/api/vendas/recuperar', [VendasController::class, 'recuperarVenda']);
     Route::get('/api/vendas/listar', [VendasController::class, 'listarVendas']);
+    Route::get('/api/vendas/update-payment', [VendasController::class, 'updatePayment']);
 
 });
