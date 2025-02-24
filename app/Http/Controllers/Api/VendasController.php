@@ -59,5 +59,24 @@ class VendasController extends Controller
 
     }
 
+    public function updatePayment():void
+    {
+        // Captura os parâmetros repassados na URL do redirecionamento
+        $collectionId = $_GET['collection_id'];
+        $collectionStatus = $_GET['collection_status'];
+        $paymentType = $_GET['payment_type'];
+        $merchantOrderId = $_GET['merchant_order_id'];
+        $externalReference = $_GET['external_reference'];
+
+// Processar os dados do pagamento
+        echo "Pagamento ID: " . $collectionId;
+        echo "Status do pagamento: " . $collectionStatus;
+        echo "Tipo de pagamento: " . $paymentType;
+        echo "ID do pedido no Mercado Pago: " . $merchantOrderId;
+        echo "Referência externa: " . $externalReference;
+
+
+    }
+
 
 }
