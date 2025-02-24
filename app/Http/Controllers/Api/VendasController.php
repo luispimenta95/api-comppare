@@ -41,12 +41,11 @@ class VendasController extends Controller
 
     }
 
-    public function recuperarVenda(Request $request)
+    public function recuperarVenda(int $idPagamento)
     {
         MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
 
-        $response = $this->apiMercadoPago->getPaymentById((int) $request->idPagamento) ;
-        echo json_encode($response);
+        return $this->apiMercadoPago->getPaymentById((int) $idPagamento) ;
 
     }
 
@@ -62,19 +61,13 @@ class VendasController extends Controller
     public function updatePayment():void
     {
         // Captura os parâmetros repassados na URL do redirecionamento
-        $collectionId = $_GET['collection_id'];
-        $collectionStatus = $_GET['collection_status'];
-        $paymentType = $_GET['payment_type'];
-        $merchantOrderId = $_GET['merchant_order_id'];
-        $externalReference = $_GET['external_reference'];
+        $orderId = (int) $_GET['collection_id'];
+        $orderStatus = $_GET['collection_status'];
+        $preferenceId = $_GET['preference_id'];
+        $response = $this->recuperarVenda($orderId);
+        $pedidio = TransacaoFinanceira::where('idPagamento', $preferenceId)->exists();
 
-// Processar os dados do pagamento
-        echo "Pagamento ID: " . $collectionId;
-        echo "Status do pagamento: " . $collectionStatus;
-        echo "Tipo de pagamento: " . $paymentType;
-        echo "ID do pedido no Mercado Pago: " . $merchantOrderId;
-        echo "Referência externa: " . $externalReference;
-
+        dd($response);
 
     }
 

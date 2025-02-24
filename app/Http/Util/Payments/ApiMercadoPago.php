@@ -63,6 +63,7 @@ public function salvarVenda(Array $data): mixed
 
     try {
         $preference = $this->_client->create($createRequest);
+
         return [
             'link' => $preference->init_point,
             "idPagamento" => $preference->id
