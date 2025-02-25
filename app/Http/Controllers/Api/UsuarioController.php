@@ -97,7 +97,7 @@ class UsuarioController extends Controller
                         'idPlano' => $idPlano,
                         'valorPlano' => $plano->valor,
                         'idUsuario' => $usuario->id,
-                        'idPagamento' => $responseApi['idPagamento']
+                        'idPedido' => $responseApi['idPedido']
                     ]);
                     $response = [
                         'codRetorno' => 200,

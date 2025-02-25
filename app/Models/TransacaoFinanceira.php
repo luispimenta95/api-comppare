@@ -17,8 +17,9 @@ class TransacaoFinanceira extends Model
         'formaPagamento',
         'valorPlano',
         'valorFinalPago',
-        'idPagamento',
+        'idPedido',
         'pagamentoEfetuado',
+        'idUltimoPagamento'
     ];
     public function usuario(): BelongsTo
     {
