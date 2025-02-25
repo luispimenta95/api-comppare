@@ -132,7 +132,7 @@ class Helper
         return empty($camposNulos) ? true : $camposNulos; // Return true if valid, otherwise return all null fields
     }
 
-    public static function enviarEmailBoasVindas(Array $dados, String $mailTo)
+    public static function enviarEmailBoasVindas(Array $dados, String $mailTo): void
     {
         $dadosEmail = [
             'to' => $mailTo,
