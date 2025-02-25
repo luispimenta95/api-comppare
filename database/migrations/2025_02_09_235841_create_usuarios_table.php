@@ -23,6 +23,7 @@ return new class extends Migration
             $table->foreign('idPlano')->references('id')->on('planos');
             $table->timestamp('dataLimiteCompra')->nullable();
             $table->timestamp('dataUltimoPagamento')->nullable();
+            $table->integer('idUltimoPagamento')->nullable();
             $table->timestamps();
         });
     }

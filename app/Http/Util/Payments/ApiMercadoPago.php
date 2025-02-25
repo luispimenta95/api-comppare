@@ -66,7 +66,7 @@ public function salvarVenda(Array $data): mixed
 
         return [
             'link' => $preference->init_point,
-            "idPagamento" => $preference->id
+            "idPedido" => $preference->id
         ];
     } catch (MPApiException $e) {
         return ["Erro" => $e->getMessage()];

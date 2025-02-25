@@ -20,7 +20,9 @@ return new class extends Migration
             $table->string('formaPagamento')->nullable();
             $table->float('valorPlano');
             $table->float('valorFinalPago')->nullable();
-            $table->string('idPagamento');
+            $table->string('idPedido');
+            $table->integer('idUltimoPagamento')->nullable();
+
             $table->boolean('pagamentoEfetuado')->default(false);
 
             $table->timestamps();
