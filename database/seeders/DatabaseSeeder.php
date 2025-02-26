@@ -2,11 +2,11 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Models\Perfil;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
-use App\Models\Usuarios;
 use App\Models\Planos;
+use App\Models\Usuarios;
+use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,8 +15,32 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        Planos::factory(4)->create();
+        Perfil::create([
+            'nome_perfil' => 'Administrador', // Primeiro tipo de perfil
 
-        Usuarios::factory(10)->create();
+        ]);
+
+        Perfil::create([
+            'nome_perfil' => 'Usuário', // Segundo tipo de perfil
+
+        ]);
+
+        Planos::create([
+            'nome' => 'Plano Premium',
+            'descricao' => 'Plano Premium',
+            'valor' => 100,
+            'quantidadeTags' => 10,
+        ]);
+
+        Usuarios::create([
+            'nome' => 'Administrador',
+            'email' => 'teste@gmail.com',
+            'senha' => bcrypt('13151319'),
+            'idPerfil' => 1,
+            'cpf' => '12345678909',
+            'telefone' => '11999999999',
+            'idPlano' => 1,
+        ]);
+
     }
 }

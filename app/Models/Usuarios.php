@@ -24,10 +24,11 @@ class Usuarios extends Authenticatable implements JWTSubject
         'cpf',
         'status',
         'dataLimiteCompra',
-        'idPlano',
         'telefone' ,
         'dataUltimoPagamento',
-        'idUltimoPagamento'
+        'idUltimoPagamento',
+         'idPlano',
+        'idPerfil'
     ];
 
     protected $hidden = ['senha'];
@@ -51,5 +52,11 @@ class Usuarios extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(TransacaoFinanceira::class);
     }
+
+    public function tags()
+    {
+        return $this->hasMany(Tag::class, 'idUsuarioCriador');
+    }
+
 
 }

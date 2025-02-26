@@ -38,6 +38,7 @@ run_artisan_commands() {
   echo $SEPARATOR
     # Run database migrations
     php $ARTISAN migrate --force
+    php $ARTISAN db:seed --force
     echo $SEPARATOR
     echo "Processo finalizado com sucesso!"
 }

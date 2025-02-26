@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Util\Helper;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -19,11 +20,13 @@ return new class extends Migration
             $table->string('email');
             $table->string('telefone');
             $table->boolean('status')->default(true);
-            $table->unsignedBigInteger('idPlano'); //
-            $table->foreign('idPlano')->references('id')->on('planos');
             $table->timestamp('dataLimiteCompra')->nullable();
             $table->timestamp('dataUltimoPagamento')->nullable();
             $table->integer('idUltimoPagamento')->nullable();
+            $table->unsignedBigInteger('idPlano'); //
+            $table->foreign('idPlano')->references('id')->on('planos');
+            $table->unsignedBigInteger('idPerfil')->default(Helper::ID_PERFIL_USUARIO);
+            $table->foreign('idPerfil')->references('id')->on('perfis');
             $table->timestamps();
         });
     }

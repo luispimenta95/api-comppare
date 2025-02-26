@@ -7,7 +7,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
 class Helper
+
+
 {
+    const ID_PERFIL_ADMIN = 1;
+    const ID_PERFIL_USUARIO = 2;
+
+    const TEMPO_GRATUIDADE = 15;
+    const LIMITE_FOTOS = 2;
+
+    const LIMITE_TAGS = 5;
+
+    const TEMPO_RENOVACAO = 30;
     /**
      * Retorna todos os códigos HTTP e suas descrições.
      *
