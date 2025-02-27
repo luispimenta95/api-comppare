@@ -104,14 +104,4 @@ class TagController extends Controller
         return response()->json($response);
     }
 
-    public function showTagsByUser(){
-    $tags = Tag::where('idUsuarioCriador', $this->userLogado->id)->get();
-
-        $tags = Tag::whereHas('idUsuarioCriador', function ($query) {
-            $query->where('idPerfil', Helper::ID_PERFIL_ADMIN); // Filtra usuários com idPerfil = 1
-        })->get();
-
-
-    }
-
 }
