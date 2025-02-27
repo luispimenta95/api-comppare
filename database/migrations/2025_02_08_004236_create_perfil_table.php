@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('perfil', function (Blueprint $table) {
             $table->id();
-            $table->timestamp('nome_perfil');
+            $table->string('nome_perfil');
             $table->timestamps();
         });
     }
