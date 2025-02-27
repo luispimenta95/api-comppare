@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('perfis', function (Blueprint $table) {
+        Schema::create('perfil', function (Blueprint $table) {
             $table->id();
             $table->timestamp('nome_perfil');
             $table->timestamps();
@@ -23,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('perfis');
+        Schema::dropIfExists('perfil');
     }
 };
