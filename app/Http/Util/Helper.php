@@ -3,8 +3,10 @@
 namespace App\Http\Util;
 
 use App\Mail\ComppareEmailWelcome;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class Helper
 
@@ -18,7 +20,11 @@ class Helper
 
     const LIMITE_TAGS = 5;
 
+    const LIMITE_PASTAS = 10;
+
+
     const TEMPO_RENOVACAO = 30;
+
     /**
      * Retorna todos os códigos HTTP e suas descrições.
      *
@@ -143,7 +149,7 @@ class Helper
         return empty($camposNulos) ? true : $camposNulos; // Return true if valid, otherwise return all null fields
     }
 
-    public static function enviarEmailBoasVindas(Array $dados, String $mailTo): void //testing webhocks
+    public static function enviarEmailBoasVindas(array $dados, string $mailTo): void //testing webhocks
     {
         $dadosEmail = [
             'to' => $mailTo,
@@ -156,6 +162,36 @@ class Helper
 
 
         Mail::to($mailTo)->send(new ComppareEmailWelcome($dadosEmail));
+    }
+
+    public static function createFolder(string $folderName): JsonResponse
+    {
+
+
+        // Cria a pasta no caminho storage/app/
+        if (Storage::makeDirectory($folderName)) {
+            // Gera o caminho completo da pasta criada
+            $fullPath = Storage::path($folderName);
+
+            return response()->json([
+                'message' => 'Pasta criada com sucesso!',
+                'path' => $fullPath, // Retorna o path no response
+            ]);
+        }
+
+        return response()->json(['message' => 'Erro ao criar a pasta.'], 500);
+
+    }
+
+    public static function deleteFolder(string $folderName): JsonResponse
+    {
+        $delete = true;
+        if (!Storage::deleteDirectory($folderName)) {
+            $delete = false;
+        }
+        return response()->json([
+            'message' => $delete ? 'Pasta deletada com sucesso!' : 'Erro ao deletar a pasta.',
+        ]);
     }
 
 

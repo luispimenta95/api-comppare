@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Planos;
 use App\Models\TransacaoFinanceira;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\Usuarios;
 use Illuminate\Support\Facades\Hash;
@@ -16,7 +17,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class UsuarioController extends Controller
 {
-    private array $codes= [];
+    private array $codes = [];
     private int $planoGratuito = 1;
     private int $tempoRenovacao = 30;
 
@@ -27,7 +28,7 @@ class UsuarioController extends Controller
 
     }
 
-    public function index(): object
+    public function index():JsonResponse
     {
         $usuariosAtivos = Usuarios::where('status', 1)->count();
         $response = [
@@ -41,7 +42,7 @@ class UsuarioController extends Controller
         return response()->json($response);
     }
 
-    public function cadastrarUsuario(Request $request): object
+    public function cadastrarUsuario(Request $request): JsonResponse
     {
         $campos = ['nome', 'senha', 'cpf', 'telefone', 'idPlano', 'email'];
 
@@ -103,7 +104,7 @@ class UsuarioController extends Controller
                         'codRetorno' => 200,
                         'message' => $this->codes[200],
                         'token' => $token,
-                        'url' => $responseApi['link'],
+                        'url' => $responseApi['link']
                     ];
                     /*$dadosEmail = [
                         'nome' => $usuario->nome,
@@ -124,7 +125,7 @@ class UsuarioController extends Controller
         }
     }
 
-    public function getUser(Request $request): object
+    public function getUser(Request $request) :JsonResponse
     {
         $campos = ['idUsuario'];
 
@@ -151,7 +152,7 @@ class UsuarioController extends Controller
         return response()->json($response);
     }
 
-    public function atualizarDados(Request $request): object
+    public function atualizarDados(Request $request) :JsonResponse
     {
         $campos = ['nome', 'senha', 'email','cpf', 'telefone'];
 
@@ -195,7 +196,7 @@ class UsuarioController extends Controller
     }
 
 
-    public function atualizarStatus(Request $request): object
+    public function atualizarStatus(Request $request) :JsonResponse
     {
         $usuario = Usuarios::findOrFail($request->idUsuario);
         if (isset($usuario->id)) {
@@ -215,7 +216,7 @@ class UsuarioController extends Controller
         return response()->json($response);
     }
 
-    public function autenticar(Request $request): object
+    public function autenticar(Request $request) :JsonResponse
     {
 
         // Validar os dados de entrada
@@ -265,7 +266,7 @@ class UsuarioController extends Controller
 
     }
 
-    public function validaExistenciaUsuario(Request $request): object
+    public function validaExistenciaUsuario(Request $request) :JsonResponse
     {
         $existe = $this->confirmaUser($request);
         $existe ?
@@ -280,7 +281,7 @@ class UsuarioController extends Controller
         return response()->json($response);
     }
 
-    public function atualizarSenha(Request $request): object
+    public function atualizarSenha(Request $request) :JsonResponse
     {
         $campos = ['cpf', 'senha'];
 
@@ -316,7 +317,7 @@ class UsuarioController extends Controller
         return response()->json($response);
     }
 
-    private function checaPermissoes(Usuarios $user, Request $request): object
+    private function checaPermissoes(Usuarios $user, Request $request) :JsonResponse
     {
         $osTime = Carbon::now()->setTimezone('America/Recife');
         $dataLimiteCompra = Carbon::parse($user->dataLimiteCompra)->setTimezone('America/Recife');
@@ -357,11 +358,19 @@ class UsuarioController extends Controller
                 }
 
             } else {
+                $pastas = $user->pastas->map(function ($pasta) {
+                    return [
+                        'nome' => $pasta->nome,
+                        'caminho' => $pasta->caminho
+                    ];
+                });
+
                 $response = [
                     'codRetorno' => 200,
                     'message' => $this->codes[200],
                     'token' => $token,
-                    'data' => $user->only('id', 'nome', 'cpf', 'telefone')
+                    'dados' => $user->only('id', 'nome', 'cpf', 'telefone'),
+                    'pastas' => $pastas
                 ];
             }
 
