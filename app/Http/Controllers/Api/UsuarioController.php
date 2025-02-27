@@ -44,7 +44,7 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Request $request): JsonResponse
     {
-        $campos = ['nome', 'senha', 'cpf', 'telefone', 'idPlano', 'email'];
+        $campos = ['nome', 'senha', 'cpf', 'telefone', 'idPlano', 'email' , 'idPerfil'];
 
         $campos = Helper::validarRequest($request, $campos);
 
@@ -80,7 +80,8 @@ class UsuarioController extends Controller
                     'cpf' => $request->cpf,
                     'telefone' => $request->telefone,
                     'email' => $request->email,
-                    'idPlano' => $request->idPlano
+                    'idPlano' => $request->idPlano,
+                    'idPerfil' => $request->idPerfil
                 ]);
 
                 $token = JWTAuth::fromUser($usuario);
