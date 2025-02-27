@@ -1,10 +1,15 @@
 <?php
 
+use App\Http\Controllers\TagController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\UsuarioController;
 use App\Http\Controllers\Api\PlanoController;
 use App\Http\Controllers\Api\CupomController;
 use App\Http\Controllers\Api\VendasController;
+Route::get('/', function () {
+    return response()->json(['message' => 'API COMPPARE ESTÁ ONLINE ']);
+});
+
 Route::middleware('api')->group(function () {
     Route::get('/api/test', function () {
         $apiVersion = env('APP_VERSION');  // 'default_version' é o valor padrão caso a variável não exista
@@ -39,5 +44,11 @@ Route::middleware('api')->group(function () {
     Route::post('/api/vendas/recuperar', [VendasController::class, 'recuperarVenda']);
     Route::get('/api/vendas/listar', [VendasController::class, 'listarVendas']);
     Route::get('/api/vendas/update-payment', [VendasController::class, 'updatePayment']);
+    //Tags
+    Route::post('/api/tags/cadastrar', [TagController::class, 'cadastrarTag']);
+    Route::get('/api/tags/listar', [TagController::class, 'index']);
+    Route::post('/api/tags/recuperar', [TagController::class, 'getTag']);
+    Route::post('/api/tags/atualizar-status', [TagController::class, 'atualizarStatus']);
+    Route::post('/api/tags/atualizar-dados', [TagController::class, 'atualizarDados']);
 
 });

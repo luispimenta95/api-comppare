@@ -14,7 +14,6 @@ class PlanoController extends Controller
     public function __construct()
     {
         $this->codes = Helper::getHttpCodes();
-        $this->gratuidade = config('app.gratuidadePlano');
     }
 
     public function index() : object
@@ -53,7 +52,6 @@ class PlanoController extends Controller
             'descricao' => $request->descricao,
             'valor' => $request->valor,
             'quantidadeTags' => $request->quantidadeTags,
-            'tempoGratuidade' => $this->gratuidade
         ]);
         isset($plano->id) ?
             $response = [
