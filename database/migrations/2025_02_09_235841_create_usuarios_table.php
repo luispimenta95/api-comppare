@@ -26,7 +26,7 @@ return new class extends Migration
             $table->unsignedBigInteger('idPlano'); //
             $table->foreign('idPlano')->references('id')->on('planos');
             $table->unsignedBigInteger('idPerfil')->default(Helper::ID_PERFIL_USUARIO);
-            $table->foreign('idPerfil')->references('id')->on('perfis');
+            $table->foreign('idPerfil')->references('id')->on('perfil');
             $table->timestamps();
         });
     }
