@@ -62,7 +62,7 @@ class VendasController extends Controller
         $orderStatus = $_GET['collection_status'];
         $preferenceId = $_GET['preference_id'];
         $response = $this->recuperarVenda($orderId);
-        $pedidio = TransacaoFinanceira::where('idPedido', $preferenceId)->exists();
+        $pedidio = TransacaoFinanceira::where('idPedido', $preferenceId)->first(); // Obtém o objeto corretamente
         if ($pedidio && strtoupper($orderStatus) == Helper::STATUS_APROVADO) {
             $dadosPagamento = json_decode($pedidio);
             $pedidio->pagamentoEfetuado = true;
