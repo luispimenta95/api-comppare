@@ -38,16 +38,14 @@ class VendasController extends Controller
         ];
         MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
 
-      return $this->apiMercadoPago->salvarVenda($data);
-
+        return $this->apiMercadoPago->salvarVenda($data);
     }
 
     public function recuperarVenda(int $idPagamento)
     {
         MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
 
-        return $this->apiMercadoPago->getPaymentById((int) $idPagamento) ;
-
+        return $this->apiMercadoPago->getPaymentById((int) $idPagamento);
     }
 
     public function listarVendas()
@@ -56,21 +54,17 @@ class VendasController extends Controller
 
         $response = $this->apiMercadoPago->getPayments();
         echo json_encode($response);
-
     }
 
-    public function updatePayment():void
+    public function updatePayment(): void
     {
         // Captura os parâmetros repassados na URL do redirecionamento
         $orderId = (int) $_GET['collection_id'];
         $orderStatus = $_GET['collection_status'];
         $preferenceId = $_GET['preference_id'];
         $response = $this->recuperarVenda($orderId);
-        $pedidio = TransacaoFinanceira::where('idPagamento', $preferenceId)->exists();
+        $pedidio = TransacaoFinanceira::where('idPedido', $preferenceId)->exists();
 
         dd($response);
-
     }
-
-
 }
