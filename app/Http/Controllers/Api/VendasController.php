@@ -7,7 +7,6 @@ use App\Http\Util\Helper;
 use App\Models\Planos;
 use App\Models\Usuarios;
 use Illuminate\Http\Request;
-use App\Models\Cupom;
 
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Client\Common\RequestOptions;
@@ -64,7 +63,19 @@ class VendasController extends Controller
         $preferenceId = $_GET['preference_id'];
         $response = $this->recuperarVenda($orderId);
         $pedidio = TransacaoFinanceira::where('idPedido', $preferenceId)->exists();
+        if ($pedidio && strtoupper($orderStatus) == Helper::STATUS_APROVADO) {
+            $dadosPagamento = json_decode($pedidio);
+            $pedidio->pagamentoEfetuado = 1;
+            $pedidio->valorFinalPago = $dadosPagamento->valor;
+            $pedidio->idUltimoPagamento = $dadosPagamento->id;
+            $pedidio->formaPagamento = $dadosPagamento->payment_method;
 
-        dd($response);
+            $pedidio->save();
+
+            $usuario = Usuarios::find($pedidio->idUsuario);
+            $usuario->dataUltimoPagamento = $dadosPagamento->dataPagamento;
+            $usuario->idUltimoPagamento  = $orderId;
+            $usuario->save();
+        }
     }
 }
