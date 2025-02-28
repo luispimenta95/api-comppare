@@ -72,7 +72,7 @@ class VendasController extends Controller
             $pedidio->save();
 
             $usuario = Usuarios::find($pedidio->idUsuario);
-            $usuario->dataUltimoPagamento = $dadosPagamento['dataPagamento'];
+            $usuario->dataUltimoPagamento = $response['dataPagamento'];
             $usuario->idUltimoPagamento  = $orderId;
             $usuario->save();
         }
