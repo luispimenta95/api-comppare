@@ -108,7 +108,7 @@ class ApiMercadoPago
                 'payment_method' => $payment->payment_method_id,
                 'id' => $payment->id,
                 'valorFinal' => $payment->transaction_details->total_paid_amount,
-                'dataPagamento' => Carbon::parse($payment->date_approved)->format('d/m/Y H:i:s')
+                'dataPagamento' => Carbon::parse($payment->date_approved)->timestamp
             ];
         } catch (MPApiException $e) {
             $response = $e->getApiResponse();
