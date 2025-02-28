@@ -13,6 +13,7 @@ use MercadoPago\Client\Common\RequestOptions;
 use App\Models\TransacaoFinanceira;
 use Carbon\Carbon;
 
+
 // Inicializar chave do Mercado Pago
 
 use App\Http\Util\Payments\ApiMercadoPago;
@@ -75,7 +76,7 @@ class VendasController extends Controller
             $usuario = Usuarios::find($pedidio->idUsuario);
             $usuario->dataUltimoPagamento = $response['dataPagamento'];
             $usuario->idUltimoPagamento  = $orderId;
-            $usuario->dataLimiteCompra =  Carbon::parse($usuario->dataUltimoPagamento)->addDays(5)->format('d/m/Y H:i:s');
+            $usuario->dataLimiteCompra =  Carbon::parse($usuario->dataUltimoPagamento)->addDays(Helper::TEMPO_RENOVACAO)->format('Y-m-d H:i:s');
             $usuario->save();
         }
     }
