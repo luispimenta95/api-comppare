@@ -64,17 +64,15 @@ class VendasController extends Controller
         $response = $this->recuperarVenda($orderId);
         $pedidio = TransacaoFinanceira::where('idPedido', $preferenceId)->first(); // Obtém o objeto corretamente
         if ($pedidio && strtoupper($orderStatus) == Helper::STATUS_APROVADO) {
-            $dadosPagamento = json_decode($pedidio);
-            dd($dadosPagamento);
             $pedidio->pagamentoEfetuado = true;
-            $pedidio->valorFinalPago = $dadosPagamento->valor;
-            $pedidio->idUltimoPagamento = $dadosPagamento->id;
-            $pedidio->formaPagamento = $dadosPagamento->payment_method;
+            $pedidio->valorFinalPago = $response['valorFinal'];
+            $pedidio->idUltimoPagamento = $response['id'];
+            $pedidio->formaPagamento = $response['payment_method'];
 
             $pedidio->save();
 
             $usuario = Usuarios::find($pedidio->idUsuario);
-            $usuario->dataUltimoPagamento = $dadosPagamento->dataPagamento;
+            $usuario->dataUltimoPagamento = $dadosPagamento['dataPagamento'];
             $usuario->idUltimoPagamento  = $orderId;
             $usuario->save();
         }

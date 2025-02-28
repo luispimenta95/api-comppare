@@ -105,7 +105,7 @@ public function salvarVenda(Array $data): mixed
                 'detalhe_status' => $payment->status_detail,
                 'payment_method' => $payment->payment_method_id,
                 'id' => $payment->id,
-                'valor' => $payment->transaction_details->total_paid_amount,
+                'valorFinal' => $payment->transaction_details->total_paid_amount,
                 'dataPagamento' => $payment->date_approved
             ];
         } catch (MPApiException $e) {
