@@ -74,7 +74,7 @@ class VendasController extends Controller
             $usuario = Usuarios::find($pedidio->idUsuario);
             $usuario->dataUltimoPagamento = $response['dataPagamento'];
             $usuario->idUltimoPagamento  = $orderId;
-            $usuario->dataLimiteCompra = $usuario->dataUltimoPagamento->addDays(Helper::TEMPO_RENOVACAO);
+            // $usuario->dataLimiteCompra = $usuario->dataUltimoPagamento->addDays(Helper::TEMPO_RENOVACAO);
             $usuario->save();
         }
     }
