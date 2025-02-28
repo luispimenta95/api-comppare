@@ -65,6 +65,7 @@ class VendasController extends Controller
         $pedidio = TransacaoFinanceira::where('idPedido', $preferenceId)->first(); // Obtém o objeto corretamente
         if ($pedidio && strtoupper($orderStatus) == Helper::STATUS_APROVADO) {
             $dadosPagamento = json_decode($pedidio);
+            dd($dadosPagamento);
             $pedidio->pagamentoEfetuado = true;
             $pedidio->valorFinalPago = $dadosPagamento->valor;
             $pedidio->idUltimoPagamento = $dadosPagamento->id;
