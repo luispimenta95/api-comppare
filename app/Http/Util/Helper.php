@@ -24,6 +24,8 @@ class Helper
 
 
     const TEMPO_RENOVACAO = 30;
+    
+    const STATUS_APROVADO = 'APPROVED';
 
     /**
      * Retorna todos os códigos HTTP e suas descrições.

@@ -7,11 +7,12 @@ use App\Http\Util\Helper;
 use App\Models\Planos;
 use App\Models\Usuarios;
 use Illuminate\Http\Request;
-use App\Models\Cupom;
 
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Client\Common\RequestOptions;
 use App\Models\TransacaoFinanceira;
+use Carbon\Carbon;
+
 
 // Inicializar chave do Mercado Pago
 
@@ -38,16 +39,14 @@ class VendasController extends Controller
         ];
         MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
 
-      return $this->apiMercadoPago->salvarVenda($data);
-
+        return $this->apiMercadoPago->salvarVenda($data);
     }
 
     public function recuperarVenda(int $idPagamento)
     {
         MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
 
-        return $this->apiMercadoPago->getPaymentById((int) $idPagamento) ;
-
+        return $this->apiMercadoPago->getPaymentById((int) $idPagamento);
     }
 
     public function listarVendas()
@@ -56,21 +55,29 @@ class VendasController extends Controller
 
         $response = $this->apiMercadoPago->getPayments();
         echo json_encode($response);
-
     }
 
-    public function updatePayment():void
+    public function updatePayment(): void
     {
         // Captura os parâmetros repassados na URL do redirecionamento
         $orderId = (int) $_GET['collection_id'];
         $orderStatus = $_GET['collection_status'];
         $preferenceId = $_GET['preference_id'];
         $response = $this->recuperarVenda($orderId);
-        $pedidio = TransacaoFinanceira::where('idPagamento', $preferenceId)->exists();
+        $pedidio = TransacaoFinanceira::where('idPedido', $preferenceId)->first(); // Obtém o objeto corretamente
+        if ($pedidio && strtoupper($orderStatus) == Helper::STATUS_APROVADO) {
+            $pedidio->pagamentoEfetuado = true;
+            $pedidio->valorFinalPago = $response['valorFinal'];
+            $pedidio->idUltimoPagamento = $response['id'];
+            $pedidio->formaPagamento = $response['payment_method'];
 
-        dd($response);
+            $pedidio->save();
 
+            $usuario = Usuarios::find($pedidio->idUsuario);
+            $usuario->dataUltimoPagamento = $response['dataPagamento'];
+            $usuario->idUltimoPagamento  = $orderId;
+            $usuario->dataLimiteCompra =  Carbon::parse($usuario->dataUltimoPagamento)->addDays(Helper::TEMPO_RENOVACAO)->format('Y-m-d H:i:s');
+            $usuario->save();
+        }
     }
-
-
 }

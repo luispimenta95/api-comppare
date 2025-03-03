@@ -44,7 +44,7 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Request $request): JsonResponse
     {
-        $campos = ['nome', 'senha', 'cpf', 'telefone', 'idPlano', 'email'];
+        $campos = ['nome', 'senha', 'cpf', 'telefone', 'idPlano', 'email' , 'idPerfil'];
 
         $campos = Helper::validarRequest($request, $campos);
 
@@ -80,7 +80,8 @@ class UsuarioController extends Controller
                     'cpf' => $request->cpf,
                     'telefone' => $request->telefone,
                     'email' => $request->email,
-                    'idPlano' => $request->idPlano
+                    'idPlano' => $request->idPlano,
+                    'idPerfil' => $request->idPerfil
                 ]);
 
                 $token = JWTAuth::fromUser($usuario);
@@ -91,7 +92,7 @@ class UsuarioController extends Controller
                     $vendasController = new VendasController();
                     $responseApi = $vendasController->realizarVenda($usuario, $plano);
                     if (!str_contains(strtolower($plano->nome), 'gratuito')) {
-                        $usuario->dataLimiteCompra = $usuario->created_at->addDays(Planos::find($idPlano)->tempoGratuidade)->setTimezone('America/Recife');;
+                        $usuario->dataLimiteCompra = $usuario->created_at->addDays(Planos::find($idPlano)->tempoGratuidade)->setTimezone('America/Recife');
                         $usuario->save();
                     }
                     TransacaoFinanceira::create([
