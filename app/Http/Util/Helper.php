@@ -2,10 +2,8 @@
 
 namespace App\Http\Util;
 
-use App\Mail\ComppareEmailWelcome;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 class Helper
@@ -152,20 +150,7 @@ class Helper
         return empty($camposNulos) ? true : $camposNulos; // Return true if valid, otherwise return all null fields
     }
 
-    public static function enviarEmailBoasVindas(array $dados, string $mailTo): void //testing webhocks
-    {
-        $dadosEmail = [
-            'to' => $mailTo,
-            'body' => [
-                'nome' => $dados['nome'],
-                'url' => $dados['url'],
-                'nomePlano' => $dados['nomePlano']
-            ],
-        ];
 
-
-        Mail::to($mailTo)->send(new ComppareEmailWelcome($dadosEmail));
-    }
 
     public static function createFolder(string $folderName): JsonResponse
     {

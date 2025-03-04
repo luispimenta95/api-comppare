@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use App\Models\Usuarios;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Util\Helper;
+use App\Http\Util\MailHelper;
 use Carbon\Carbon;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
@@ -111,7 +112,7 @@ class UsuarioController extends Controller
                         'nomePlano' => $plano->nome,
 
                     ];
-                    Helper::enviarEmailBoasVindas($dadosEmail, $request->email);
+                    MailHelper::boasVindas($dadosEmail, $request->email);
                 } else {
                     $response = [
                         'codRetorno' => 500,
@@ -311,6 +312,7 @@ class UsuarioController extends Controller
                 'message' => $this->codes[500]
             ];
         }
+        // Criar email para recuperar a senha
         return response()->json($response);
     }
 

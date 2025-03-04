@@ -7,15 +7,10 @@
     <h2 style="font-size: 24px; color: #4CAF50;">Olá, <strong>{{ $dados['nome'] }}</strong>!</h2>
 
     <!-- Purchase Info -->
-    <p style="font-size: 18px; color: #555;">Estamos felizes pela sua compra do plano <strong>{{ $dados['nomePlano'] }}</strong> no nosso site.</p>
+    <p style="font-size: 18px; color: #555;">Estamos felizes em receber o seu pagamento.</p>
 
-    <!-- Call to Action Button -->
-    <x-mail::button :url="$dados['url']" style="background-color: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-size: 16px; display: inline-block; margin-top: 20px;">
-        Clique aqui para realizar o pagamento
-    </x-mail::button>
+    <p style="font-size: 16px; margin-top: 30px; color: #777;">Obrigado por confiar em nós! Seu acesso estará ativo até o dia {{ date('d/m/Y', strtotime($dados['dataRenovacao'])) }} .</p>
 
-    <!-- Thank You Message -->
-    <p style="font-size: 16px; margin-top: 30px; color: #777;">Obrigado por confiar em nós! Se precisar de qualquer ajuda, não hesite em nos contatar.</p>
 
     <!-- Footer Section -->
     <footer style="margin-top: 40px; font-size: 14px; color: #aaa;">

@@ -10,6 +10,7 @@ use MercadoPago\MercadoPagoConfig;
 use App\Models\TransacaoFinanceira;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
+use App\Http\Util\MailHelper;
 
 
 // Inicializar chave do Mercado Pago
@@ -87,11 +88,19 @@ class VendasController extends Controller
         $usuario->idUltimoPagamento  = $orderId;
         $usuario->dataLimiteCompra =  Carbon::parse($usuario->dataUltimoPagamento)->addDays(Helper::TEMPO_RENOVACAO)->format('Y-m-d H:i:s');
         $usuario->save();
-        $response = [
-            'codRetorno' => 200,
-            'message' => 'Pagamento do pedido ' . $orderId . ' foi efetuado com sucesso.'
+        $dadosEmail = [
+            'nome' => $usuario->nome,
+            'dataRenovacao' =>  $usuario->dataLimiteCompra
         ];
 
+        MailHelper::confirmacaoPagamento($dadosEmail, $usuario->email);
+
+        $response = [
+            'codRetorno' => 200,
+            'message' => 'Pagamento do pedido ' . $orderId . 'foi atualizado com sucesso.'
+        ];
+
+        // Redirecionar o cliente para a página de sucesso da venda
         return response()->json($response);
     }
 }
