@@ -41,7 +41,7 @@ public function build()
 {
 return $this->from($this->sender, $this->fromName)
 ->subject($this->subject) // Subjeto dinâmico
-->markdown($this->getMarkdownTemplate()) // Template dinâmico
+->view($this->getMarkdownTemplate()) // Template dinâmico
 ->with('dados', $this->dados); // Passa os dados ao template
 }
 

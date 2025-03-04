@@ -10,10 +10,10 @@ Content-Type: application/json
 
 {
     "nome": "Luis Pimenta",
-    "cpf": "02342288140",
+    "cpf": "01234567890",
     "senha": "13151319",
     "telefone": "61998690313",
-    "email": "luisfelipearaujopimenta@gmail.com",
+    "email": "luispimenta.contato@gmail.com",
     "idPlano": 1,
     "idPerfil": 2
 }
