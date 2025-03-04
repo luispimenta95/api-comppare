@@ -29,7 +29,7 @@ class VendasController extends Controller
         $this->codes = Helper::getHttpCodes();
     }
 
-    public function realizarVenda(Planos $plano):mixed
+    public function realizarVenda(Planos $plano): mixed
     {
         $data = [
             "id" => $plano->id,
@@ -65,8 +65,8 @@ class VendasController extends Controller
         $preferenceId = $_GET['preference_id'];
         $responseApi = $this->recuperarVenda($orderId);
         $pedidio = TransacaoFinanceira::where('idPedido', $preferenceId)->first(); // Obtém o objeto corretamente
-        
-        if($pedidio && strtoupper($orderStatus) !== Helper::STATUS_APROVADO) {
+
+        if ($pedidio && strtoupper($orderStatus) !== Helper::STATUS_APROVADO) {
             $response = [
                 'codRetorno' => 400,
                 'message' => $this->codes[-10]
@@ -77,7 +77,7 @@ class VendasController extends Controller
 
         $pedidio->pagamentoEfetuado = true;
         $pedidio->valorFinalPago = $responseApi['valorFinal'];
-        $pedidio->idUltimoPagamento = $responseApi['id'];
+        $pedidio->idPagamento = $responseApi['id'];
         $pedidio->formaPagamento = $responseApi['payment_method'];
 
         $pedidio->save();
@@ -89,7 +89,7 @@ class VendasController extends Controller
         $usuario->save();
         $response = [
             'codRetorno' => 200,
-            'message' => 'Pagamento do pedido ' .$orderId. ' foi efetuado com sucesso.'
+            'message' => 'Pagamento do pedido ' . $orderId . ' foi efetuado com sucesso.'
         ];
 
         return response()->json($response);

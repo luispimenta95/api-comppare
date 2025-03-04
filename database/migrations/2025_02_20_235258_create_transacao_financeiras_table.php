@@ -21,7 +21,7 @@ return new class extends Migration
             $table->float('valorPlano');
             $table->float('valorFinalPago')->nullable();
             $table->string('idPedido');
-            $table->integer('idUltimoPagamento')->nullable();
+            $table->integer('idPagamento')->nullable();
 
             $table->boolean('pagamentoEfetuado')->default(false);
 
