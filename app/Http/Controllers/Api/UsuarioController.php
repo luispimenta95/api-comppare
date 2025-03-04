@@ -90,7 +90,7 @@ class UsuarioController extends Controller
                     $idPlano = $usuario->idPlano;
                     $plano = Planos::find($idPlano);
                     $vendasController = new VendasController();
-                    $responseApi = $vendasController->realizarVenda($usuario, $plano);
+                    $responseApi = $vendasController->realizarVenda($plano);
                     if (!str_contains(strtolower($plano->nome), 'gratuito')) {
                         $usuario->dataLimiteCompra = $usuario->created_at->addDays(Planos::find($idPlano)->tempoGratuidade)->setTimezone('America/Recife');
                         $usuario->save();

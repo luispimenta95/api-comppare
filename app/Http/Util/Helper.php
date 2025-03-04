@@ -24,7 +24,7 @@ class Helper
 
 
     const TEMPO_RENOVACAO = 30;
-    
+
     const STATUS_APROVADO = 'APPROVED';
 
     /**
@@ -105,7 +105,8 @@ class Helper
             -6 => 'Error: CPF já cadastrado no banco de dados',
             -7 => 'Error: Período de gratuidade expirado. Por favor, atualize sua assinatura adquirindo um novo plano.',
             -8 => 'Error: Assinatura exiprada. Por favor, atualize sua assinatura adquirindo um novo plano.',
-            '-9' => 'Error: A request possui campos obrigatórios não preenchidos ou inválidos.'
+            -9 => 'Error: A request possui campos obrigatórios não preenchidos ou inválidos.',
+            -10 => 'Error: O pagamento ainda não foi realizado.'
         ];
     }
 
@@ -182,7 +183,6 @@ class Helper
         }
 
         return response()->json(['message' => 'Erro ao criar a pasta.'], 500);
-
     }
 
     public static function deleteFolder(string $folderName): JsonResponse
@@ -195,7 +195,4 @@ class Helper
             'message' => $delete ? 'Pasta deletada com sucesso!' : 'Erro ao deletar a pasta.',
         ]);
     }
-
-
-
 }
