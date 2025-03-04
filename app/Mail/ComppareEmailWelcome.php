@@ -11,6 +11,7 @@ class ComppareEmailWelcome extends Mailable
     use Queueable, SerializesModels;
 
     protected $dados; // Dados do e-mail
+    protected $sender;
     protected $fromName = 'Comppare'; // Nome padrão do remetente
     public $subject = 'Assinatura solicitada com sucesso'; // Assunto padrão do e-mail
     public $mailTo; // Destinatário
@@ -28,6 +29,7 @@ class ComppareEmailWelcome extends Mailable
 
         $this->dados = $dados['body'] ?? []; // Inicializa os dados do corpo do e-mail
         $this->mailTo = $dados['to']; // Inicializa o destinatário
+        $this->sender =  env('MAIL_FROM_ADDRESS');
     }
 
     /**
@@ -35,7 +37,7 @@ class ComppareEmailWelcome extends Mailable
      */
     public function build()
     {
-        return $this->from($this, $this->fromName)
+        return $this->from($this->sender, $this->fromName)
             ->subject($this->subject)
             ->markdown('emails.template_welcome') // Usa o template de markdown
             ->with('dados', $this->dados); // Passa os dados ao template
