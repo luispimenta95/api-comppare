@@ -21,8 +21,9 @@ class MailHelper
             'to' => $mailTo,
             'body' => [
                 'nome' => $dados['nome'],
-                'nomePlano' => $dados['nomePlano']
-            ],
+                'nomePlano' => $dados['nomePlano'],
+                'url' => $dados['url']
+            ]
         ];
 
 
