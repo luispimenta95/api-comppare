@@ -25,10 +25,9 @@ class UsuarioController extends Controller
     public function __construct()
     {
         $this->codes = Helper::getHttpCodes();
-
     }
 
-    public function index():JsonResponse
+    public function index(): JsonResponse
     {
         $usuariosAtivos = Usuarios::where('status', 1)->count();
         $response = [
@@ -44,7 +43,7 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Request $request): JsonResponse
     {
-        $campos = ['nome', 'senha', 'cpf', 'telefone', 'idPlano', 'email' , 'idPerfil'];
+        $campos = ['nome', 'senha', 'cpf', 'telefone', 'idPlano', 'email', 'idPerfil'];
 
         $campos = Helper::validarRequest($request, $campos);
 
@@ -70,7 +69,6 @@ class UsuarioController extends Controller
                     'message' => $this->codes[-6]
                 ];
                 return response()->json($response);
-
             } else {
 
 
@@ -107,26 +105,25 @@ class UsuarioController extends Controller
                         'token' => $token,
                         'url' => $responseApi['link']
                     ];
-                    /*$dadosEmail = [
+                    $dadosEmail = [
                         'nome' => $usuario->nome,
                         'url' => $responseApi['link'],
                         'nomePlano' => $plano->nome,
 
                     ];
-                    Helper::enviarEmailBoasVindas($dadosEmail,$request->email);*/
+                    Helper::enviarEmailBoasVindas($dadosEmail, $request->email);
                 } else {
                     $response = [
                         'codRetorno' => 500,
                         'message' => $this->codes[500]
                     ];
-
                 }
                 return response()->json($response);
             }
         }
     }
 
-    public function getUser(Request $request) :JsonResponse
+    public function getUser(Request $request): JsonResponse
     {
         $campos = ['idUsuario'];
 
@@ -147,15 +144,15 @@ class UsuarioController extends Controller
                 'message' => $this->codes[200],
                 'data' => $usuario
             ] : $response = [
-            'codRetorno' => 404,
-            'message' => $this->codes[404]
-        ];
+                'codRetorno' => 404,
+                'message' => $this->codes[404]
+            ];
         return response()->json($response);
     }
 
-    public function atualizarDados(Request $request) :JsonResponse
+    public function atualizarDados(Request $request): JsonResponse
     {
-        $campos = ['nome', 'senha', 'email','cpf', 'telefone'];
+        $campos = ['nome', 'senha', 'email', 'cpf', 'telefone'];
 
         $campos = Helper::validarRequest($request, $campos);
 
@@ -197,7 +194,7 @@ class UsuarioController extends Controller
     }
 
 
-    public function atualizarStatus(Request $request) :JsonResponse
+    public function atualizarStatus(Request $request): JsonResponse
     {
         $usuario = Usuarios::findOrFail($request->idUsuario);
         if (isset($usuario->id)) {
@@ -217,7 +214,7 @@ class UsuarioController extends Controller
         return response()->json($response);
     }
 
-    public function autenticar(Request $request) :JsonResponse
+    public function autenticar(Request $request): JsonResponse
     {
 
         // Validar os dados de entrada
@@ -235,7 +232,7 @@ class UsuarioController extends Controller
         }
         // Recuperar o usuário com base no CPF
         $user = Usuarios::where('cpf', $request->input('cpf'))->first();
-        if(!$user){
+        if (!$user) {
             $response = [
                 'codRetorno' => 404,
                 'message' => $this->codes[404]
@@ -243,7 +240,7 @@ class UsuarioController extends Controller
             return response()->json($response);
         }
 
-       $response = $this->checaPermissoes($user, $request);
+        $response = $this->checaPermissoes($user, $request);
 
         return response()->json($response);
     }
@@ -264,17 +261,16 @@ class UsuarioController extends Controller
         }
         $exists = Usuarios::where('cpf', $request->cpf)->exists();
         return $exists;
-
     }
 
-    public function validaExistenciaUsuario(Request $request) :JsonResponse
+    public function validaExistenciaUsuario(Request $request): JsonResponse
     {
         $existe = $this->confirmaUser($request);
         $existe ?
-        $response = [
-            'codRetorno' => 200,
-            'message' => $this->codes[200]
-        ]:
+            $response = [
+                'codRetorno' => 200,
+                'message' => $this->codes[200]
+            ] :
             $response = [
                 'codRetorno' => 404,
                 'message' => $this->codes[404]
@@ -282,7 +278,7 @@ class UsuarioController extends Controller
         return response()->json($response);
     }
 
-    public function atualizarSenha(Request $request) :JsonResponse
+    public function atualizarSenha(Request $request): JsonResponse
     {
         $campos = ['cpf', 'senha'];
 
@@ -318,7 +314,7 @@ class UsuarioController extends Controller
         return response()->json($response);
     }
 
-    private function checaPermissoes(Usuarios $user, Request $request) :JsonResponse
+    private function checaPermissoes(Usuarios $user, Request $request): JsonResponse
     {
         $osTime = Carbon::now()->setTimezone('America/Recife');
         $dataLimiteCompra = Carbon::parse($user->dataLimiteCompra)->setTimezone('America/Recife');
@@ -357,7 +353,6 @@ class UsuarioController extends Controller
                     ];
                     return response()->json($response);
                 }
-
             } else {
                 $pastas = $user->pastas->map(function ($pasta) {
                     return [
@@ -374,9 +369,7 @@ class UsuarioController extends Controller
                     'pastas' => $pastas
                 ];
             }
-
         }
         return response()->json($response);
     }
-
 }

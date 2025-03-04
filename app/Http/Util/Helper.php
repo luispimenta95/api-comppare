@@ -192,7 +192,7 @@ class Helper
             $delete = false;
         }
         return response()->json([
-            'message' => $delete ? 'Pasta deletada com sucesso!' : 'Erro ao deletar a pasta.',
+            'message' => $delete ? 'Pasta deletada com sucesso!' : 'Erro ao deletar a pasta.'
         ]);
     }
 }
