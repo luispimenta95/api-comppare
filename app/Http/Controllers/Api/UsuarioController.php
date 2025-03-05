@@ -103,8 +103,7 @@ class UsuarioController extends Controller
                     $response = [
                         'codRetorno' => 200,
                         'message' => $this->codes[200],
-                        'token' => $token,
-                        'url' => $responseApi['link']
+                        'token' => $token
                     ];
                     $dadosEmail = [
                         'nome' => $usuario->nome,
