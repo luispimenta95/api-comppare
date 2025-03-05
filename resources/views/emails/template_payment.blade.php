@@ -60,16 +60,15 @@
 <body>
 <div class="container">
     <div class="content">
-        <p>Olá, {{ $dados['nome'] }}!</p><br>
+        <p>Olá, {{ $dados['nome'] }}!</p>
         <p>Seu pagamento foi realizado com sucesso!</p>
-        <br>
         <p>Obrigado por confiar em nós! Seu acesso estará ativo até o dia {{ date('d/m/Y', strtotime($dados['dataRenovacao'])) }}</p>
     </div>
     <div class="footer">
         <p>Se você não reconhece esta compra, ignore este e-mail.</p>
-        <p>Atenciosamente, <br>
+        <p>Atenciosamente,
+
             {{ config('app.name') }}</p>
-        <br>
         <p>&copy; {{ date('Y') }} Todos os direitos reservados.</p>
     </div>
 </div>

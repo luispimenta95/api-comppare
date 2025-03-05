@@ -61,10 +61,10 @@
 <div class="container">
     <div class="content">
         <p>Olá, {{ $dados['nome'] }}!</p>
-        <p>Obrigado por se interessar em nosso produto {{$dados['nomePlano']}}. Para confirmar o seu cadastro, por favor, clique no botão abaixo para confirmar sua compra:</p>
+        <p>Obrigado por se interessar em nosso produto {{$dados['nomePlano']}}. Para confirmar o seu cadastro em nosso site, por favor, clique no botão abaixo para realizar o pagamento:</p>
     </div>
     <div class="btn-container">
-        <a href="{{ $dados['url'] }}" class="btn">Confirmar Compra</a>
+        <a href="{{ $dados['url'] }}" class="btn">Realizar Pagamento</a>
     </div>
     <div class="footer">
         <p>Se você não se cadastrou em nosso site, ignore este e-mail.</p>

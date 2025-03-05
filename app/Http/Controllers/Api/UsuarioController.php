@@ -83,8 +83,6 @@ class UsuarioController extends Controller
                     'idPerfil' => $request->idPerfil
                 ]);
 
-                $token = JWTAuth::fromUser($usuario);
-
                 if (isset($usuario->id)) {
                     $idPlano = $usuario->idPlano;
                     $plano = Planos::find($idPlano);
@@ -103,7 +101,6 @@ class UsuarioController extends Controller
                     $response = [
                         'codRetorno' => 200,
                         'message' => $this->codes[200],
-                        'token' => $token
                     ];
                     $dadosEmail = [
                         'nome' => $usuario->nome,
@@ -297,12 +294,10 @@ class UsuarioController extends Controller
         if (isset($usuario->cpf)) {
             $usuario->senha = bcrypt($request->senha);
             $usuario->save();
-            $token = JWTAuth::fromUser($usuario);
 
             $response = [
                 'codRetorno' => 200,
-                'message' => $this->codes[200],
-                'token' => $token
+                'message' => $this->codes[200]
             ];
         } else {
 
