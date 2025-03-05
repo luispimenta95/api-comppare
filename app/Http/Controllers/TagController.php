@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Util\Helper;
 use App\Models\Tag;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -14,13 +15,13 @@ class TagController extends Controller
     public function __construct()
     {
         $this->codes = Helper::getHttpCodes();
-         $this->userLogado = Auth::user(); //
+        $this->userLogado = Auth::user(); //
 
     }
     /**
      * Display a listing of the resource.
      */
-    public function index() : object
+    public function index(): object
     {
         $tags = Tag::where('status', 1)->count();
         $response = [
@@ -36,9 +37,9 @@ class TagController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function cadastrarTag(Request $request) : object
+    public function cadastrarTag(Request $request): object
     {
-        $campos = ['nome', 'descricao', 'valor', 'quantidadeTags'];
+        $campos = ['nome', 'descricao'];
 
         $campos = Helper::validarRequest($request, $campos);
         if ($campos !== true) {
@@ -55,7 +56,7 @@ class TagController extends Controller
                 'codRetorno' => 400,
                 'message' => $this->codes[-10]
             ];
-           return response()->json($response);
+            return response()->json($response);
         }
         Tag::create([
 
@@ -66,7 +67,7 @@ class TagController extends Controller
         $response = [
             'codRetorno' => 200,
             'message' => $this->codes[200]
-            ];
+        ];
         return response()->json($response);
     }
 
@@ -104,4 +105,30 @@ class TagController extends Controller
         return response()->json($response);
     }
 
+    public function atualizarDados($request): JsonResponse
+    {
+        $campos = ['nome', 'descricao', 'idTag'];
+
+        $campos = Helper::validarRequest($request, $campos);
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
+
+        $tag = Tag::findOrFail($request->idTag);
+        if (isset($tag->id)) {
+            $tag->nome = $request->nome;
+            $tag->descricao = $request->descricao;
+            $tag->save();
+            $response = [
+                'codRetorno' => 200,
+                'message' => $this->codes[200]
+            ];
+        }
+        return response()->json($response);
+    }
 }
