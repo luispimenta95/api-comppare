@@ -6,17 +6,22 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Planos;
 use App\Http\Util\Helper;
+use App\Http\Util\Payments\ApiMercadoPago;
+
 
 class PlanoController extends Controller
 {
     private  array $codes;
     private int $gratuidade;
+    private $apiMercadoPago;
+
     public function __construct()
     {
         $this->codes = Helper::getHttpCodes();
+        $this->apiMercadoPago = new ApiMercadoPago();
     }
 
-    public function index() : object
+    public function index(): object
     {
         $planosAtivos = Planos::where('status', 1)->count();
         $response = [
@@ -30,9 +35,9 @@ class PlanoController extends Controller
         return response()->json($response);
     }
 
-    public function cadastrarPlano(Request $request) : object
+    public function cadastrarPlano(Request $request): object
     {
-        $campos = ['nome', 'descricao', 'valor', 'quantidadeTags'];
+        $campos = ['nome', 'valor'];
 
         $campos = Helper::validarRequest($request, $campos);
         if ($campos !== true) {
@@ -43,29 +48,16 @@ class PlanoController extends Controller
             ];
             return response()->json($response);
         }
-        if (str_contains(strtolower($request->nome), 'gratuito')) {
-            $this->gratuidade = 730;
-        }
 
-            $plano = Planos::create([
-            'nome' => $request->nome,
-            'descricao' => $request->descricao,
-            'valor' => $request->valor,
-            'quantidadeTags' => $request->quantidadeTags,
-        ]);
-        isset($plano->id) ?
-            $response = [
-                'codRetorno' => 200,
-                'message' => $this->codes[200]
-            ] :  $response = [
-                'codRetorno' => 500,
-                'message' => $this->codes[500]
-            ];
+        $nome = $request->nome;
+        $valor = $request->valor;
+
+        $response = $this->apiMercadoPago->criarPlano($nome, $valor);
         return response()->json($response);
     }
 
 
-    public function getPlano(Request $request) : object
+    public function getPlano(Request $request): object
     {
         $plano = Planos::find($request->idPlano);
         isset($plano->id) ?
@@ -95,7 +87,7 @@ class PlanoController extends Controller
             return response()->json($response);
         }
         $plano = Planos::findOrFail($request->idPlano);
-        if(isset($plano->id)){
+        if (isset($plano->id)) {
             $plano->nome = $request->nome;
             $plano->descricao = $request->descricao;
             $plano->valor = $request->valor;
@@ -105,7 +97,7 @@ class PlanoController extends Controller
                 'codRetorno' => 200,
                 'message' => $this->codes[200]
             ];
-        }else{
+        } else {
             $response = [
                 'codRetorno' => 500,
                 'message' => $this->codes[500]
@@ -115,7 +107,7 @@ class PlanoController extends Controller
         return response()->json($response);
     }
 
-    public function atualizarStatus(Request $request) : object
+    public function atualizarStatus(Request $request): object
     {
         $campos = ['idPlano', 'status'];
 
@@ -131,24 +123,23 @@ class PlanoController extends Controller
         }
 
         $plano = Planos::findOrFail($request->idPlano);
-        if(isset($plano->id)){
+        if (isset($plano->id)) {
             $plano->status = $request->status;
             $plano->save();
             $response = [
                 'codRetorno' => 200,
                 'message' => $this->codes[200]
             ];
-        }else{
+        } else {
             $response = [
                 'codRetorno' => 500,
                 'message' => $this->codes[500]
             ];
         }
         return response()->json($response);
-
     }
 
-    public function adicionarFuncionalidades(Request $request) : object
+    public function adicionarFuncionalidades(Request $request): object
     {
         $campos = ['idPlano', 'funcionalidades'];
 
@@ -164,19 +155,18 @@ class PlanoController extends Controller
         }
 
         $plano = Planos::findOrFail($request->idPlano);
-        if(isset($plano->id)){
-          $plano->funcionalidades()->sync($request->funcionalidades);
+        if (isset($plano->id)) {
+            $plano->funcionalidades()->sync($request->funcionalidades);
             $response = [
                 'codRetorno' => 200,
                 'message' => $this->codes[200]
             ];
-        }else{
+        } else {
             $response = [
                 'codRetorno' => 500,
                 'message' => $this->codes[500]
             ];
         }
         return response()->json($response);
-
     }
 }

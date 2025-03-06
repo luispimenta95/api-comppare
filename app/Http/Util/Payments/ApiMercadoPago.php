@@ -11,19 +11,22 @@ use MercadoPago\Net\MPSearchRequest;
 use MercadoPago\Client\Payment\PaymentClient;
 use MercadoPago\Preference;
 use Carbon\Carbon;
-
+use MercadoPago\Preapproval;
+use App\Http\Util\Helper;
+use PHPUnit\TextUI\Help;
 
 //fix types
 class ApiMercadoPago
 {
     private $_client;
     private $_options;
-    private $config;
+    private $payer;
 
     public function __construct()
     {
         $this->_client = new PreferenceClient();
         $this->_options = new RequestOptions();
+        $this->payer = new PaymentClient();
     }
 
     public function salvarVenda(array $data): mixed
@@ -84,16 +87,14 @@ class ApiMercadoPago
             "criteria" => "desc"
         ]);
 
-        $client = new PaymentClient();
-        return $client->search($searchRequest);
+        return $this->payer->search($searchRequest);
     }
 
     public function getPaymentById(int $idPagamento): array
     {
         try {
             MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOKEN_TST"));
-            $client = new PaymentClient();
-            $payment = $client->get($idPagamento);
+            $payment = $this->payer->get($idPagamento);
 
             if (!$payment) {
                 return [
@@ -120,5 +121,24 @@ class ApiMercadoPago
                 "Codigo HTTP" => $statusCode
             ];
         }
+    }
+
+    public function criarPlano($nome, $valor)
+    {
+        $plan = new Preapproval();
+        $plan->auto_recurring = [
+            "frequency" => 1,
+            "frequency_type" => Helper::TIPO_RENOVACAO_MENSAL,
+            "transaction_amount" => $valor,
+            "currency_id" => Helper::MOEDA,
+            "billing_day" => 10,
+            "billing_day_proportional" => true,
+        ];
+        $plan->reason = $nome;
+        $plan->back_url = route('assinatura.confirmacao');
+        $plan->status = "active";
+        $plan->save();
+
+        return $plan;
     }
 }

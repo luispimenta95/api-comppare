@@ -24,6 +24,11 @@ class Helper
     const TEMPO_RENOVACAO = 30;
 
     const STATUS_APROVADO = 'APPROVED';
+    const STATUS_AGUARDANDO_APROVACAO = 'WAITING_APPROVAL';
+    const STATUS_CANCELADO = 'CANCELLED';
+    const MOEDA = "BRL";
+    const TIPO_RENOVACAO_MENSAL = 'months';
+    const TIPO_RENOVACAO_DIARIA = 'days';
 
     /**
      * Retorna todos os códigos HTTP e suas descrições.
