@@ -6,9 +6,6 @@ use App\Http\Controllers\Api\UsuarioController;
 use App\Http\Controllers\Api\PlanoController;
 use App\Http\Controllers\Api\CupomController;
 use App\Http\Controllers\Api\VendasController;
-Route::get('/', function () {
-    return response()->json(['message' => 'API COMPPARE ESTÁ ONLINE ']);
-});
 
 Route::middleware('api')->group(function () {
     Route::get('/api/test', function () {
