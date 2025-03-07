@@ -125,6 +125,8 @@ class ApiMercadoPago
 
     public function criarPlano($nome, $valor)
     {
+        MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
+
         $plan = new Preapproval();
         $plan->auto_recurring = [
             "frequency" => 1,
