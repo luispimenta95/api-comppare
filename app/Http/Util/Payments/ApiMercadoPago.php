@@ -15,6 +15,7 @@ use MercadoPago\Preapproval;
 use App\Http\Util\Helper;
 use PHPUnit\TextUI\Help;
 use MercadoPago;
+use Doctrine\Common\Annotations\AnnotationRegistry;
 //fix types
 class ApiMercadoPago
 {
@@ -27,6 +28,9 @@ class ApiMercadoPago
         $this->_client = new PreferenceClient();
         $this->_options = new RequestOptions();
         $this->payer = new PaymentClient();
+        if (class_exists(AnnotationRegistry::class)) {
+            AnnotationRegistry::registerLoader('class_exists');
+        }
     }
 
     public function salvarVenda(array $data): mixed
