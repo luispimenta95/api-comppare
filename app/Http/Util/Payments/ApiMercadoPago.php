@@ -14,7 +14,7 @@ use Carbon\Carbon;
 use MercadoPago\Preapproval;
 use App\Http\Util\Helper;
 use PHPUnit\TextUI\Help;
-
+use MercadoPago;
 //fix types
 class ApiMercadoPago
 {
@@ -125,7 +125,9 @@ class ApiMercadoPago
 
     public function criarPlano($nome, $valor)
     {
-        MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
+
+        //MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
+        MercadoPago\SDK::setAccessToken(env('ACCESS_TOKEN_TST'));
 
         $plan = new Preapproval();
         $plan->auto_recurring = [
