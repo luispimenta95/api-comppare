@@ -44,7 +44,7 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Request $request): JsonResponse
     {
-        $campos = ['nome', 'senha', 'cpf', 'telefone', 'idPlano', 'email', 'idPerfil'];
+        $campos = ['nome', 'senha', 'cpf', 'telefone', 'idPlano', 'email'];
 
         $campos = Helper::validarRequest($request, $campos);
 
@@ -80,7 +80,7 @@ class UsuarioController extends Controller
                     'telefone' => $request->telefone,
                     'email' => $request->email,
                     'idPlano' => $request->idPlano,
-                    'idPerfil' => $request->idPerfil
+                    'idPerfil' => Helper::ID_PERFIL_USUARIO
                 ]);
 
                 if (isset($usuario->id)) {
