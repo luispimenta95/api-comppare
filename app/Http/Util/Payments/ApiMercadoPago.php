@@ -2,21 +2,17 @@
 
 namespace App\Http\Util\Payments;
 
-use Illuminate\Http\Request;
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Client\Common\RequestOptions;
 use MercadoPago\Client\Preference\PreferenceClient;
 use MercadoPago\Exceptions\MPApiException;
 use MercadoPago\Net\MPSearchRequest;
 use MercadoPago\Client\Payment\PaymentClient;
-use MercadoPago\Preference;
 use Carbon\Carbon;
 use MercadoPago\Preapproval;
 use App\Http\Util\Helper;
-use PHPUnit\TextUI\Help;
 use MercadoPago;
-use Doctrine\Common\Annotations\AnnotationRegistry;
-//fix types
+
 class ApiMercadoPago
 {
     private $_client;
@@ -28,9 +24,7 @@ class ApiMercadoPago
         $this->_client = new PreferenceClient();
         $this->_options = new RequestOptions();
         $this->payer = new PaymentClient();
-        if (class_exists(AnnotationRegistry::class)) {
-            AnnotationRegistry::registerLoader('class_exists');
-        }
+    
     }
 
     public function salvarVenda(array $data): mixed
@@ -43,7 +37,6 @@ class ApiMercadoPago
 
         $createRequest = [
             "external_reference" => 3,
-            "notification_url" => "https://google.com",
             "items" => array(
                 array(
                     "id" => $data['id'],
