@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Planos;
 use App\Http\Util\Helper;
 use App\Http\Util\Payments\ApiMercadoPago;
+use MercadoPago\MercadoPagoConfig;
 
 
 class PlanoController extends Controller
@@ -14,6 +15,7 @@ class PlanoController extends Controller
     private  array $codes;
     private int $gratuidade;
     private $apiMercadoPago;
+
 
     public function __construct()
     {
@@ -48,6 +50,7 @@ class PlanoController extends Controller
             ];
             return response()->json($response);
         }
+        MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
 
         $nome = $request->nome;
         $valor = $request->valor;
