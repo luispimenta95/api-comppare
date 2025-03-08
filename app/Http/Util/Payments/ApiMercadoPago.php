@@ -137,7 +137,7 @@ class ApiMercadoPago
     public function createSubscription(Usuarios $usuario): mixed
     {
         // Initialize MercadoPago SDK with access token
-        dd(env('ACCESS_TOKEN_TST'));
+        //dd(env('ACCESS_TOKEN_TST'));
         MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
 
         // Create a new Preapproval object for the subscription
