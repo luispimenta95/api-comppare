@@ -84,7 +84,7 @@ class ApiMercadoPago
         return $this->payer->search($searchRequest);
     }
 
-    public function getPaymentById(int $idPagamento): array
+    public function getPaymentById(int $idPagamento)
     {
         try {
 
@@ -106,14 +106,7 @@ class ApiMercadoPago
                 'dataPagamento' => Carbon::parse($payment->date_approved)->format('Y-m-d H:i:s')
             ];
         } catch (MPApiException $e) {
-            $response = $e->getApiResponse();
-            $statusCode = $e->getStatusCode();
-
-            return [
-                "Erro" => "Api error. Check response for details.",
-                "Detalhes" => $response ? $response->getContent() : "Nenhuma informação detalhada disponível",
-                "Codigo HTTP" => $statusCode
-            ];
+            $this->showErrors($e);
         }
     }
 
@@ -136,7 +129,7 @@ class ApiMercadoPago
         return $plan;
     }
 
-    public function createSubscription(Usuarios $usuario): mixed
+    public function createSubscription(Usuarios $usuario)
     {
         // Initialize MercadoPago SDK with the access token
         MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
@@ -146,7 +139,7 @@ class ApiMercadoPago
             'reason' => 'Plano de Assinatura Mensal 03',
             'back_url' => route('updatePaymentSubscription'), // URL de retorno
             'auto_return' => 'all', // Se a assinatura for confirmada, retornar para esta URL
-            'status' => Helper::STATUS_ATIVO,
+            'status' => Helper::STATUS_AUTORIZADO,
             "card_token_id" => "e3ed6f098462036dd2cbabe314b9de2a",
             'external_reference' => uniqid(),
             'auto_recurring' => array(
@@ -165,14 +158,18 @@ class ApiMercadoPago
         try {
             return $this->plan->create($subscriptionData);
         } catch (MPApiException $e) {
-            $response = $e->getApiResponse();
-            $statusCode = $e->getStatusCode();
-
-            return [
-                "Erro" => "Api error. Check response for details.",
-                "Detalhes" => $response ? $response->getContent() : "Nenhuma informação detalhada disponível",
-                "Codigo HTTP" => $statusCode
-            ];
+            $this->showErrors($e);
         }
+    }
+    private function showErrors(MPApiException $e)
+    {
+        $response = $e->getApiResponse();
+        $statusCode = $e->getStatusCode();
+
+        return [
+            "Erro" => "Api error. Check response for details.",
+            "Detalhes" => $response ? $response->getContent() : "Nenhuma informação detalhada disponível",
+            "Codigo HTTP" => $statusCode
+        ];
     }
 }
