@@ -103,4 +103,11 @@ class VendasController extends Controller
         // Redirecionar o cliente para a página de sucesso da venda
         return response()->json($response);
     }
+
+    public function createSubscription(): JsonResponse
+    {
+        $usuario = Usuarios::find(1);
+        $responseApi = $this->apiMercadoPago->createSubscription($usuario);
+        return response()->json($responseApi);
+    }
 }

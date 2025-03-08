@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\UsuarioController;
 use App\Http\Controllers\Api\PlanoController;
 use App\Http\Controllers\Api\CupomController;
 use App\Http\Controllers\Api\VendasController;
+use MercadoPago\Resources\MerchantOrder\Payer;
 
 Route::middleware('api')->group(function () {
     Route::get('/api/test', function () {
@@ -40,12 +41,13 @@ Route::middleware('api')->group(function () {
     Route::post('/api/vendas/salvar-pagamento', [VendasController::class, 'realizarVenda']);
     Route::post('/api/vendas/recuperar', [VendasController::class, 'recuperarVenda']);
     Route::get('/api/vendas/listar', [VendasController::class, 'listarVendas']);
-    Route::get('/api/vendas/update-payment', [VendasController::class, 'updatePayment']);
+    Route::get('/api/vendas/update-payment', [VendasController::class, 'updatePayment'])->name('updatePayment');
+    Route::get('/api/vendas/create-subscription', [VendasController::class, 'createSubscription'])->name('createSubscription');
+
     //Tags
     Route::post('/api/tags/cadastrar', [TagController::class, 'cadastrarTag']);
     Route::get('/api/tags/listar', [TagController::class, 'index']);
     Route::post('/api/tags/recuperar', [TagController::class, 'getTag']);
     Route::post('/api/tags/atualizar-status', [TagController::class, 'atualizarStatus']);
     Route::post('/api/tags/atualizar-dados', [TagController::class, 'atualizarDados']);
-
 });

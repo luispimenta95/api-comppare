@@ -29,6 +29,8 @@ class Helper
     const MOEDA = "BRL";
     const TIPO_RENOVACAO_MENSAL = 'months';
     const TIPO_RENOVACAO_DIARIA = 'days';
+    const DIA_COBRANCA = 10;
+    const STATUS_ATIVO = 'active';
 
     /**
      * Retorna todos os códigos HTTP e suas descrições.

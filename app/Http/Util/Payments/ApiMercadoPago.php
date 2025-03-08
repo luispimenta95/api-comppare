@@ -11,7 +11,7 @@ use MercadoPago\Client\Payment\PaymentClient;
 use Carbon\Carbon;
 use MercadoPago\Preapproval;
 use App\Http\Util\Helper;
-use MercadoPago;
+use App\Models\Usuarios;
 
 class ApiMercadoPago
 {
@@ -24,16 +24,13 @@ class ApiMercadoPago
         $this->_client = new PreferenceClient();
         $this->_options = new RequestOptions();
         $this->payer = new PaymentClient();
-    
+        MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
     }
 
     public function salvarVenda(array $data): mixed
     {
-        MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOKEN_TST"));
 
         $this->_options->setCustomHeaders(["X-Idempotency-Key: " . uniqid()]);
-
-
 
         $createRequest = [
             "external_reference" => 3,
@@ -45,14 +42,14 @@ class ApiMercadoPago
                     "picture_url" => "http://www.myapp.com/myimage.jpg",
                     "category_id" => "SERVICES",
                     "quantity" => 1,
-                    "currency_id" => "BRL",
+                    "currency_id" =>  Helper::MOEDA,
                     "unit_price" => $data['price'],
                 )
             ),
             "back_urls" => array(
-                "success" => "https://api.comppare.com.br/api/vendas/update-payment",
-                "failure" => "https://api.comppare.com.br/api/vendas/update-payment",
-                "pending" => "https://api.comppare.com.br/api/vendas/update-payment"
+                "success" => route('updatePayment'),
+                "failure" => route('updatePayment'),
+                "pending" => route('updatePayment')
             ),
             "auto_return" => "all",
             "default_payment_method_id" => "master",
@@ -77,8 +74,6 @@ class ApiMercadoPago
 
     public function getPayments()
     {
-        MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOKEN_TST"));
-
         $searchRequest = new MPSearchRequest(30, 0, [
             "sort" => "date_created",
             "criteria" => "desc"
@@ -90,7 +85,7 @@ class ApiMercadoPago
     public function getPaymentById(int $idPagamento): array
     {
         try {
-            MercadoPagoConfig::setAccessToken(getenv("ACCESS_TOKEN_TST"));
+
             $payment = $this->payer->get($idPagamento);
 
             if (!$payment) {
@@ -120,26 +115,43 @@ class ApiMercadoPago
         }
     }
 
-    public function criarPlano($nome, $valor)
+    public function createPlain($nome, $valor)
     {
-
-        //MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
-        MercadoPago\SDK::setAccessToken(env('ACCESS_TOKEN_TST'));
-
         $plan = new Preapproval();
         $plan->auto_recurring = [
             "frequency" => 1,
             "frequency_type" => Helper::TIPO_RENOVACAO_MENSAL,
             "transaction_amount" => $valor,
             "currency_id" => Helper::MOEDA,
-            "billing_day" => 10,
+            "billing_day" => Helper::DIA_COBRANCA,
             "billing_day_proportional" => true,
         ];
         $plan->reason = $nome;
-        $plan->back_url = route('assinatura.confirmacao');
-        $plan->status = "active";
+        $plan->back_url = route('updatePayment');
+        $plan->status = Helper::STATUS_ATIVO;
         $plan->save();
 
         return $plan;
+    }
+
+    public function createSubscription(Usuarios $usuario)
+    {
+        $subscription = new Preapproval();
+        $subscription->preapproval_plan_id = 'testeApiLp';
+        $subscription->payer_email = $usuario->email;
+        $subscription->reason = "Plano de Assinatura Mensal"; 
+        $subscription->external_reference = uniqid(); 
+        $subscription->auto_recurring = array(
+            "frequency" => 1, // Frequência do pagamento
+            "frequency_type" => Helper::TIPO_RENOVACAO_MENSAL, // Tipo de frequência (meses)
+            "transaction_amount" => 29.90, // Valor da assinatura
+            "currency_id" =>  Helper::MOEDA // Moeda
+
+        );
+
+        // Salvar a assinatura
+        $subscription->save();
+
+        return $subscription;
     }
 }
