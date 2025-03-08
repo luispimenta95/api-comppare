@@ -31,6 +31,7 @@ class Helper
     const TIPO_RENOVACAO_DIARIA = 'days';
     const DIA_COBRANCA = 10;
     const STATUS_ATIVO = 'active';
+    const STATUS_AUTORIZADO = 'authorized';
 
     /**
      * Retorna todos os códigos HTTP e suas descrições.

@@ -145,6 +145,9 @@ class ApiMercadoPago
             'payer_email' => $usuario->email,
             'reason' => 'Plano de Assinatura Mensal 03',
             'back_url' => route('updatePaymentSubscription'), // URL de retorno
+            'auto_return' => 'all', // Se a assinatura for confirmada, retornar para esta URL
+            'status' => Helper::STATUS_AUTORIZADO,
+            "card_token_id" => "e3ed6f098462036dd2cbabe314b9de2a",
             'external_reference' => uniqid(),
             'auto_recurring' => array(
                 'frequency' => 1, // Frequência do pagamento
