@@ -24,10 +24,10 @@ class Usuarios extends Authenticatable implements JWTSubject
         'cpf',
         'status',
         'dataLimiteCompra',
-        'telefone' ,
+        'telefone',
         'dataUltimoPagamento',
         'idUltimoPagamento',
-         'idPlano',
+        'idPlano',
         'idPerfil'
     ];
 
@@ -59,9 +59,6 @@ class Usuarios extends Authenticatable implements JWTSubject
     }
     public function pastas()
     {
-        return $this->hasMany(Pastas::class);
+        return $this->hasMany(Pastas::class, 'idUsuario');
     }
-
-
-
 }
