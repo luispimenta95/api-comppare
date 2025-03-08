@@ -150,6 +150,7 @@ class ApiMercadoPago
             'preapproval_plan_id' => 'testeApiLp',
             'payer_email' => $usuario->email,
             'reason' => 'Plano de Assinatura Mensal',
+            'back_url' => route('createSubscription'), // URL de retorno
             'external_reference' => uniqid(),
             'auto_recurring' => array(
                 'frequency' => 1, // Frequência do pagamento
