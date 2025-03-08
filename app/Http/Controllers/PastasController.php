@@ -12,7 +12,7 @@ use App\Models\Usuarios;
 class PastasController extends Controller
 {
     private array $codes = [];
-    Const ROOT_PATH = 'usuarios/';
+    const ROOT_PATH = 'usuarios/';
     /**
      * Display a listing of the resource.
      */
@@ -24,7 +24,7 @@ class PastasController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create(Request $request):JsonResponse
+    public function create(Request $request): JsonResponse
     {
         $campos = ['nomePasta', 'idUsuario'];
 
@@ -40,22 +40,23 @@ class PastasController extends Controller
         }
 
         $user = Usuarios::find($request->idUsuario);
-        $folderName = self::ROOT_PATH . $user->id.'/' .$request->nomePasta;
+        $folderName = self::ROOT_PATH . $user->id . '/' . $request->nomePasta;
         $folder = json_decode(Helper::createFolder($folderName));
+        dd($folder);
         if ($folder->path !== null) {
             Pastas::create([
                 'nome' => $folderName,
                 'idUsuario' => $user->id,
                 'caminho' => $folder->path
             ]);
-
-        } if($folder->path === null){
+        }
+        if ($folder->path === null) {
             $response = [
                 'codRetorno' => 500,
                 'message' => $this->codes[500]
             ];
             return response()->json($response);
-    }
+        }
         $response = [
             'codRetorno' => 200,
             'message' => $this->codes[200]
@@ -115,9 +116,8 @@ class PastasController extends Controller
         }
 
         $user = Usuarios::find($request->idUsuario);
-        $folderName = self::ROOT_PATH . $user->id.'/' .$request->nomePasta;
+        $folderName = self::ROOT_PATH . $user->id . '/' . $request->nomePasta;
         $response = json_decode(Helper::deleteFolder($folderName));
         return $response->message;     //
     }
-
 }
