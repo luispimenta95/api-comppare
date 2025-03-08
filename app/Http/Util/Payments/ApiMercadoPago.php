@@ -24,7 +24,6 @@ class ApiMercadoPago
         $this->_client = new PreferenceClient();
         $this->_options = new RequestOptions();
         $this->payer = new PaymentClient();
-        MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
     }
 
     public function salvarVenda(array $data): mixed
@@ -136,11 +135,12 @@ class ApiMercadoPago
 
     public function createSubscription(Usuarios $usuario)
     {
+        MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
         $subscription = new Preapproval();
         $subscription->preapproval_plan_id = 'testeApiLp';
         $subscription->payer_email = $usuario->email;
-        $subscription->reason = "Plano de Assinatura Mensal"; 
-        $subscription->external_reference = uniqid(); 
+        $subscription->reason = "Plano de Assinatura Mensal";
+        $subscription->external_reference = uniqid();
         $subscription->auto_recurring = array(
             "frequency" => 1, // Frequência do pagamento
             "frequency_type" => Helper::TIPO_RENOVACAO_MENSAL, // Tipo de frequência (meses)
