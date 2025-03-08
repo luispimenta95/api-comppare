@@ -84,7 +84,7 @@ class ApiMercadoPago
         return $this->payer->search($searchRequest);
     }
 
-    public function getPaymentById(int $idPagamento)
+    public function getPaymentById(int $idPagamento): array
     {
         try {
 
@@ -106,7 +106,14 @@ class ApiMercadoPago
                 'dataPagamento' => Carbon::parse($payment->date_approved)->format('Y-m-d H:i:s')
             ];
         } catch (MPApiException $e) {
-            $this->showErrors($e);
+            $response = $e->getApiResponse();
+            $statusCode = $e->getStatusCode();
+
+            return [
+                "Erro" => "Api error. Check response for details.",
+                "Detalhes" => $response ? $response->getContent() : "Nenhuma informação detalhada disponível",
+                "Codigo HTTP" => $statusCode
+            ];
         }
     }
 
@@ -129,7 +136,7 @@ class ApiMercadoPago
         return $plan;
     }
 
-    public function createSubscription(Usuarios $usuario)
+    public function createSubscription(Usuarios $usuario): mixed
     {
         // Initialize MercadoPago SDK with the access token
         MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
@@ -158,18 +165,14 @@ class ApiMercadoPago
         try {
             return $this->plan->create($subscriptionData);
         } catch (MPApiException $e) {
-            $this->showErrors($e);
-        }
-    }
-    private function showErrors(MPApiException $e)
-    {
-        $response = $e->getApiResponse();
-        $statusCode = $e->getStatusCode();
+            $response = $e->getApiResponse();
+            $statusCode = $e->getStatusCode();
 
-        return [
-            "Erro" => "Api error. Check response for details.",
-            "Detalhes" => $response ? $response->getContent() : "Nenhuma informação detalhada disponível",
-            "Codigo HTTP" => $statusCode
-        ];
+            return [
+                "Erro" => "Api error. Check response for details.",
+                "Detalhes" => $response ? $response->getContent() : "Nenhuma informação detalhada disponível",
+                "Codigo HTTP" => $statusCode
+            ];
+        }
     }
 }
