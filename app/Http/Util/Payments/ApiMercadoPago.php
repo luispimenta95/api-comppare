@@ -166,9 +166,15 @@ class ApiMercadoPago
         // Save the subscription (attempt to create the preapproval)
         try {
             return $this->plan->create($subscriptionData);
-        } catch (Exception $e) {
-            // Handle any errors during the save process
-            return ['error' => $e->getMessage()];
+        } catch (MPApiException $e) {
+            $response = $e->getApiResponse();
+            $statusCode = $e->getStatusCode();
+
+            return [
+                "Erro" => "Api error. Check response for details.",
+                "Detalhes" => $response ? $response->getContent() : "Nenhuma informação detalhada disponível",
+                "Codigo HTTP" => $statusCode
+            ];
         }
     }
 }
