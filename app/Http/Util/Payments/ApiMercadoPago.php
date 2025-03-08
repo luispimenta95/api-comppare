@@ -138,24 +138,18 @@ class ApiMercadoPago
 
     public function createSubscription(Usuarios $usuario): mixed
     {
-        $accessToken = env('ACCESS_TOKEN_TST');
-
-        if (empty($accessToken)) {
-            throw new Exception('Access token is not set properly in the .env file');
-        }
-
         // Initialize MercadoPago SDK with the access token
-        MercadoPagoConfig::setAccessToken($accessToken);
+        MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
         $subscriptionData = array(
-            'preapproval_plan_id' => 'testeApiLp',
+
             'payer_email' => $usuario->email,
-            'reason' => 'Plano de Assinatura Mensal',
-            'back_url' => route('createSubscription'), // URL de retorno
+            'reason' => 'Plano de Assinatura Mensal 03',
+            'back_url' => route('updatePaymentSubscription'), // URL de retorno
             'external_reference' => uniqid(),
             'auto_recurring' => array(
                 'frequency' => 1, // Frequência do pagamento
                 'frequency_type' => Helper::TIPO_RENOVACAO_MENSAL, // Tipo de frequência (meses)
-                'transaction_amount' => 29.90, // Valor da assinatura
+                'transaction_amount' => 99.90, // Valor da assinatura
                 'currency_id' => Helper::MOEDA // Moeda
             )
         );

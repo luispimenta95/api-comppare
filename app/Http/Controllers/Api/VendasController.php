@@ -110,4 +110,7 @@ class VendasController extends Controller
         $responseApi = $this->apiMercadoPago->createSubscription($usuario);
         return response()->json($responseApi);
     }
+    public function updatePaymentSubscription(){
+        dd($_GET);
+    }
 }

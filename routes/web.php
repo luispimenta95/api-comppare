@@ -41,8 +41,9 @@ Route::middleware('api')->group(function () {
     Route::post('/api/vendas/salvar-pagamento', [VendasController::class, 'realizarVenda']);
     Route::post('/api/vendas/recuperar', [VendasController::class, 'recuperarVenda']);
     Route::get('/api/vendas/listar', [VendasController::class, 'listarVendas']);
-    Route::get('/api/vendas/update-payment', [VendasController::class, 'updatePayment'])->name('updatePayment');
+    Route::get('/api/vendas/update-payment-single', [VendasController::class, 'updatePaymentSingle'])->name('updatePaymentSingle');
     Route::get('/api/vendas/create-subscription', [VendasController::class, 'createSubscription'])->name('createSubscription');
+    Route::get('/api/vendas/update-payment-subscription', [VendasController::class, 'updatePaymentSubscription'])->name('updatePaymentSubscription');
 
     //Tags
     Route::post('/api/tags/cadastrar', [TagController::class, 'cadastrarTag']);
