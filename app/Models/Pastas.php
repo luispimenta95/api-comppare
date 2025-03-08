@@ -11,7 +11,6 @@ class Pastas extends Model
 
     public function usuario()
     {
-        return $this->belongsTo(Usuarios::class);
+        return $this->belongsTo(Usuarios::class, 'idUsuario');
     }
-
 }
