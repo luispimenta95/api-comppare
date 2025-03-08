@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use MercadoPago\Preapproval;
 use App\Http\Util\Helper;
 use App\Models\Usuarios;
+use Exception;
 
 class ApiMercadoPago
 {
@@ -133,10 +134,16 @@ class ApiMercadoPago
         return $plan;
     }
 
-    public function createSubscription(Usuarios $usuario)
+    public function createSubscription(Usuarios $usuario): mixed
     {
+        // Initialize MercadoPago SDK with access token
+        dd(env('ACCESS_TOKEN_TST'));
         MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
+
+        // Create a new Preapproval object for the subscription
         $subscription = new Preapproval();
+
+        // Set subscription details
         $subscription->preapproval_plan_id = 'testeApiLp';
         $subscription->payer_email = $usuario->email;
         $subscription->reason = "Plano de Assinatura Mensal";
@@ -145,13 +152,16 @@ class ApiMercadoPago
             "frequency" => 1, // Frequência do pagamento
             "frequency_type" => Helper::TIPO_RENOVACAO_MENSAL, // Tipo de frequência (meses)
             "transaction_amount" => 29.90, // Valor da assinatura
-            "currency_id" =>  Helper::MOEDA // Moeda
-
+            "currency_id" => Helper::MOEDA // Moeda
         );
 
-        // Salvar a assinatura
-        $subscription->save();
-
-        return $subscription;
+        // Save the subscription (attempt to create the preapproval)
+        try {
+            $subscription->save();
+            return $subscription;
+        } catch (Exception $e) {
+            // Handle any errors during the save process
+            return ['error' => $e->getMessage()];
+        }
     }
 }
