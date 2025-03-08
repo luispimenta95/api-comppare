@@ -13,18 +13,20 @@ use MercadoPago\Preapproval;
 use App\Http\Util\Helper;
 use App\Models\Usuarios;
 use Exception;
+use MercadoPago\Client\PreApprovalPlan\PreApprovalPlanClient;
 
 class ApiMercadoPago
 {
     private $_client;
     private $_options;
     private $payer;
-
+    private $plan;
     public function __construct()
     {
         $this->_client = new PreferenceClient();
         $this->_options = new RequestOptions();
         $this->payer = new PaymentClient();
+        $this->plan = new PreApprovalPlanClient();
     }
 
     public function salvarVenda(array $data): mixed
@@ -144,26 +146,26 @@ class ApiMercadoPago
 
         // Initialize MercadoPago SDK with the access token
         MercadoPagoConfig::setAccessToken($accessToken);
-
+        $subscriptionData = array(
+            'preapproval_plan_id' => 'testeApiLp',
+            'payer_email' => $usuario->email,
+            'reason' => 'Plano de Assinatura Mensal',
+            'external_reference' => uniqid(),
+            'auto_recurring' => array(
+                'frequency' => 1, // Frequência do pagamento
+                'frequency_type' => Helper::TIPO_RENOVACAO_MENSAL, // Tipo de frequência (meses)
+                'transaction_amount' => 29.90, // Valor da assinatura
+                'currency_id' => Helper::MOEDA // Moeda
+            )
+        );
         // Create a new Preapproval object for the subscription
-        $subscription = new Preapproval();
+
 
         // Set subscription details
-        $subscription->preapproval_plan_id = 'testeApiLp';
-        $subscription->payer_email = $usuario->email;
-        $subscription->reason = "Plano de Assinatura Mensal";
-        $subscription->external_reference = uniqid();
-        $subscription->auto_recurring = array(
-            "frequency" => 1, // Frequência do pagamento
-            "frequency_type" => Helper::TIPO_RENOVACAO_MENSAL, // Tipo de frequência (meses)
-            "transaction_amount" => 29.90, // Valor da assinatura
-            "currency_id" => Helper::MOEDA // Moeda
-        );
 
         // Save the subscription (attempt to create the preapproval)
         try {
-            $subscription->save();
-            return $subscription;
+            return $this->plan->create($subscriptionData);
         } catch (Exception $e) {
             // Handle any errors during the save process
             return ['error' => $e->getMessage()];
