@@ -350,19 +350,19 @@ class UsuarioController extends Controller
                     return response()->json($response);
                 }
             } else {
-                /*$pastas = $user->pastas->map(function ($pasta) {
+                $pastas = $user->pastas->map(function ($pasta) {
                     return [
                         'nome' => $pasta->nome,
                         'caminho' => $pasta->caminho
                     ];
-                });*/
+                });
 
                 $response = [
                     'codRetorno' => 200,
                     'message' => $this->codes[200],
                     'token' => $token,
                     'dados' => $user->only('id', 'nome', 'cpf', 'telefone'),
-                    //'pastas' => $pastas
+                    'pastas' => $pastas
                 ];
             }
         }
