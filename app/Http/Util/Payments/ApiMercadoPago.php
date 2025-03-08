@@ -143,16 +143,15 @@ class ApiMercadoPago
         $subscriptionData = array(
 
             'payer_email' => $usuario->email,
-            'reason' => 'Plano de Assinatura Mensal 03',
+            'reason' => 'Plano de Assinatura Mensal',
             'back_url' => route('updatePaymentSubscription'), // URL de retorno
             'auto_return' => 'all', // Se a assinatura for confirmada, retornar para esta URL
             'status' => Helper::STATUS_ATIVO,
-            "card_token_id" => "e3ed6f098462036dd2cbabe314b9de2a",
             'external_reference' => uniqid(),
             'auto_recurring' => array(
                 'frequency' => 1, // Frequência do pagamento
                 'frequency_type' => Helper::TIPO_RENOVACAO_MENSAL, // Tipo de frequência (meses)
-                'transaction_amount' => 99.90, // Valor da assinatura
+                'transaction_amount' => 45.90, // Valor da assinatura
                 'currency_id' => Helper::MOEDA // Moeda
             )
         );
