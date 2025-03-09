@@ -1,0 +1,176 @@
+# Criando um Plano de Assinatura no Laravel com a API do Mercado Pago
+
+## 1. Criar conta e obter credenciais
+1. Acesse [Mercado Pago Developer](https://www.mercadopago.com.br/developers/)
+2. Vá até **Credenciais** e copie suas **chaves de acesso** (`PUBLIC_KEY` e `ACCESS_TOKEN`)
+
+## 2. Instalar o SDK do Mercado Pago
+No terminal, dentro do projeto Laravel, execute:
+
+```
+composer require mercadopago/dx-php
+```
+
+Depois, adicione suas credenciais no `.env`:
+
+```
+MERCADO_PAGO_ACCESS_TOKEN=SEU_ACCESS_TOKEN_AQUI
+```
+
+E no `config/services.php`, adicione:
+
+```php
+'mercadopago' => [
+    'access_token' => env('MERCADO_PAGO_ACCESS_TOKEN'),
+],
+```
+
+## 3. Criar um Plano de Assinatura
+O Mercado Pago usa **preapproval plans** para assinaturas. Crie um serviço para gerenciar isso.
+
+### Criar o service de Mercado Pago
+Crie um arquivo `app/Services/MercadoPagoService.php`:
+
+```php
+<?php
+
+namespace App\Services;
+
+use MercadoPago;
+
+class MercadoPagoService
+{
+    public function __construct()
+    {
+        MercadoPago\SDK::setAccessToken(config('services.mercadopago.access_token'));
+    }
+
+    public function criarPlano($nome, $preco, $frequencia = 1, $tipoFrequencia = 'months')
+    {
+        $plan = new MercadoPago\PreapprovalPlan();
+        $plan->auto_recurring = [
+            "frequency" => $frequencia,
+            "frequency_type" => $tipoFrequencia, // days, months
+            "transaction_amount" => $preco,
+            "currency_id" => "BRL",
+            "repetitions" => 12,
+            "billing_day" => 10,
+            "billing_day_proportional" => false
+        ];
+        $plan->reason = $nome;
+        $plan->back_url = route('assinatura.confirmacao');
+        $plan->status = "active";
+        $plan->save();
+
+        return $plan;
+    }
+}
+```
+
+## 4. Criar o Controller de Assinatura
+Crie um controller:
+
+```
+php artisan make:controller AssinaturaController
+```
+
+Edite `app/Http/Controllers/AssinaturaController.php`:
+
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Services\MercadoPagoService;
+
+class AssinaturaController extends Controller
+{
+    protected $mercadoPagoService;
+
+    public function __construct(MercadoPagoService $mercadoPagoService)
+    {
+        $this->mercadoPagoService = $mercadoPagoService;
+    }
+
+    public function criarPlano(Request $request)
+    {
+        $plano = $this->mercadoPagoService->criarPlano(
+            "Plano Premium",
+            29.90,
+            1,
+            'months'
+        );
+
+        return response()->json($plano);
+    }
+}
+```
+
+## 5. Criar a Rota
+Abra `routes/api.php` e adicione:
+
+```php
+use App\Http\Controllers\AssinaturaController;
+
+Route::post('/criar-plano', [AssinaturaController::class, 'criarPlano']);
+```
+
+## 6. Criar um Assinante no Plano
+Adicione este método no `MercadoPagoService.php`:
+
+```php
+public function criarAssinatura($email, $planoId)
+{
+    $preapproval = new MercadoPago\Preapproval();
+    $preapproval->payer_email = $email;
+    $preapproval->back_url = route('assinatura.confirmacao');
+    $preapproval->status = "pending";
+    $preapproval->preapproval_plan_id = $planoId;
+    $preapproval->save();
+
+    return $preapproval;
+}
+```
+
+E no `AssinaturaController.php`:
+
+```php
+public function criarAssinatura(Request $request)
+{
+    $assinatura = $this->mercadoPagoService->criarAssinatura(
+        $request->email,
+        $request->plano_id
+    );
+
+    return response()->json($assinatura);
+}
+```
+
+Depois, adicione a rota:
+
+```php
+Route::post('/criar-assinatura', [AssinaturaController::class, 'criarAssinatura']);
+```
+
+## 7. Testando a API
+Agora, para testar:
+
+1. **Criar um Plano**  
+   - Faça uma requisição `POST` para `/api/criar-plano`
+   - Retornará um JSON com o `id` do plano criado
+
+2. **Criar uma Assinatura**  
+   - Faça uma requisição `POST` para `/api/criar-assinatura` enviando:
+
+```json
+{
+    "email": "cliente@email.com",
+    "plano_id": "ID_DO_PLANO_AQUI"
+}
+```
+
+O usuário será cadastrado e receberá a cobrança recorrente via Mercado Pago.
+
+## Conclusão
+Agora, seu Laravel está configurado para criar **planos de assinatura** e **assinantes** utilizando a API do Mercado Pago! 🚀

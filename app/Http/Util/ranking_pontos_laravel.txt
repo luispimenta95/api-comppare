@@ -1,0 +1,144 @@
+Criar um sistema de ranking de pontos baseado em ações no Laravel envolve algumas etapas essenciais. Aqui está um guia passo a passo para implementar isso de forma eficiente.
+
+---
+
+1. Criar a Migration e o Model para Pontuação
+---------------------------------------------
+
+Primeiro, crie uma tabela para armazenar os pontos de cada usuário:
+
+php artisan make:model Point -m
+
+No arquivo de migration gerado, defina a estrutura da tabela:
+
+Schema::create('points', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('user_id')->constrained()->onDelete('cascade');
+    $table->integer('points')->default(0);
+    $table->string('action'); // Tipo de ação (ex: 'post_created', 'comment_added')
+    $table->timestamps();
+});
+
+Agora, rode a migration:
+
+php artisan migrate
+
+No Model `Point.php`, defina os relacionamentos:
+
+class Point extends Model
+{
+    protected $fillable = ['user_id', 'points', 'action'];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+}
+
+---
+
+2. Criar um Serviço para Gerenciar os Pontos
+--------------------------------------------
+
+Crie um novo arquivo `app/Services/PointService.php`:
+
+class PointService
+{
+    protected $pointRules = [
+        'post_created' => 10,
+        'comment_added' => 5,
+        'like_received' => 2,
+    ];
+
+    public function addPoints($userId, $action)
+    {
+        if (!isset($this->pointRules[$action])) {
+            return;
+        }
+
+        Point::create([
+            'user_id' => $userId,
+            'points' => $this->pointRules[$action],
+            'action' => $action,
+        ]);
+    }
+
+    public function getRanking()
+    {
+        return Point::selectRaw('user_id, SUM(points) as total_points')
+            ->groupBy('user_id')
+            ->orderByDesc('total_points')
+            ->with('user')
+            ->get();
+    }
+}
+
+---
+
+3. Integrar o Sistema de Pontos nas Ações
+-----------------------------------------
+
+Exemplo de integração em um controller:
+
+public function store(Request $request, PointService $pointService)
+{
+    $post = Post::create([
+        'user_id' => auth()->id(),
+        'title' => $request->title,
+        'content' => $request->content,
+    ]);
+
+    $pointService->addPoints(auth()->id(), 'post_created');
+
+    return response()->json(['message' => 'Post criado e pontos adicionados!']);
+}
+
+---
+
+4. Criar um Endpoint para Consultar o Ranking
+----------------------------------------------
+
+No `routes/web.php`:
+
+Route::get('/ranking', function (PointService $pointService) {
+    return response()->json($pointService->getRanking());
+});
+
+---
+
+5. Exibir o Ranking na View
+----------------------------
+
+No `RankingController.php`:
+
+public function index(PointService $pointService)
+{
+    $ranking = $pointService->getRanking();
+    return view('ranking', compact('ranking'));
+}
+
+Crie a view `resources/views/ranking.blade.php`:
+
+<h1>Ranking de Usuários</h1>
+<table border="1">
+    <tr>
+        <th>Posição</th>
+        <th>Usuário</th>
+        <th>Pontos</th>
+    </tr>
+    @foreach($ranking as $index => $item)
+        <tr>
+            <td>{{ $index + 1 }}</td>
+            <td>{{ $item->user->name }}</td>
+            <td>{{ $item->total_points }}</td>
+        </tr>
+    @endforeach
+</table>
+
+---
+
+Conclusão
+---------
+
+Agora você tem um sistema de ranking de pontos em Laravel baseado em ações dos usuários.
+Isso pode ser expandido para incluir recompensas, níveis e até integração com notificações!
