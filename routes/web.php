@@ -51,7 +51,7 @@ Route::middleware('api')->group(function () {
     Route::post('/api/tags/recuperar', [TagController::class, 'getTag']);
     Route::post('/api/tags/atualizar-status', [TagController::class, 'atualizarStatus']);
     Route::post('/api/tags/atualizar-dados', [TagController::class, 'atualizarDados']);
-    Route::get('/api/adm/planos/cadastrar', [AdminController::class, 'cadastrarPlano']);
+    Route::get('/api/planos/cadastrar', [AdminController::class, 'criarPlanoAssinatura']);
 
     Route::post('/webhook/mercadopago', [MercadoPagoController::class, 'handleWebhook']);
 
