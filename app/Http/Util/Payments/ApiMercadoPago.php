@@ -145,10 +145,10 @@ class ApiMercadoPago
                 "billing_day" => Helper::DIA_COBRANCA,
                 "billing_day_proportional" => true,
                 //Definir periodo de gratuidade
-   /*             "free_trial" => [
-                    "frequency" => 1,
-                    "frequency_type" => "months",
-                ],*/
+                "free_trial" => [
+                    "frequency" => 15,
+                    "frequency_type" => Helper::TIPO_RENOVACAO_DIARIA,
+                ],
                 "transaction_amount" => $valor,
                 "currency_id" => Helper::MOEDA,
             ],
