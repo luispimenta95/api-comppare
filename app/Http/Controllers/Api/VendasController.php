@@ -6,7 +6,6 @@ use Carbon\Carbon;
 use App\Models\Planos;
 use App\Models\Usuarios;
 use App\Http\Util\Helper;
-use MercadoPago\MercadoPagoConfig;
 use App\Models\TransacaoFinanceira;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -38,21 +37,18 @@ class VendasController extends Controller
             "description" => $plano->descricao,
             "price" => $plano->valor
         ];
-        MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
 
         return $this->apiMercadoPago->salvarVenda($data);
     }
 
     public function recuperarVenda(int $idPagamento): array
     {
-        MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
 
         return $this->apiMercadoPago->getPaymentById((int) $idPagamento);
     }
 
     public function listarVendas()
     {
-        MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
 
         $response = $this->apiMercadoPago->getPayments();
         echo json_encode($response);

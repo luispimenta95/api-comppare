@@ -2,6 +2,8 @@
 
 namespace App\Http\Util\Payments;
 
+use App\Models\Planos;
+use App\Models\Usuarios;
 use Illuminate\Http\Request;
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Client\Common\RequestOptions;
@@ -141,7 +143,7 @@ class ApiMercadoPago
                 "frequency" => 1,
                 "frequency_type" => "months",
                 "billing_day" => Helper::DIA_COBRANCA,
-                "billing_day_proportional" => false,
+                "billing_day_proportional" => true,
                 "free_trial" => [
                     "frequency" => 1,
                     "frequency_type" => "months",
@@ -195,7 +197,7 @@ class ApiMercadoPago
         return json_decode($response, true);
     }
 
-    public function createSale(string $subscriptionId, float $amount, string $email): mixed
+    public function createSale(Usuarios $usuario , Planos $plano): mixed
     {
         try {
             // Inicialize o SDK do Mercado Pago
@@ -203,15 +205,15 @@ class ApiMercadoPago
 
             // Criar um pagamento para um cliente associado a uma assinatura
             $payment = new Payment();
-            $payment->transaction_amount = $amount; // Valor da venda
-            $payment->currency_id = 'BRL'; // Moeda (ex: "BRL")
-            $payment->description = 'Venda Produto Vinculado';
+            $payment->transaction_amount = $plano->valor; // Valor da venda
+            $payment->currency_id = Helper::MOEDA; // Moeda (ex: "BRL")
+            $payment->description = $plano->nome;
             $payment->payer = [
-                'email' => $email // E-mail do cliente (vinculado ao plano)
+                'email' => $usuario->email // E-mail do cliente (vinculado ao plano)
             ];
 
             // Referenciar a assinatura no pagamento
-            $payment->external_reference = $subscriptionId; // ID da assinatura criada
+            $payment->external_reference = $plano->idMercadoPago; // ID da assinatura criada
 
             // Salvar o pagamento
             $payment->save();
