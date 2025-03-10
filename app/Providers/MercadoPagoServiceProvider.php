@@ -15,7 +15,7 @@ class MercadoPagoServiceProvider extends ServiceProvider
     public function boot()
     {
         // Inicializar o SDK do Mercado Pago
-        MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST')); // Use o token correto
+        MercadoPagoConfig::setAccessToken(env('ACESS_TOKEN_MP')); // Use o token correto
     }
 
     /**

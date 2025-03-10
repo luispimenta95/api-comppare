@@ -28,7 +28,7 @@ class ApiMercadoPago
         $this->_client = new PreferenceClient();
         $this->_options = new RequestOptions();
         $this->payer = new PaymentClient();
-        $this->token = env('ACCESS_TOKEN_TST'); // Token de teste ou produção
+        $this->token = env('ACESS_TOKEN_MP'); // Token de teste ou produção
 
     }
 
@@ -202,7 +202,7 @@ class ApiMercadoPago
     {
         try {
             // Inicialize o SDK do Mercado Pago
-            MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST')); // Use seu token
+            MercadoPagoConfig::setAccessToken(env('ACESS_TOKEN_MP')); // Use seu token
 
             // Criar um pagamento para um cliente associado a uma assinatura
             $payment = new Payment();
