@@ -2,6 +2,7 @@
 
 namespace App\Http\Util\Payments;
 
+use Illuminate\Http\Request;
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Client\Common\RequestOptions;
 use MercadoPago\Client\Preference\PreferenceClient;
@@ -10,8 +11,7 @@ use MercadoPago\Net\MPSearchRequest;
 use MercadoPago\Client\Payment\PaymentClient;
 use Carbon\Carbon;
 use App\Http\Util\Helper;
-use App\Models\Usuarios;
-use MercadoPago\Preapproval;
+
 use MercadoPago\Payment;
 
 class ApiMercadoPago
@@ -127,37 +127,65 @@ class ApiMercadoPago
         }
     }
 
-    public function criarPlano($nome, $valor)
+    function criarPlanoAssinatura(string $nome, float $valor)
     {
-        try {
-            // Criar um novo plano de assinatura
-            $subscription = new Preapproval();
-            $subscription->auto_recurring = [
-                'frequency' => 1, // Frequência do pagamento (ex: 1)
-                'frequency_type' => 'months', // Tipo de frequência (ex: "months")
-                'transaction_amount' => 45.90, // Valor do plano
-                'currency_id' => 'BRL', // Moeda (ex: "BRL")
-                'start_date' => date('Y-m-d\TH:i:sP', strtotime('+1 day')), // Data de início do plano
-                'end_date' => date('Y-m-d\TH:i:sP', strtotime('+2 year')), // Data de término do plano
-            ];
-            $subscription->payer_email = 'cliente@email.com'; // E-mail do comprador
-            $subscription->reason = 'Assinatura Mensal'; // Motivo do pagamento
-            $subscription->external_reference = uniqid(); // Referência externa para controle interno
 
-            // Salvar o plano de assinatura
-            $subscription->save();
+        $data = [
+            "reason" => $nome, // Motivo da assinatura
+            "auto_recurring" => [
+                "frequency" => 1, // Frequência do ciclo de pagamento
+                "frequency_type" => Helper::TIPO_RENOVACAO_MENSAL, // Tipo de frequência: ex.: mensal
+                "billing_day" => Helper::DIA_COBRANCA, // Dia de cobrança
+                "billing_day_proportional" => true, // Pró-rata para dia de cobrança inicial
+                "transaction_amount" => $valor, // Valor da assinatura
+                "currency_id" => Helper::MOEDA// Moeda: Real
+            ],
+            "payment_methods_allowed" => [
+                "payment_types" => [
+                    [ "id" => "credit_card" ] // Aceitar cartões de crédito
+                ]
+            ],
+            "back_url" => env('APP_URL') . "api/vendas/update-payment-subscription" // URL de retorno ao finalizar assinatura
+        ];
 
-            // Retornar os detalhes do plano de assinatura criado
+        $headers = [
+            "Authorization: Bearer " . $this->token,
+            "Content-Type: application/json"
+        ];
+
+        // Inicia cURL
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $this->url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data)); // Dados em formato JSON
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // Retornar resposta
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers); // Adiciona os headers
+
+        // Executa a requisição
+        $response = curl_exec($ch);
+
+        // Captura erros HTTP
+        if (curl_errno($ch)) {
+            $error_msg = curl_error($ch);
+            curl_close($ch);
+            return ["error" => "Erro na requisição: " . $error_msg];
+        }
+
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE); // Código HTTP de retorno
+        curl_close($ch);
+
+        // Decodifica resposta JSON
+        $decodedResponse = json_decode($response, true);
+
+        // Retorna a resposta de forma adequada
+        if ($httpCode === 201) {
+            return $decodedResponse; // Plano criado com sucesso
+        } else {
             return [
-                'id' => $subscription->id,
-                'init_point' => $subscription->init_point // URL para iniciar a assinatura
-            ];
-
-        } catch (\Exception $e) {
-            return [
-                'Erro' => 'Erro ao criar o plano de assinatura.',
-                'Detalhes' => $e->getMessage()
-            ];
+                "error" => "Erro ao criar plano",
+                "status" => $httpCode,
+                "response" => $decodedResponse
+            ]; // Retorna detalhes do erro
         }
     }
 

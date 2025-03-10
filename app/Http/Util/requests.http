@@ -65,8 +65,10 @@ POST {{baseUrl}}/planos/cadastrar
 Content-Type: application/json
 
 {
-    "nome": "Teste plano 012",
-    "valor": 45
+    "nome": "Teste plano gratuito",
+    "descricao": "Teste",
+    "valor": 0,
+    "quantidadeTags": 1
 }
 
 

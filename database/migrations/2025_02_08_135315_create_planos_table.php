@@ -22,6 +22,8 @@ return new class extends Migration
             $table->integer('quantidadeFotos')->default(Helper::LIMITE_FOTOS);
             $table->integer('quantidadePastas')->default(Helper::LIMITE_PASTAS);
             $table->boolean('status')->default(true);
+            $table->string('idMercadoPago');
+            $table->string('linkAssinatura');
             $table->timestamps();
         });
     }
