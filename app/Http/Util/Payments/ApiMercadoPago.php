@@ -21,7 +21,7 @@ class ApiMercadoPago
     private $payer;
 
     private string $token;
-    private string $url = "https://api.mercadopago.com/preapproval";
+    private string $url = "https://api.mercadopago.com/preapproval_plan";
     public function __construct()
     {
         $this->_client = new PreferenceClient();
