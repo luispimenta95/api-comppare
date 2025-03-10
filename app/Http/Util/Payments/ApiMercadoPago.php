@@ -75,7 +75,7 @@ class ApiMercadoPago
 
     public function getPayments()
     {
-        $searchRequest = new MPSearchRequest(30, 0, [
+        $searchRequest = new MPSearchRequest(3000, 0, [
             "sort" => "date_created",
             "criteria" => "desc"
         ]);

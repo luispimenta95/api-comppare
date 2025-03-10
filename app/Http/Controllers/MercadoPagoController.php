@@ -9,7 +9,7 @@ class MercadoPagoController extends Controller
 {
     private string $accessToken;
     public function __construct(){
-        $this->accessToken = env('ACCESS_TOKEN_TST');
+
 
     }
     /**
