@@ -19,12 +19,15 @@ class ApiMercadoPago
     private $_client;
     private $_options;
     private $payer;
+
+    private string $token;
+    private string $url = "https://api.mercadopago.com/preapproval";
     public function __construct()
     {
         $this->_client = new PreferenceClient();
         $this->_options = new RequestOptions();
         $this->payer = new PaymentClient();
-        MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST')); // Token de teste ou produção
+        $this->token = env('ACCESS_TOKEN_TST'); // Token de teste ou produção
 
     }
 
