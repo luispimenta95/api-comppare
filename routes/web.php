@@ -1,12 +1,13 @@
 <?php
 
-use App\Http\Controllers\TagController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\UsuarioController;
-use App\Http\Controllers\Api\PlanoController;
-use App\Http\Controllers\Api\CupomController;
-use App\Http\Controllers\Api\VendasController;
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\CupomController;
+use App\Http\Controllers\Api\PlanoController;
+use App\Http\Controllers\Api\TagController;
+use App\Http\Controllers\Api\UsuarioController;
+use App\Http\Controllers\Api\VendasController;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\MercadoPagoController;
 
 Route::middleware('api')->group(function () {
     Route::get('/api/test', function () {
@@ -51,5 +52,9 @@ Route::middleware('api')->group(function () {
     Route::post('/api/tags/atualizar-status', [TagController::class, 'atualizarStatus']);
     Route::post('/api/tags/atualizar-dados', [TagController::class, 'atualizarDados']);
     Route::get('/api/adm/planos/cadastrar', [AdminController::class, 'cadastrarPlano']);
+
+    Route::post('/webhook/mercadopago', [MercadoPagoController::class, 'handleWebhook']);
+
+
 
 });

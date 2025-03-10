@@ -172,11 +172,7 @@ class ApiMercadoPago
             $payment->save();
 
             // Retornar os detalhes do pagamento realizado
-            return [
-                'status' => $payment->status, // Exemplo: "approved"
-                'id' => $payment->id, // ID do pagamento gerado no Mercado Pago
-                'detalhes' => $payment
-            ];
+            return $payment;
 
         } catch (\Exception $e) {
             return [

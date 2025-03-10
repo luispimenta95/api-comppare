@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Http\Util\Helper;
 use App\Models\Tag;
 use Illuminate\Http\JsonResponse;
@@ -15,7 +16,7 @@ class TagController extends Controller
     public function __construct()
     {
         $this->codes = Helper::getHttpCodes();
-        $this->userLogado = Auth::user(); //
+        $this->userLogado = Auth::user();
 
     }
     /**
