@@ -26,7 +26,7 @@ class AdminController extends Controller
     {
         $campos = ['nome', 'valor'];
 
-        $campos = Helper::validarRequest($request, $campos);
+       /* $campos = Helper::validarRequest($request, $campos);
         if ($campos !== true) {
             $response = [
                 'codRetorno' => 400,
@@ -34,10 +34,10 @@ class AdminController extends Controller
                 'campos' => $campos
             ];
             return response()->json($response);
-        }
+        }*/
 
-        $nome = $request->nome;
-        $valor = $request->valor;
+        $nome = 't';
+        $valor = '45';
 
         $response = $this->apiMercadoPago->criarPlano($nome, $valor);
         return response()->json($response);
