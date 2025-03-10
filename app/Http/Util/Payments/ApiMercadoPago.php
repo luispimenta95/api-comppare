@@ -75,12 +75,23 @@ class ApiMercadoPago
 
     public function getPayments()
     {
-        $searchRequest = new MPSearchRequest(3000, 0, [
-            "sort" => "date_created",
-            "criteria" => "desc"
-        ]);
+        try {
+            $searchRequest = new MPSearchRequest(3000, 0, [
+                "sort" => "date_created",
+                "criteria" => "desc"
+            ]);
 
-        return $this->payer->search($searchRequest);
+            return $this->payer->search($searchRequest);
+        }catch (MPApiException $e) {
+            $response = $e->getApiResponse();
+            $statusCode = $e->getStatusCode();
+
+            return [
+                "Erro" => "Api error. Check response for details.",
+                "Detalhes" => $response ? $response->getContent() : "Nenhuma informação detalhada disponível",
+                "Codigo HTTP" => $statusCode
+            ];
+        }
     }
 
     public function getPaymentById(int $idPagamento): array
