@@ -9,24 +9,21 @@ use MercadoPago\Exceptions\MPApiException;
 use MercadoPago\Net\MPSearchRequest;
 use MercadoPago\Client\Payment\PaymentClient;
 use Carbon\Carbon;
-use MercadoPago\Preapproval;
 use App\Http\Util\Helper;
 use App\Models\Usuarios;
 use Exception;
-use MercadoPago\Client\PreApprovalPlan\PreApprovalPlanClient;
+use MercadoPago\Preapproval;
 
 class ApiMercadoPago
 {
     private $_client;
     private $_options;
     private $payer;
-    private $plan;
     public function __construct()
     {
         $this->_client = new PreferenceClient();
         $this->_options = new RequestOptions();
         $this->payer = new PaymentClient();
-        $this->plan = new PreApprovalPlanClient();
     }
 
     public function salvarVenda(array $data): mixed
@@ -140,30 +137,39 @@ class ApiMercadoPago
     {
         // Initialize MercadoPago SDK with the access token
         MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
-        $subscriptionData = array(
 
+        // Prepare subscription data
+        $subscriptionData = [
             'payer_email' => $usuario->email,
             'reason' => 'Plano de Assinatura Mensal',
             'back_url' => route('updatePaymentSubscription'), // URL de retorno
             'auto_return' => 'all', // Se a assinatura for confirmada, retornar para esta URL
             'status' => Helper::STATUS_ATIVO,
             'external_reference' => uniqid(),
-            'auto_recurring' => array(
+            'auto_recurring' => [
                 'frequency' => 1, // Frequência do pagamento
                 'frequency_type' => Helper::TIPO_RENOVACAO_MENSAL, // Tipo de frequência (meses)
                 'transaction_amount' => 45.90, // Valor da assinatura
-                'currency_id' => Helper::MOEDA // Moeda
-            )
-        );
-        // Create a new Preapproval object for the subscription
+                'currency_id' => Helper::MOEDA, // Moeda
+            ]
+        ];
 
-
-        // Set subscription details
-
-        // Save the subscription (attempt to create the preapproval)
         try {
-            return $this->plan->create($subscriptionData);
-        } catch (MPApiException $e) {
+            // Create a new Preapproval object for the subscription
+            $preapproval = new Preapproval();
+
+            // Add subscription data to the Preapproval object
+            foreach ($subscriptionData as $key => $value) {
+                $preapproval->$key = $value;
+            }
+
+            // Save the subscription
+            $preapproval->save();
+
+            // Return the created subscription data or confirmation
+            return $preapproval;
+        } catch (\MercadoPago\Exceptions\MPApiException $e) {
+            // Handle API exceptions
             $response = $e->getApiResponse();
             $statusCode = $e->getStatusCode();
 
@@ -174,4 +180,4 @@ class ApiMercadoPago
             ];
         }
     }
-}
+    }
