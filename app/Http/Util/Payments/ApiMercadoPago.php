@@ -24,6 +24,8 @@ class ApiMercadoPago
         $this->_client = new PreferenceClient();
         $this->_options = new RequestOptions();
         $this->payer = new PaymentClient();
+        MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST')); // Token de teste ou produção
+
     }
 
     public function salvarVenda(array $data): mixed
@@ -117,9 +119,6 @@ class ApiMercadoPago
     public function criarPlano($nome, $valor)
     {
         try {
-            // Inicialize o SDK com o Access Token
-            MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST')); // Use seu token de teste ou produção
-
             // Criar um novo plano de assinatura
             $subscription = new Preapproval();
             $subscription->auto_recurring = [
