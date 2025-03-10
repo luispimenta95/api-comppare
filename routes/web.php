@@ -6,7 +6,7 @@ use App\Http\Controllers\Api\UsuarioController;
 use App\Http\Controllers\Api\PlanoController;
 use App\Http\Controllers\Api\CupomController;
 use App\Http\Controllers\Api\VendasController;
-use MercadoPago\Resources\MerchantOrder\Payer;
+use App\Http\Controllers\Api\AdminController;
 
 Route::middleware('api')->group(function () {
     Route::get('/api/test', function () {
@@ -26,7 +26,6 @@ Route::middleware('api')->group(function () {
     //Rotas planos
     Route::get('/api/planos/listar', [PlanoController::class, 'index']);
     Route::post('/api/planos/recuperar', [PlanoController::class, 'getPlano']);
-    Route::post('/api/planos/cadastrar', [PlanoController::class, 'cadastrarPlano']);
     Route::post('/api/planos/atualizar-status', [PlanoController::class, 'atualizarStatus']);
     Route::post('/api/planos/atualizar-dados', [PlanoController::class, 'atualizarDados']);
     Route::post('/api/planos/atualizar-funcionalidades', [PlanoController::class, 'adicionarFuncionalidades']);
@@ -51,4 +50,6 @@ Route::middleware('api')->group(function () {
     Route::post('/api/tags/recuperar', [TagController::class, 'getTag']);
     Route::post('/api/tags/atualizar-status', [TagController::class, 'atualizarStatus']);
     Route::post('/api/tags/atualizar-dados', [TagController::class, 'atualizarDados']);
+    Route::get('/api/adm/planos/cadastrar', [AdminController::class, 'cadastrarPlano']);
+
 });

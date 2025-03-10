@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\Planos;
 use App\Http\Util\Helper;
@@ -35,29 +36,10 @@ class PlanoController extends Controller
         return response()->json($response);
     }
 
-    public function cadastrarPlano(Request $request): object
-    {
-        $campos = ['nome', 'valor'];
-
-        $campos = Helper::validarRequest($request, $campos);
-        if ($campos !== true) {
-            $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
-                'campos' => $campos
-            ];
-            return response()->json($response);
-        }
-
-        $nome = $request->nome;
-        $valor = $request->valor;
-
-        $response = $this->apiMercadoPago->criarPlano($nome, $valor);
-        return response()->json($response);
-    }
 
 
-    public function getPlano(Request $request): object
+
+    public function getPlano(Request $request): JsonResponse
     {
         $plano = Planos::find($request->idPlano);
         isset($plano->id) ?
@@ -72,7 +54,7 @@ class PlanoController extends Controller
         return response()->json($response);
     }
 
-    public function atualizarDados(Request $request): object
+    public function atualizarDados(Request $request): JsonResponse
     {
         $campos = ['nome', 'descricao', 'valor', 'quantidadeTags',];
 
@@ -107,7 +89,7 @@ class PlanoController extends Controller
         return response()->json($response);
     }
 
-    public function atualizarStatus(Request $request): object
+    public function atualizarStatus(Request $request): JsonResponse
     {
         $campos = ['idPlano', 'status'];
 
@@ -139,7 +121,7 @@ class PlanoController extends Controller
         return response()->json($response);
     }
 
-    public function adicionarFuncionalidades(Request $request): object
+    public function adicionarFuncionalidades(Request $request): JsonResponse
     {
         $campos = ['idPlano', 'funcionalidades'];
 

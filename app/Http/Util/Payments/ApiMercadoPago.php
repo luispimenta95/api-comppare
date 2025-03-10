@@ -11,8 +11,8 @@ use MercadoPago\Client\Payment\PaymentClient;
 use Carbon\Carbon;
 use App\Http\Util\Helper;
 use App\Models\Usuarios;
-use Exception;
 use MercadoPago\Preapproval;
+use MercadoPago\Payment;
 
 class ApiMercadoPago
 {
@@ -114,70 +114,77 @@ class ApiMercadoPago
         }
     }
 
-    public function createPlain($nome, $valor)
+    public function criarPlano($nome, $valor)
     {
-        $plan = new Preapproval();
-        $plan->auto_recurring = [
-            "frequency" => 1,
-            "frequency_type" => Helper::TIPO_RENOVACAO_MENSAL,
-            "transaction_amount" => $valor,
-            "currency_id" => Helper::MOEDA,
-            "billing_day" => Helper::DIA_COBRANCA,
-            "billing_day_proportional" => true,
-        ];
-        $plan->reason = $nome;
-        $plan->back_url = route('updatePayment');
-        $plan->status = Helper::STATUS_ATIVO;
-        $plan->save();
-
-        return $plan;
-    }
-
-    public function createSubscription(Usuarios $usuario): mixed
-    {
-        // Initialize MercadoPago SDK with the access token
-        MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
-
-        // Prepare subscription data
-        $subscriptionData = [
-            'payer_email' => $usuario->email,
-            'reason' => 'Plano de Assinatura Mensal',
-            'back_url' => route('updatePaymentSubscription'), // URL de retorno
-            'auto_return' => 'all', // Se a assinatura for confirmada, retornar para esta URL
-            'status' => Helper::STATUS_ATIVO,
-            'external_reference' => uniqid(),
-            'auto_recurring' => [
-                'frequency' => 1, // Frequência do pagamento
-                'frequency_type' => Helper::TIPO_RENOVACAO_MENSAL, // Tipo de frequência (meses)
-                'transaction_amount' => 45.90, // Valor da assinatura
-                'currency_id' => Helper::MOEDA, // Moeda
-            ]
-        ];
-
         try {
-            // Create a new Preapproval object for the subscription
-            $preapproval = new Preapproval();
+            // Inicialize o SDK com o Access Token
+            MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST')); // Use seu token de teste ou produção
 
-            // Add subscription data to the Preapproval object
-            foreach ($subscriptionData as $key => $value) {
-                $preapproval->$key = $value;
-            }
+            // Criar um novo plano de assinatura
+            $subscription = new Preapproval();
+            $subscription->auto_recurring = [
+                'frequency' => 1, // Frequência do pagamento (ex: 1)
+                'frequency_type' => 'months', // Tipo de frequência (ex: "months")
+                'transaction_amount' => 45.90, // Valor do plano
+                'currency_id' => 'BRL', // Moeda (ex: "BRL")
+                'start_date' => date('Y-m-d\TH:i:sP', strtotime('+1 day')), // Data de início do plano
+                'end_date' => date('Y-m-d\TH:i:sP', strtotime('+2 year')), // Data de término do plano
+            ];
+            $subscription->payer_email = 'cliente@email.com'; // E-mail do comprador
+            $subscription->reason = 'Assinatura Mensal'; // Motivo do pagamento
+            $subscription->external_reference = uniqid(); // Referência externa para controle interno
 
-            // Save the subscription
-            $preapproval->save();
+            // Salvar o plano de assinatura
+            $subscription->save();
 
-            // Return the created subscription data or confirmation
-            return $preapproval;
-        } catch (\MercadoPago\Exceptions\MPApiException $e) {
-            // Handle API exceptions
-            $response = $e->getApiResponse();
-            $statusCode = $e->getStatusCode();
-
+            // Retornar os detalhes do plano de assinatura criado
             return [
-                "Erro" => "Api error. Check response for details.",
-                "Detalhes" => $response ? $response->getContent() : "Nenhuma informação detalhada disponível",
-                "Codigo HTTP" => $statusCode
+                'id' => $subscription->id,
+                'init_point' => $subscription->init_point // URL para iniciar a assinatura
+            ];
+
+        } catch (\Exception $e) {
+            return [
+                'Erro' => 'Erro ao criar o plano de assinatura.',
+                'Detalhes' => $e->getMessage()
             ];
         }
     }
+
+    public function createSale(string $subscriptionId, float $amount, string $email): mixed
+    {
+        try {
+            // Inicialize o SDK do Mercado Pago
+            MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST')); // Use seu token
+
+            // Criar um pagamento para um cliente associado a uma assinatura
+            $payment = new Payment();
+            $payment->transaction_amount = $amount; // Valor da venda
+            $payment->currency_id = 'BRL'; // Moeda (ex: "BRL")
+            $payment->description = 'Venda Produto Vinculado';
+            $payment->payer = [
+                'email' => $email // E-mail do cliente (vinculado ao plano)
+            ];
+
+            // Referenciar a assinatura no pagamento
+            $payment->external_reference = $subscriptionId; // ID da assinatura criada
+
+            // Salvar o pagamento
+            $payment->save();
+
+            // Retornar os detalhes do pagamento realizado
+            return [
+                'status' => $payment->status, // Exemplo: "approved"
+                'id' => $payment->id, // ID do pagamento gerado no Mercado Pago
+                'detalhes' => $payment
+            ];
+
+        } catch (\Exception $e) {
+            return [
+                'Erro' => 'Erro ao criar a venda vinculada.',
+                'Detalhes' => $e->getMessage()
+            ];
+        }
     }
+
+}
