@@ -21,7 +21,6 @@ class ApiMercadoPago
     private $payer;
 
     private string $token;
-    private string $url = "https://api.mercadopago.com/preapproval_plan";
     public function __construct()
     {
         $this->_client = new PreferenceClient();
@@ -132,65 +131,68 @@ class ApiMercadoPago
 
     function criarPlanoAssinatura(string $nome, float $valor)
     {
+        // URL da API do Mercado Pago
+        $url = 'https://api.mercadopago.com/preapproval_plan';
 
+        // Dados do plano de assinatura
         $data = [
-            "reason" => $nome, // Motivo da assinatura,
-            "payer_email" =>"user@gmail.com",
+            "reason" => $nome,
             "auto_recurring" => [
-                "frequency" => 1, // Frequência do ciclo de pagamento
-                "frequency_type" => Helper::TIPO_RENOVACAO_MENSAL, // Tipo de frequência: ex.: mensal
-                "billing_day" => Helper::DIA_COBRANCA, // Dia de cobrança
-                "billing_day_proportional" => true, // Pró-rata para dia de cobrança inicial
-                "transaction_amount" => $valor, // Valor da assinatura
-                "currency_id" => Helper::MOEDA// Moeda: Real
+                "frequency" => 1,
+                "frequency_type" => "months",
+                "billing_day" => Helper::DIA_COBRANCA,
+                "billing_day_proportional" => false,
+                "free_trial" => [
+                    "frequency" => 1,
+                    "frequency_type" => "months",
+                ],
+                "transaction_amount" => $valor,
+                "currency_id" => Helper::MOEDA,
             ],
             "payment_methods_allowed" => [
                 "payment_types" => [
-                    [ "id" => "credit_card" ] // Aceitar cartões de crédito
+                    [
+                        "id" => "credit_card"
+                    ]
                 ]
             ],
-            "back_url" => env('APP_URL') . "api/vendas/update-payment-subscription" // URL de retorno ao finalizar assinatura
+            "back_url" => "https://www.yoursite.com"
         ];
 
+        // Configurar cabeçalhos da requisição
         $headers = [
-            "Authorization: Bearer " . $this->token,
-            "Content-Type: application/json"
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $this->token, // Token de acesso
         ];
 
-        // Inicia cURL
+        // Inicializar cURL
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $this->url);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data)); // Dados em formato JSON
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // Retornar resposta
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers); // Adiciona os headers
 
-        // Executa a requisição
+        // Configurar parâmetros para a requisição cURL
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data)); // Convertendo os dados para JSON
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+        // Executar a requisição e capturar a resposta
         $response = curl_exec($ch);
 
-        // Captura erros HTTP
+        // Capturar erros da requisição se houver
         if (curl_errno($ch)) {
-            $error_msg = curl_error($ch);
+            $error = curl_error($ch);
             curl_close($ch);
-            return ["error" => "Erro na requisição: " . $error_msg];
+            return [
+                "error" => true,
+                "message" => "Erro na requisição: $error"
+            ];
         }
 
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE); // Código HTTP de retorno
+        // Fechar a sessão do cURL
         curl_close($ch);
 
-        // Decodifica resposta JSON
-        $decodedResponse = json_decode($response, true);
-
-        // Retorna a resposta de forma adequada
-        if ($httpCode === 201) {
-            return $decodedResponse; // Plano criado com sucesso
-        } else {
-            return [
-                "error" => "Erro ao criar plano",
-                "status" => $httpCode,
-                "response" => $decodedResponse
-            ]; // Retorna detalhes do erro
-        }
+        // Retornar a resposta decodificada (em array associativo)
+        return json_decode($response, true);
     }
 
     public function createSale(string $subscriptionId, float $amount, string $email): mixed
