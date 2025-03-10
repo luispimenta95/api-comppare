@@ -37,14 +37,13 @@ class AdminController extends Controller
         $nome = $request->nome;
         $valor = $request->valor;
         $responseApi = $this->apiMercadoPago->criarPlanoAssinatura($nome, $valor);
-dd($responseApi);
         $plano = Planos::create([
             'nome' => $nome,
             'descricao' => $request->descricao,
             'valor' => $valor,
             'quantidadeTags' => $request->quantidadeTags,
-            'idMercadoPago' => $responseApi->id,
-            'linkAssinatura' => $responseApi->init_point,
+            'idMercadoPago' => $responseApi['id'],
+            'linkAssinatura' => $responseApi['init_point']
         ]);
         isset($plano->id) ?
             $response = [
