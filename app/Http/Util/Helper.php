@@ -29,7 +29,7 @@ class Helper
     const MOEDA = "BRL";
     const TIPO_RENOVACAO_MENSAL = 'months';
     const TIPO_RENOVACAO_DIARIA = 'days';
-    const DIA_COBRANCA = 10;
+    const DIA_COBRANCA = 02;
     const STATUS_ATIVO = 'active';
     const STATUS_AUTORIZADO = 'authorized';
 
