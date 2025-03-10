@@ -134,7 +134,8 @@ class ApiMercadoPago
     {
 
         $data = [
-            "reason" => $nome, // Motivo da assinatura
+            "reason" => $nome, // Motivo da assinatura,
+            "payer_email" =>"user@gmail.com",
             "auto_recurring" => [
                 "frequency" => 1, // Frequência do ciclo de pagamento
                 "frequency_type" => Helper::TIPO_RENOVACAO_MENSAL, // Tipo de frequência: ex.: mensal
