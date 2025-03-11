@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Util\Payments\ApiEfi;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\Planos;
@@ -14,12 +15,16 @@ class PlanoController extends Controller
 {
     private  array $codes;
     private $apiMercadoPago;
+    private ApiEfi $apiEfi;
+
 
 
     public function __construct()
     {
         $this->codes = Helper::getHttpCodes();
         $this->apiMercadoPago = new ApiMercadoPago();
+        $this->apiEfi = new ApiEfi();
+
     }
 
     public function index(): object
@@ -34,6 +39,24 @@ class PlanoController extends Controller
 
         ];
         return response()->json($response);
+    }
+
+    public function createPlan(Request $request){
+        $campos = ['nome'];
+
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
+
+        return $this->apiEfi->createPlan($request->nome);
+
     }
 
 

@@ -11,6 +11,7 @@
     "require": {
         "php": "^8.3",
         "doctrine/annotations": "^2.0",
+        "efipay/sdk-php-apis-efi": "^1.12",
         "laravel/framework": "^11.31",
         "laravel/tinker": "^2.9",
         "liveecommerce/dx-php": "^3.0",

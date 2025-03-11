@@ -33,6 +33,8 @@ class Helper
     const STATUS_ATIVO = 'active';
     const STATUS_AUTORIZADO = 'authorized';
 
+    const INTERVALO_MENSAL = 1;
+
     /**
      * Retorna todos os códigos HTTP e suas descrições.
      *
