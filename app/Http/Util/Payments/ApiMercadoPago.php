@@ -131,7 +131,7 @@ class ApiMercadoPago
         }
     }
 
-    function criarPlanoAssinatura(string $nome, float $valor)
+    public function criarPlanoAssinatura(string $nome, float $valor)
     {
         // URL da API do Mercado Pago
         $url = 'https://api.mercadopago.com/preapproval_plan';
@@ -156,7 +156,11 @@ class ApiMercadoPago
                 "payment_types" => [
                     [
                         "id" => "credit_card"
+                    ],
+                    [
+                        "id" => "pix" // Adicionando Pix
                     ]
+
                 ]
             ],
             "back_url" => "https://www.yoursite.com"
