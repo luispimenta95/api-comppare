@@ -42,7 +42,7 @@ class PlanoController extends Controller
     }
 
     public function createPlan(Request $request){
-        $campos = ['nome'];
+        $campos = ['nome', 'descricao', 'valor', 'quantidadeTags'];
 
         $campos = Helper::validarRequest($request, $campos);
 
@@ -55,8 +55,24 @@ class PlanoController extends Controller
             return response()->json($response);
         }
 
-        return $this->apiEfi->createPlan($request->nome);
 
+        $responseApi = $this->apiEfi->createPlan($request->nome);
+        $plano = Planos::create([
+            'nome' => $request->nome,
+            'descricao' => $request->descricao,
+            'valor' => $request->valor,
+            'quantidadeTags' => $request->quantidadeTags,
+            'idHost' => $responseApi['data']['plan_id'],
+        ]);
+        isset($plano->id) ?
+            $response = [
+                'codRetorno' => 200,
+                'message' => $this->codes[200]
+            ] :  $response = [
+            'codRetorno' => 500,
+            'message' => $this->codes[500]
+        ];
+        return response()->json($response);
     }
 
 

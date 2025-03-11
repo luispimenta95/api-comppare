@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Util\Payments\ApiEfi;
 use Carbon\Carbon;
 use App\Models\Planos;
 use App\Models\Usuarios;
@@ -21,12 +22,15 @@ class VendasController extends Controller
     //update server
     private $apiMercadoPago;
     private array $codes = [];
+    private ApiEfi $apiEfi;
 
 
     public function __construct()
     {
         $this->apiMercadoPago = new ApiMercadoPago();
         $this->codes = Helper::getHttpCodes();
+        $this->apiEfi = new ApiEfi();
+
     }
 
     public function realizarVenda(Planos $plano): mixed
@@ -100,11 +104,38 @@ class VendasController extends Controller
         return response()->json($response);
     }
 
-    public function createSubscription(): JsonResponse
+    public function createSubscription()
     {
         $usuario = Usuarios::find(1);
-        $responseApi = $this->apiMercadoPago->createSubscription($usuario);
-        return response()->json($responseApi);
+
+        $data = [
+            "cardToken" => "abc",
+            "idPlano" =>123,
+            "usuario" => [
+                "name" => "Gorbadoc Oldbuck",
+                "cpf" => "04267484171",
+                "phone_number" => "5144916523",
+                "email" => "oldbuck@server.com.br",
+                "birth" => "1990-01-15"
+            ],
+            "endereco" => [
+                "street" => "Av. JK",
+                "number" => 909,
+                "neighborhood" => "Bauxita",
+                "zipcode" => "35400000",
+                "city" => "Ouro Preto",
+                "state" => "MG"
+            ],
+            "produto" => [
+                "name" => "Product 2",
+                "amount" => 2,
+                "value" => 2000
+            ]
+
+        ];
+
+        return $this->apiEfi->createSubscription($data);
+
     }
     public function updatePaymentSubscription(){
         dd($_GET);

@@ -6,15 +6,18 @@ use Efi\Exception\EfiException;
 use Efi\EfiPay;
 use Illuminate\Http\JsonResponse;
 
-class ApiEfi{
+class ApiEfi
+{
 
     private array $options = [];
     private array $params = [];
     private EfiPay $efiPay;
-    public function __construct(){
+
+    public function __construct()
+    {
         $this->options = [
-            "clientId" => env('ID_EFI_HML'),
-            "clientSecret" => env('SECRET_EFI_HML'),
+            "clientId" => env('ID_EFI_PRD'),
+            "clientSecret" => env('SECRET_EFI_PRD'),
             "sandbox" => false, // Opcional | Padrão = false | Define o ambiente de desenvolvimento entre Produção e Homologação
             "debug" => false, // Opcional | Padrão = false | Ativa/desativa os logs de requisições do Guzzle
             "timeout" => 30, // Opcional | Padrão = 30 | Define o tempo máximo de resposta das requisições
@@ -26,7 +29,8 @@ class ApiEfi{
 
     }
 
-    public function createPlan(string $name): mixed{
+    public function createPlan(string $name):mixed
+    {
         try {
             $body = [
                 "name" => $name,
@@ -39,11 +43,39 @@ class ApiEfi{
         } catch (EfiException $e) {
             return json_encode(
                 [
-                "code" => $e->code,
-                "Erro" => $e->error,
-                "description" => $e->errorDescription
-            ]
+                    "code" => $e->code,
+                    "Erro" => $e->error,
+                    "description" => $e->errorDescription
+                ]
             );
         }
+    }
+    public function createSubscription(array $dados): mixed{
+        $params = [
+            "id" => $dados['idPlano'] // plan_id
+        ];
+
+        $body = [
+            "items" =>  $dados['produto'],
+            "payment" => [
+                "credit_card" => [
+                    "billing_address" =>  $dados['endereco'],
+                    "payment_token" =>  $dados['cardToken'],
+                    "customer" =>  $dados['usuario']
+                ]
+            ]
+        ];
+        try {
+            return json_encode($this->efiPay->createOneStepSubscription($params, $body));
+        }catch (EfiException $e) {
+            return json_encode(
+                [
+                    "code" => $e->code,
+                    "Erro" => $e->error,
+                    "description" => $e->errorDescription
+                ]
+            );
+        }
+
     }
 }
