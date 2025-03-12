@@ -56,8 +56,7 @@ class PlanoController extends Controller
         }
 
 
-        $responseApi = $this->apiEfi->createPlan($request->nome);
-        dd($responseApi);
+        $responseApi = json_decode($this->apiEfi->createPlan($request->nome),true);
         $plano = Planos::create([
             'nome' => $request->nome,
             'descricao' => $request->descricao,
