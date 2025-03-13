@@ -56,7 +56,7 @@ class Usuarios extends Authenticatable implements JWTSubject
 
     public function tags()
     {
-        return $this->hasMany(Tag::class);
+        return $this->hasMany(Tag::class , 'idUsuarioCriador');
     }
     public function pastas()
     {

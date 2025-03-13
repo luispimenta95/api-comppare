@@ -10,28 +10,30 @@ class Helper
 
 
 {
-    const ID_PERFIL_ADMIN = 1;
-    const ID_PERFIL_USUARIO = 2;
+    const int ID_PERFIL_ADMIN = 1;
+    const int ID_PERFIL_USUARIO = 2;
 
-    const TEMPO_GRATUIDADE = 15;
-    const LIMITE_FOTOS = 2;
+    const int ATIVO = 1;
 
-    const LIMITE_TAGS = 5;
+    const int TEMPO_GRATUIDADE = 15;
+    const int LIMITE_FOTOS = 2;
 
-    const LIMITE_PASTAS = 10;
+    const int LIMITE_TAGS = 5;
+
+    const int LIMITE_PASTAS = 10;
 
 
-    const TEMPO_RENOVACAO = 30;
+    const int TEMPO_RENOVACAO = 30;
 
-    const STATUS_APROVADO = 'APPROVED';
-    const STATUS_AGUARDANDO_APROVACAO = 'WAITING_APPROVAL';
-    const STATUS_CANCELADO = 'CANCELLED';
-    const MOEDA = "BRL";
+    const string STATUS_APROVADO = 'APPROVED';
+    const string STATUS_AGUARDANDO_APROVACAO = 'WAITING_APPROVAL';
+    const string STATUS_CANCELADO = 'CANCELLED';
+    const string MOEDA = "BRL";
     const TIPO_RENOVACAO_MENSAL = 'months';
-    const TIPO_RENOVACAO_DIARIA = 'days';
-    const DIA_COBRANCA = 05;
-    const STATUS_ATIVO = 'active';
-    const STATUS_AUTORIZADO = 'authorized';
+    const string TIPO_RENOVACAO_DIARIA = 'days';
+    const int DIA_COBRANCA = 05;
+    const string STATUS_ATIVO = 'active';
+    const string STATUS_AUTORIZADO = 'authorized';
 
     const INTERVALO_MENSAL = 1;
 

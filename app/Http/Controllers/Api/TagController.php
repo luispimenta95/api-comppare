@@ -13,12 +13,13 @@ class TagController extends Controller
 {
     private array $codes;
     private $userLogado;
+
     public function __construct()
     {
         $this->codes = Helper::getHttpCodes();
-        $this->userLogado = Auth::user();
 
     }
+
     /**
      * Display a listing of the resource.
      */
@@ -35,12 +36,13 @@ class TagController extends Controller
         ];
         return response()->json($response);
     }
+
     /**
      * Show the form for creating a new resource.
      */
     public function cadastrarTag(Request $request): object
     {
-        $campos = ['nome', 'descricao'];
+        $campos = ['nome', 'descricao', 'usuario'];
 
         $campos = Helper::validarRequest($request, $campos);
         if ($campos !== true) {
@@ -51,14 +53,7 @@ class TagController extends Controller
             ];
             return response()->json($response);
         }
-        $exists = Tag::where('nome', $request->nome)->exists();
-        if ($exists) {
-            $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-10]
-            ];
-            return response()->json($response);
-        }
+
         Tag::create([
 
             'nome' => $request->nome,
@@ -75,7 +70,7 @@ class TagController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function atualizarStatus(Request $request): object
+    public function atualizarStatus(Request $request): JsonResponse
     {
         $campos = ['idTag'];
 
@@ -106,7 +101,7 @@ class TagController extends Controller
         return response()->json($response);
     }
 
-    public function atualizarDados($request): JsonResponse
+    public function atualizarDados(Request $request): JsonResponse
     {
         $campos = ['nome', 'descricao', 'idTag'];
 
@@ -132,4 +127,36 @@ class TagController extends Controller
         }
         return response()->json($response);
     }
+
+    public function getTagsByUsuario(Request $request): JsonResponse
+    {
+        $campos = ['usuario'];
+
+        $campos = Helper::validarRequest($request, $campos);
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
+
+        $tags = Tag::where('idUsuarioCriador', $request->usuario)  // Tags do usuário logado
+        ->where('status', Helper::ATIVO)  // Filtro para tags com status ATIVO
+        ->orWhereHas('usuario', function ($query) {
+            $query->where('idPerfil', Helper::ID_PERFIL_ADMIN);  // Tags dos admins
+        })
+            ->where('status', Helper::ATIVO)  // Filtro para tags com status ATIVO também para administradores
+            ->get();
+
+        $response = [
+            'codRetorno' => 200,
+            'message' => $this->codes[200],
+            'totalTags' => count($tags),
+            'data' => $tags
+            ];
+        return response()->json($response);
+    }
+
 }
