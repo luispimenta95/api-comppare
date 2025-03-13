@@ -19,7 +19,7 @@ class ResetPastasCounter implements ShouldQueue
      *
      * @var string
      */
-    protected $signature = 'pastas:reset';
+    protected $signature = 'resetPastasCounter';
 
     /**
      * The console command description.
