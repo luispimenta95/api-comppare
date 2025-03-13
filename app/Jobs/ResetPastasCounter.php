@@ -33,7 +33,7 @@ class ResetPastasCounter implements ShouldQueue
      */
     public function handle()
     {
-        Log::info('Contador de pastas resetado com sucesso para todos os usuários.');
+        Log::info('Processo iniciado.');
 
         // Resetando o contador de pastas criadas para todos os usuários no mês
         try {
@@ -49,6 +49,9 @@ class ResetPastasCounter implements ShouldQueue
             }
 
             Log::info('Contador de pastas resetado com sucesso para todos os usuários.');
+
+            Log::info('Processo finalizado.');
+
         } catch (\Exception $e) {
             Log::error('Erro ao resetar contador de pastas: ' . $e->getMessage());
         }
