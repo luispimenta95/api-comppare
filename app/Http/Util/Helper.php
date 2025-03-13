@@ -114,7 +114,9 @@ class Helper
             -7 => 'Error: Período de gratuidade expirado. Por favor, atualize sua assinatura adquirindo um novo plano.',
             -8 => 'Error: Assinatura exiprada. Por favor, atualize sua assinatura adquirindo um novo plano.',
             -9 => 'Error: A request possui campos obrigatórios não preenchidos ou inválidos.',
-            -10 => 'Error: O pagamento ainda não foi realizado.'
+            -10 => 'Error: O pagamento ainda não foi realizado.',
+            -11 => 'Error: Limite de criação de pastas mensal atingido.'
+
         ];
     }
 

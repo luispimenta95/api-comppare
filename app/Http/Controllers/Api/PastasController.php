@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Util\Helper;
 use App\Models\Pastas;
+use App\Models\Planos;
 use App\Models\Usuarios;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -40,15 +41,39 @@ class PastasController extends Controller
         }
 
         $user = Usuarios::find($request->idUsuario);
-        $folderName = self::ROOT_PATH . $user->id . '/' . $request->nomePasta;
-        $folder = json_decode(Helper::createFolder($folderName));
-        dd($folder);
-        if ($folder->path !== null) {
-            Pastas::create([
-                'nome' => $folderName,
-                'idUsuario' => $user->id,
-                'caminho' => $folder->path
-            ]);
+
+// Verifica se o usuário possui o atributo 'pastasCriadas' e calcula as pastas criadas no mês atual
+        $currentMonth = now()->month;
+        $currentYear = now()->year;
+        $idPlano = $user->idPlano;
+        $limitePastas = Planos::find($idPlano)->limitePastas;
+
+        $pastasCriadasNoMes = Pastas::where('idUsuario', $user->id)
+            ->whereYear('created_at', $currentYear)  // Filtra pelo ano atual
+            ->whereMonth('created_at', $currentMonth)  // Filtra pelo mês atual
+            ->count();
+
+// Verifica se o número de pastas criadas é menor que 3
+        if ($pastasCriadasNoMes < $limitePastas) {
+            // Prossegue com a criação da pasta
+            $folderName = self::ROOT_PATH . $user->id . '/' . $request->nomePasta;
+            $folder = json_decode(Helper::createFolder($folderName));
+
+            if ($folder->path !== null) {
+                Pastas::create([
+                    'nome' => $folderName,
+                    'idUsuario' => $user->id,
+                    'caminho' => $folder->path
+                ]);
+            }
+        } else {
+            // Retorna uma mensagem ou erro indicando que o limite de pastas foi atingido
+            $response = [
+                'codRetorno' => 500,
+                'message' => $this->codes[-11]
+            ];
+            return response()->json($response);
+
         }
         if ($folder->path === null) {
             $response = [

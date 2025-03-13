@@ -23,6 +23,7 @@ return new class extends Migration
             $table->timestamp('dataLimiteCompra')->nullable();
             $table->timestamp('dataUltimoPagamento')->nullable();
             $table->integer('idUltimoPagamento')->nullable();
+            $table->integer('pastasCriadas')->default(0);
             $table->unsignedBigInteger('idPlano');
             $table->foreign('idPlano')->references('id')->on('planos');
             $table->unsignedBigInteger('idPerfil')->default(Helper::ID_PERFIL_USUARIO);
