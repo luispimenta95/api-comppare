@@ -1,12 +1,6 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use App\Jobs\ResetPastasCounter;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
-
-//Schedule::command('pastas:reset') ->monthlyOn(1, '00:00');
-Schedule::command('pastas:reset')->everyFiveMinutes();
+Schedule::job(new ResetPastasCounter())->everyFiveMinutes();
