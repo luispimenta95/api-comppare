@@ -1,13 +1,12 @@
 <?php
 
-use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\CupomController;
 use App\Http\Controllers\Api\PlanoController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\UsuarioController;
 use App\Http\Controllers\Api\VendasController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\MercadoPagoController;
+use App\Http\Controllers\Api\RankingController;
 
 Route::middleware('api')->group(function () {
     Route::get('/api/test', function () {
@@ -55,6 +54,8 @@ Route::middleware('api')->group(function () {
     Route::post('/api/tags/recuperar-tags-usuario', [TagController::class, 'getTagsByUsuario']);
 
     Route::post('/api/vendas/criar-assinatura', [VendasController::class, 'createSubscription']);
+    Route::post('/api/ranking/atualizar', [RankingController::class, 'updatePoints']);
+    Route::get('/api/ranking/classificacao', [RankingController::class, 'index']);
 
 
 
