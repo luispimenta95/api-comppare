@@ -3,4 +3,4 @@
 use Illuminate\Support\Facades\Schedule;
 use App\Jobs\ResetPastasCounter;
 
-Schedule::job(new ResetPastasCounter())->everyFiveMinutes();
+Schedule::job(new ResetPastasCounter())->everySecond();
