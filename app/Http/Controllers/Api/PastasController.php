@@ -53,7 +53,7 @@ class PastasController extends Controller
             ->whereMonth('created_at', $currentMonth)  // Filtra pelo mês atual
             ->count();
 
-// Verifica se o número de pastas criadas é menor que 3
+// Verifica se o número de pastas criadas é menor que o numero de pastas do plano associado
         if ($pastasCriadasNoMes < $limitePastas) {
             // Prossegue com a criação da pasta
             $folderName = self::ROOT_PATH . $user->id . '/' . $request->nomePasta;
@@ -82,6 +82,7 @@ class PastasController extends Controller
             ];
             return response()->json($response);
         }
+        $user->pastasCriadas = $user->pastasCriadas +1;
         $response = [
             'codRetorno' => 200,
             'message' => $this->codes[200]
