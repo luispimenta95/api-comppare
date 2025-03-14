@@ -109,7 +109,7 @@ class VendasController extends Controller
         $usuario = Usuarios::find(1);
 
         $data = [
-            "cardToken" => "5354b5ab309708f8e631781b624ec2c2ba5d490a",
+            "cardToken" => "630b5ac1b28b3be4dca5fde9052e63b55fa71ffa",
             "idPlano" =>1,
             "usuario" => [
                 "name" => "Gorbadoc Oldbuck",
