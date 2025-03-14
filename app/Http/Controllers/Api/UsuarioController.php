@@ -44,7 +44,7 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Request $request): JsonResponse
     {
-        $campos = ['nome', 'senha', 'cpf', 'telefone', 'idPlano', 'email', 'nascimento'];
+        $campos = ['nome', 'senha', 'cpf', 'telefone', 'idPlano', 'email', 'nascimento', 'cardToken'];
 
         $campos = Helper::validarRequest($request, $campos);
 
@@ -85,32 +85,27 @@ class UsuarioController extends Controller
                 ]);
 
                 if (isset($usuario->id)) {
-                    $idPlano = $usuario->idPlano;
-                    $plano = Planos::find($idPlano);
-                    $vendasController = new VendasController();
-                    $responseApi = $vendasController->realizarVenda($plano);
-                    if (!str_contains(strtolower($plano->nome), 'gratuito')) {
-                        $usuario->dataLimiteCompra = $usuario->created_at->addDays(Planos::find($idPlano)->tempoGratuidade)->setTimezone('America/Recife');
-                        $usuario->save();
-                    }
-                    TransacaoFinanceira::create([
-                        'idPlano' => $idPlano,
-                        'valorPlano' => $plano->valor,
-                        'idUsuario' => $usuario->id,
-                        'idPedido' => $responseApi['idPedido']
-                    ]);
-                    $response = [
-                        'codRetorno' => 200,
-                        'message' => $this->codes[200],
+                    $dadosAssinatura = [
+                        'usuario' => $usuario->id,
+                        'plano' => $request->idPlano,
+                        'token' => $request->cardToken
                     ];
-                    $dadosEmail = [
-                        'nome' => $usuario->nome,
-                        'url' => $responseApi['link'],
-                        'nomePlano' => $plano->nome,
 
-                    ];
-                    MailHelper::boasVindas($dadosEmail, $request->email);
-                } else {
+                    $createSignature = json_decode(Helper::makeRequest('/api/vendas/criar-assinatura', $dadosAssinatura));
+
+                    if ($createSignature['code'] == 200) {
+                        $response = [
+                            'codRetorno' => 200,
+                            'message' => $this->codes[200],
+                        ];
+
+                    }else{
+                        $response = [
+                            'codRetorno' => 500,
+                            'message' => $this->codes[-12]
+                            ];
+                    }
+                }else {
                     $response = [
                         'codRetorno' => 500,
                         'message' => $this->codes[500]

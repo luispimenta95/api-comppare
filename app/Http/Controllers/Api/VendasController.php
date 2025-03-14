@@ -107,7 +107,7 @@ class VendasController extends Controller
 
     public function createSubscription(Request $request): JsonResponse
     {
-        $campos = ['nome', 'descricao', 'valor', 'quantidadeTags'];
+        $campos = ['usuario', 'plano', 'token'];
 
         $campos = Helper::validarRequest($request, $campos);
 
@@ -142,14 +142,23 @@ class VendasController extends Controller
         ];
 
         $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
-        $response = $responseApi['code'] == 200 ?
-        [
-            'codRetorno' => 200,
-            'message' => $this->codes[200]
-        ] :  [
-            'codRetorno' => 400,
+
+        if($responseApi['code'] == 200){
+            $response = [
+                'codRetorno' => 200,
+                'message' => $this->codes[200]
+            ];
+            $dadosEmail = [
+                'nome' => $usuario->nome,
+            ];
+
+            MailHelper::confirmacaoPagamento($dadosEmail, $usuario->email);
+        }else{
+            $response = [
+                'codRetorno' => 400,
                 'message' => $responseApi['description']
             ];
+        }
             return response()->json($response);
     }
 }

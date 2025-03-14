@@ -62,7 +62,7 @@
     <div class="content">
         <p>Olá, {{ $dados['nome'] }}!</p>
         <p>Seu pagamento foi realizado com sucesso!</p>
-        <p>Obrigado por confiar em nós! Seu acesso estará ativo até o dia {{ date('d/m/Y', strtotime($dados['dataRenovacao'])) }}</p>
+        <p>Obrigado por confiar em nós! Seu acesso estará ativo até o dia {{ date('d/m/Y', strtotime('+30 days'))}}</p>
     </div>
     <div class="footer">
         <p>Se você não reconhece esta compra, ignore este e-mail.</p>

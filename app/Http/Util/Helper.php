@@ -5,6 +5,7 @@ namespace App\Http\Util;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 
 class Helper
 
@@ -192,5 +193,24 @@ class Helper
         return response()->json([
             'message' => $delete ? 'Pasta deletada com sucesso!' : 'Erro ao deletar a pasta.'
         ]);
+    }
+
+    public static  function makeRequest(string $url, array $data): mixed
+    {
+        $route = url($url);
+
+        // Faz a requisição POST para o endpoint interno
+        $response = Http::post($route, $data);
+        // Verifique a resposta
+        if ($response->successful()) {
+            // A requisição foi bem-sucedida
+            return response()->json(
+                ['message' => 'Processo finalizado com sucesso',
+                'code'  => 200
+                ]);
+        } else {
+            // Em caso de erro na requisição
+            return response()->json(['message' => 'Erro ao realizar request', 'code'  => 500],500);
+        }
     }
 }
