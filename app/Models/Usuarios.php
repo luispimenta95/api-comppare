@@ -24,6 +24,7 @@ class Usuarios extends Authenticatable implements JWTSubject
         'cpf',
         'status',
         'dataLimiteCompra',
+        'dataNascimento',
         'telefone',
         'dataUltimoPagamento',
         'idUltimoPagamento',

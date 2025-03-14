@@ -16,6 +16,7 @@ use App\Http\Util\MailHelper;
 // Inicializar chave do Mercado Pago
 
 use App\Http\Util\Payments\ApiMercadoPago;
+use Illuminate\Http\Request;
 
 class VendasController extends Controller
 {
@@ -104,33 +105,51 @@ class VendasController extends Controller
         return response()->json($response);
     }
 
-    public function createSubscription()
+    public function createSubscription(Request $request): JsonResponse
     {
-        $usuario = Usuarios::find(1);
+        $campos = ['nome', 'descricao', 'valor', 'quantidadeTags'];
+
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
+        $usuario = Usuarios::find($request->usuario);
+        $plano = Planos::find($request->plano);
 
         $data = [
-            "cardToken" => "TOKEN",
-            "idPlano" =>1,
+            "cardToken" => $request->token,
+            "idPlano" =>$plano->idHost,
             "usuario" => [
-                "name" => "Gorbadoc Oldbuck",
-                "cpf" => "04267484171",
-                "phone_number" => "5144916523",
-                "email" => "oldbuck@server.com.br",
-                "birth" => "1990-01-15"
+                "name" => $usuario->nome,
+                "cpf" => $usuario->cpf,
+                "phone_number" => $usuario->telefone,
+                "email" => $usuario->email,
+                "birth" => Carbon::parse($usuario->dataNascimento)->format('Y-m-d')
             ],
 
             "produto" => [
-                "name" => "Product 2",
+                "name" => $plano->nome,
                 "amount" => Helper::QUANTIDADE,
-                "value" => 4990 // Valor = Valor plano * 100
+                "value" => $plano->valor * 100 // Valor = Valor plano * 100
             ]
 
         ];
 
-        return $this->apiEfi->createSubscription($data);
-
-    }
-    public function updatePaymentSubscription(){
-        dd($_GET);
+        $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
+        $response = $responseApi['code'] == 200 ?
+        [
+            'codRetorno' => 200,
+            'message' => $this->codes[200]
+        ] :  [
+            'codRetorno' => 400,
+                'message' => $responseApi['description']
+            ];
+            return response()->json($response);
     }
 }

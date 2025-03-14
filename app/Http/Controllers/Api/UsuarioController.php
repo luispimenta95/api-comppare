@@ -44,7 +44,7 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Request $request): JsonResponse
     {
-        $campos = ['nome', 'senha', 'cpf', 'telefone', 'idPlano', 'email'];
+        $campos = ['nome', 'senha', 'cpf', 'telefone', 'idPlano', 'email', 'nascimento'];
 
         $campos = Helper::validarRequest($request, $campos);
 
@@ -72,13 +72,14 @@ class UsuarioController extends Controller
                 return response()->json($response);
             } else {
 
-
+                $dataNascimento = Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d');
                 $usuario = Usuarios::create([
                     'nome' => $request->nome,
                     'senha' => bcrypt($request->senha), //
                     'cpf' => $request->cpf,
                     'telefone' => $request->telefone,
                     'email' => $request->email,
+                    'nascimento' => $dataNascimento,
                     'idPlano' => $request->idPlano,
                     'idPerfil' => Helper::ID_PERFIL_USUARIO
                 ]);
@@ -149,7 +150,7 @@ class UsuarioController extends Controller
 
     public function atualizarDados(Request $request): JsonResponse
     {
-        $campos = ['nome', 'senha', 'email', 'cpf', 'telefone'];
+        $campos = ['nome', 'senha', 'email', 'cpf', 'telefone' ,'nascimento'];
 
         $campos = Helper::validarRequest($request, $campos);
 
@@ -169,12 +170,15 @@ class UsuarioController extends Controller
             return response()->json($response);
         } else {
             $usuario = Usuarios::findOrFail($request->idUsuario);
+            $dataNascimento = Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d');
+
             if (isset($usuario->id)) {
                 $usuario->nome = $request->nome;
                 $usuario->senha = bcrypt($request->senha);
                 $usuario->cpf = $request->cpf;
                 $usuario->telefone = $request->telefone;
                 $usuario->email = $request->email;
+                $usuario->dataNascimento = $dataNascimento;
                 $usuario->save();
                 $response = [
                     'codRetorno' => 200,

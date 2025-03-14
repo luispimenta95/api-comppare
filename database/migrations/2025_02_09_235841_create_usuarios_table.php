@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('senha');
             $table->string('email');
             $table->string('telefone');
+            $table->date('dataNascimento');
             $table->boolean('status')->default(true);
             $table->timestamp('dataLimiteCompra')->nullable();
             $table->timestamp('dataUltimoPagamento')->nullable();
