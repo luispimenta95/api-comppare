@@ -57,7 +57,7 @@ class ApiEfi
         //dd($dados['produto']);
 
         $body = [
-            "items" =>  $dados['produto'],
+            "items" =>  [ $dados['produto']],
             "payment" => [
                 "credit_card" => [
                     "payment_token" =>  $dados['cardToken'],
