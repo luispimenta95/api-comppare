@@ -26,7 +26,6 @@ class ApiEfi
             "timeout" => 30, // Opcional | Padrão = 30 | Define o tempo máximo de resposta das requisições
             "responseHeaders" => false
         ];
-        dd($this->options);
 
         $this->efiPay = new EfiPay($this->options);
 
