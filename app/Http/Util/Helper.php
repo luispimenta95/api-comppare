@@ -35,6 +35,7 @@ class Helper
     const string STATUS_ATIVO = 'active';
     const string STATUS_AUTORIZADO = 'authorized';
 
+    const int QUANTIDADE = 1;
     const INTERVALO_MENSAL = 1;
 
     /**

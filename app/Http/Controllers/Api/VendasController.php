@@ -109,7 +109,7 @@ class VendasController extends Controller
         $usuario = Usuarios::find(1);
 
         $data = [
-            "cardToken" => "630b5ac1b28b3be4dca5fde9052e63b55fa71ffa",
+            "cardToken" => "TOKEN",
             "idPlano" =>1,
             "usuario" => [
                 "name" => "Gorbadoc Oldbuck",
@@ -121,8 +121,8 @@ class VendasController extends Controller
 
             "produto" => [
                 "name" => "Product 2",
-                "amount" => 2,
-                "value" => 2000
+                "amount" => Helper::QUANTIDADE,
+                "value" => 4990 // Valor = Valor plano * 100
             ]
 
         ];

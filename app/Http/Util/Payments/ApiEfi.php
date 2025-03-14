@@ -11,18 +11,22 @@ class ApiEfi
 
     private array $options = [];
     private array $params = [];
+    private string $enviroment;
     private EfiPay $efiPay;
 
     public function __construct()
     {
+        $this->enviroment =   env('APP_ENV');
+
         $this->options = [
             "clientId" => env('ID_EFI_PRD'),
             "clientSecret" => env('SECRET_EFI_PRD'),
-            "sandbox" => false, // Opcional | Padrão = false | Define o ambiente de desenvolvimento entre Produção e Homologação
+            "sandbox" => $this->enviroment == "local" ? true : false,  // False = PRD | TRUE = DEV
             "debug" => false, // Opcional | Padrão = false | Ativa/desativa os logs de requisições do Guzzle
             "timeout" => 30, // Opcional | Padrão = 30 | Define o tempo máximo de resposta das requisições
             "responseHeaders" => false
         ];
+        dd($this->options);
 
         $this->efiPay = new EfiPay($this->options);
 
@@ -52,7 +56,7 @@ class ApiEfi
     }
     public function createSubscription(array $dados): mixed{
         $params = [
-            "id" => 122656
+            "id" => $dados["idPlano"],
         ];
         //dd($dados['cardToken']);
 
