@@ -52,14 +52,13 @@ class ApiEfi
     }
     public function createSubscription(array $dados): mixed{
         $params = [
-            "id" => $dados['idPlano'] // plan_id
+            "id" => 122656
         ];
 
         $body = [
             "items" =>  $dados['produto'],
             "payment" => [
                 "credit_card" => [
-                    "billing_address" =>  $dados['endereco'],
                     "payment_token" =>  $dados['cardToken'],
                     "customer" =>  $dados['usuario']
                 ]

@@ -53,7 +53,7 @@ Route::middleware('api')->group(function () {
     Route::post('/api/tags/atualizar-dados', [TagController::class, 'atualizarDados']);
     Route::post('/api/tags/recuperar-tags-usuario', [TagController::class, 'getTagsByUsuario']);
 
-    Route::post('/api/vendas/criar-assinatura', [VendasController::class, 'createSubscription']);
+    Route::get('/api/vendas/criar-assinatura', [VendasController::class, 'createSubscription']);
     Route::post('/api/ranking/atualizar', [RankingController::class, 'updatePoints']);
     Route::get('/api/ranking/classificacao', [RankingController::class, 'index']);
 

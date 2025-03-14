@@ -109,8 +109,8 @@ class VendasController extends Controller
         $usuario = Usuarios::find(1);
 
         $data = [
-            "cardToken" => "abc",
-            "idPlano" =>123,
+            "cardToken" => "5354b5ab309708f8e631781b624ec2c2ba5d490a",
+            "idPlano" =>1,
             "usuario" => [
                 "name" => "Gorbadoc Oldbuck",
                 "cpf" => "04267484171",
@@ -118,14 +118,7 @@ class VendasController extends Controller
                 "email" => "oldbuck@server.com.br",
                 "birth" => "1990-01-15"
             ],
-            "endereco" => [
-                "street" => "Av. JK",
-                "number" => 909,
-                "neighborhood" => "Bauxita",
-                "zipcode" => "35400000",
-                "city" => "Ouro Preto",
-                "state" => "MG"
-            ],
+
             "produto" => [
                 "name" => "Product 2",
                 "amount" => 2,
