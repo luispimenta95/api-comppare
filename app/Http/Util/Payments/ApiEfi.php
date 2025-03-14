@@ -19,8 +19,8 @@ class ApiEfi
         $this->enviroment =   env('APP_ENV');
 
         $this->options = [
-            "clientId" => env('ID_EFI_PRD'),
-            "clientSecret" => env('SECRET_EFI_PRD'),
+            "clientId" =>  $this->enviroment == "local" ? env('ID_EFI_HML') : env('ID_EFI_PRD'),
+            "clientSecret" => $this->enviroment == "local" ? env('SECRET_EFI_HML') : env('SECRET_EFI_PRD'),
             "sandbox" => $this->enviroment == "local" ? true : false,  // False = PRD | TRUE = DEV
             "debug" => false, // Opcional | Padrão = false | Ativa/desativa os logs de requisições do Guzzle
             "timeout" => 30, // Opcional | Padrão = 30 | Define o tempo máximo de resposta das requisições
