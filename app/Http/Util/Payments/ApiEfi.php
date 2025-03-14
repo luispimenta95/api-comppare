@@ -54,6 +54,7 @@ class ApiEfi
         $params = [
             "id" => 122656
         ];
+        dd($dados['produto']);
 
         $body = [
             "items" =>  $dados['produto'],
