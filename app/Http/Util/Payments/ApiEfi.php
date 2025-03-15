@@ -86,7 +86,7 @@ class ApiEfi
     public function getSubscriptionDetail(string $token): mixed{
         try {
             $params = [
-                "token" => $token
+                "notification" => $token
             ];
             return json_encode($this->efiPay->getNotification($params));
         }catch (EfiException $e) {
