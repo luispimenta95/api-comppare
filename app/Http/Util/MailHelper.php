@@ -2,6 +2,7 @@
 
 namespace App\Http\Util;
 
+use App\Mail\EmailAssinatura;
 use App\Mail\EmailPagamento;
 use App\Mail\EmailWelcome;
 use Illuminate\Support\Facades\Mail;
@@ -43,4 +44,18 @@ class MailHelper
 
         Mail::to($mailTo)->send(new EmailPagamento($dadosEmail));
     }
+
+    public static function confirmacaoAssinatura(array $dados, string $mailTo): void //testing webhocks
+    {
+        $dadosEmail = [
+            'to' => $mailTo,
+            'body' => [
+                'nome' => $dados['nome']
+            ]
+        ];
+
+
+        Mail::to($mailTo)->send(new EmailAssinatura($dadosEmail));
+    }
+
 }

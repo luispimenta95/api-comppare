@@ -63,6 +63,7 @@ class ApiEfi
             "items" =>  [ $dados['produto']],
             "payment" => [
                 "credit_card" => [
+                    "trial_days" =>  Helper::TEMPO_GRATUIDADE,
                     "payment_token" =>  $dados['cardToken'],
                     "customer" =>  $dados['usuario']
                 ]

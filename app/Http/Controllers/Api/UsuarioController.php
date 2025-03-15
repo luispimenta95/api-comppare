@@ -85,26 +85,10 @@ class UsuarioController extends Controller
                 ]);
 
                 if (isset($usuario->id)) {
-                    $dadosAssinatura = [
-                        'usuario' => $usuario->id,
-                        'plano' => $request->idPlano,
-                        'token' => $request->cardToken
-                    ];
-
-                    $createSignature = json_decode(Helper::makeRequest('/api/vendas/criar-assinatura', $dadosAssinatura));
-
-                    if ($createSignature['code'] == 200) {
                         $response = [
                             'codRetorno' => 200,
                             'message' => $this->codes[200],
                         ];
-
-                    }else{
-                        $response = [
-                            'codRetorno' => 500,
-                            'message' => $this->codes[-12]
-                            ];
-                    }
                 }else {
                     $response = [
                         'codRetorno' => 500,
