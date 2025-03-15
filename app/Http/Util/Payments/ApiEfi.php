@@ -83,9 +83,12 @@ class ApiEfi
         }
 
     }
-    public function getSubscriptionDetail(array $dados): mixed{
+    public function getSubscriptionDetail(string $token): mixed{
         try {
-            return json_encode($this->efiPay->getNotification($dados));
+            $params = [
+                "token" => $token
+            ];
+            return json_encode($this->efiPay->getNotification($params));
         }catch (EfiException $e) {
             return json_encode(
                 [
