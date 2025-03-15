@@ -152,7 +152,7 @@ class VendasController extends Controller
                 'nome' => $usuario->nome,
             ];
 
-            MailHelper::confirmacaoPagamento($dadosEmail, $usuario->email);
+            MailHelper::confirmacaoAssinatura($dadosEmail, $usuario->email);
         }else{
             $response = [
                 'codRetorno' => 400,
