@@ -94,7 +94,8 @@ class VendasController extends Controller
             'token' => $request->notification
         ];
         $chargeNotification = $this->apiEfi->getSubscriptionDetail($params);
-        Log::info('Dados do Pagamento:', $chargeNotification);
+        $array = (array) $chargeNotification;
+        Log::info('Dados do Pagamento:', $array);
 
     }
 }
