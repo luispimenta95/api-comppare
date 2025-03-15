@@ -90,7 +90,11 @@ class VendasController extends Controller
     }
     public function updatePayment(Request $request)
     {
-        Log::info('Dados do Request:', $request->all());
+        $params = [
+            'token' => $request->notification
+        ];
+        $chargeNotification = $this->apiEfi->getSubscriptionDetail($params);
+        Log::info('Dados do Pagamento:', $chargeNotification);
 
     }
 }

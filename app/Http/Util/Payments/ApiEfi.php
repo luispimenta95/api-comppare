@@ -83,4 +83,17 @@ class ApiEfi
         }
 
     }
+    public function getSubscriptionDetail(array $dados): mixed{
+        try {
+            return json_encode($this->efiPay->getNotification($dados));
+        }catch (EfiException $e) {
+            return json_encode(
+                [
+                    "code" => $e->code,
+                    "Erro" => $e->error,
+                    "description" => $e->errorDescription
+                ]
+            );
+        }
+    }
 }
