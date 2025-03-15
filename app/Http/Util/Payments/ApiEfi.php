@@ -61,6 +61,7 @@ class ApiEfi
 
         $body = [
             "items" =>  [ $dados['produto']],
+            "metadata" =>  ["notification_url" =>  $this->enviroment == "local" ? "http://127.0.0.1:8000/api/notification" : env('APP_URL') . '/api/notification'],
             "payment" => [
                 "credit_card" => [
                     "trial_days" =>  Helper::TEMPO_GRATUIDADE,

@@ -37,12 +37,6 @@ Route::middleware('api')->group(function () {
     Route::post('/api/cupons/atualizar-status', [CupomController::class, 'atualizarStatus']);
     Route::post('/api/cupons/atualizar-dados', [CupomController::class, 'atualizarDados']);
 
-    //Pagamentos
-    Route::post('/api/vendas/salvar-pagamento', [VendasController::class, 'realizarVenda']);
-    Route::post('/api/vendas/recuperar', [VendasController::class, 'recuperarVenda']);
-    Route::get('/api/vendas/listar', [VendasController::class, 'listarVendas']);
-    Route::get('/api/vendas/update-payment-single', [VendasController::class, 'updatePaymentSingle'])->name('updatePaymentSingle');
-    Route::get('/api/vendas/create-subscription', [VendasController::class, 'createSubscription'])->name('createSubscription');
 
     //Tags
     Route::post('/api/tags/cadastrar', [TagController::class, 'cadastrarTag']);
@@ -56,6 +50,7 @@ Route::middleware('api')->group(function () {
     Route::post('/api/ranking/atualizar', [RankingController::class, 'updatePoints']);
     Route::get('/api/ranking/classificacao', [RankingController::class, 'index']);
 
+    Route::post('/api/notification', [VendasController::class, 'updatePayment']);
 
 
 });
