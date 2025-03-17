@@ -61,7 +61,7 @@ class ApiEfi
 
         $body = [
             "items" =>  [ $dados['produto']],
-            "metadata" =>  ["notification_url" =>   env('APP_URL') . 'api/notification'],
+            "metadata" =>  ["notification_url" =>   env('APP_URL') . 'api/notification?sandbox=true'],
             "payment" => [
                 "credit_card" => [
                     "trial_days" =>  Helper::TEMPO_GRATUIDADE,
