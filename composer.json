@@ -14,8 +14,6 @@
         "efipay/sdk-php-apis-efi": "^1.12",
         "laravel/framework": "^11.31",
         "laravel/tinker": "^2.9",
-        "liveecommerce/dx-php": "^3.0",
-        "mercadopago/dx-php": "3.0.7",
         "tymon/jwt-auth": "^2.1"
     },
     "require-dev": {
