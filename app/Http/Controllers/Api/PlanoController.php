@@ -8,13 +8,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\Planos;
 use App\Http\Util\Helper;
-use App\Http\Util\Payments\ApiMercadoPago;
 
 
 class PlanoController extends Controller
 {
     private  array $codes;
-    private $apiMercadoPago;
     private ApiEfi $apiEfi;
 
 
@@ -22,7 +20,6 @@ class PlanoController extends Controller
     public function __construct()
     {
         $this->codes = Helper::getHttpCodes();
-        $this->apiMercadoPago = new ApiMercadoPago();
         $this->apiEfi = new ApiEfi();
 
     }
