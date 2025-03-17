@@ -15,7 +15,9 @@ Content-Type: application/json
     "telefone": "61998690313",
     "email": "luispimenta.contato@gmail.com",
     "idPlano": 1,
-    "idPerfil": 2
+    "idPerfil": 2,
+    "nascimento": "19/09/1995",
+    "cardToken": "0a9fc512fa67d3a9a217a1c34be522e878a2baa7"
 }
 
 
