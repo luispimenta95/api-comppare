@@ -69,8 +69,10 @@ class VendasController extends Controller
         ];
 
         $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
-            dd($responseApi);
         if ($responseApi['code'] == 200) {
+            $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
+            $usuario->dataLimiteCompra = Carbon::parse( $responseApi['data']['first_execution'])->format('Y-m-d');
+            $usuario->save();
             $response = [
                 'codRetorno' => 200,
                 'message' => $this->codes[200]
@@ -95,16 +97,16 @@ class VendasController extends Controller
 
         $chargeNotification = $this->apiEfi->getSubscriptionDetail($request->notification);
         $data = json_decode($chargeNotification, true);
-        /*
-         [2025-03-17 12:37:13] local.INFO: Dados do Pagamento: ["{\"code\":200,\"data\":[{\"id\":1,\"type\":\"subscription\",\"custom_id\":null,\"status\":{\"current\":\"new\",\"previous\":null},\"identifiers\":{\"subscription_id\":95609},\"created_at\":\"2025-03-17 12:37:06\"},{\"id\":2,\"type\":\"subscription\",\"custom_id\":null,\"status\":{\"current\":\"new_charge\",\"previous\":\"new\"},\"identifiers\":{\"subscription_id\":95609},\"created_at\":\"2025-03-17 12:37:06\"},{\"id\":3,\"type\":\"subscription\",\"custom_id\":null,\"status\":{\"current\":\"active\",\"previous\":\"new_charge\"},\"identifiers\":{\"subscription_id\":95609},\"created_at\":\"2025-03-17 12:37:06\"},{\"id\":4,\"type\":\"subscription_charge\",\"custom_id\":null,\"status\":{\"current\":\"new\",\"previous\":null},\"identifiers\":{\"subscription_id\":95609,\"charge_id\":44514485},\"created_at\":\"2025-03-17 12:37:06\"},{\"id\":5,\"type\":\"subscription_charge\",\"custom_id\":null,\"status\":{\"current\":\"waiting\",\"previous\":\"new\"},\"identifiers\":{\"subscription_id\":95609,\"charge_id\":44514485},\"created_at\":\"2025-03-17 12:37:06\"}]}"]
 
-         */
-
-// Iterar sobre os dados e verificar o status "paid"
         foreach ($data['data'] as $item) {
             // Verificar se o tipo é 'subscription_charge' e o status 'current' é 'paid'
-            if ($item['type'] === 'subscription_charge' && $item['status']['current'] === 'paid') {
-
+            if ($item['type'] === 'subscription_charge' && $item['status']['current'] === Helper::STATUS_APROVADO) {
+                $usuario = Usuarios::where('idUltimaCobranca', $item['identifiers']['charge_id'])->first();
+                if ($usuario) {
+                    $usuario->dataUltimoPagamento = Carbon::parse($item['received_by_bank_at'])->format('Y-m-d');
+                    $usuario->dataLimiteCompra = $usuario->dataUltimoPagamento->addDays(Helper::TEMPO_RENOVACAO)->setTimezone('America/Recife');
+                    $usuario->save();
+                }
             }
         }
     }

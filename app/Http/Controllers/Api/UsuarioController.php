@@ -73,6 +73,7 @@ class UsuarioController extends Controller
             } else {
 
                 $dataNascimento = Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d');
+                $limite = Planos::where('id', $request->idPlano)->tempoGratuidade;
                 $usuario = Usuarios::create([
                     'nome' => $request->nome,
                     'senha' => bcrypt($request->senha), //
@@ -81,7 +82,8 @@ class UsuarioController extends Controller
                     'email' => $request->email,
                     'nascimento' => $dataNascimento,
                     'idPlano' => $request->idPlano,
-                    'idPerfil' => Helper::ID_PERFIL_USUARIO
+                    'idPerfil' => Helper::ID_PERFIL_USUARIO,
+                    'dataLimiteCompra' => Carbon::now()->addDays($limite)->format('Y-m-d')
                 ]);
 
                 if (isset($usuario->id)) {

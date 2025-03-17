@@ -26,8 +26,8 @@ class Helper
 
     const int TEMPO_RENOVACAO = 30;
 
-    const string STATUS_APROVADO = 'APPROVED';
-    const string STATUS_AGUARDANDO_APROVACAO = 'WAITING_APPROVAL';
+    const string STATUS_APROVADO = 'paid';
+    const string STATUS_AGUARDANDO_APROVACAO = 'waiting';
     const string STATUS_CANCELADO = 'CANCELLED';
     const string MOEDA = "BRL";
     const TIPO_RENOVACAO_MENSAL = 'months';

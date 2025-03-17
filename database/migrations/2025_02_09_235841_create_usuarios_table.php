@@ -21,9 +21,9 @@ return new class extends Migration
             $table->string('telefone');
             $table->date('dataNascimento');
             $table->boolean('status')->default(true);
-            $table->timestamp('dataLimiteCompra')->nullable();
+            $table->timestamp('dataLimiteCompra');
             $table->timestamp('dataUltimoPagamento')->nullable();
-            $table->integer('idUltimoPagamento')->nullable();
+            $table->integer('idUltimaCobranca')->nullable();
             $table->integer('pastasCriadas')->default(0);
             $table->integer('pontos')->default(0);
             $table->unsignedBigInteger('idPlano');
