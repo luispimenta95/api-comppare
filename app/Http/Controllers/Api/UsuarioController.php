@@ -221,10 +221,10 @@ class UsuarioController extends Controller
         return response()->json($response);
     }
 
-    private function confirmaUser(Request $request): mixed
-    {
+    private function confirmaUser(Request $request): mixed{
         $campos = ['cpf'];
         $campos = Helper::validarRequest($request, $campos);
+
 
         if ($campos !== true) {
             $response = [
@@ -235,8 +235,10 @@ class UsuarioController extends Controller
             return response()->json($response);
         }
 
-        $exists = Usuarios::findOrFail($request->cpf);
-        return $exists;
+        $usuario = Usuarios::where('cpf', $request->cpf)->first();
+
+
+        return isset($usuario->id) ? true : false;
     }
 
     public function validaExistenciaUsuario(Request $request): JsonResponse
