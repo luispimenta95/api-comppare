@@ -39,7 +39,7 @@ class PlanoController extends Controller
     }
 
     public function createPlan(Request $request){
-        $campos = ['nome', 'descricao', 'valor', 'quantidadeTags', 'online', 'frequenciaCobranca'];
+        $campos = ['nome', 'descricao', 'valor', 'quantidadeTags', 'quantidadePastas' ,'online', 'frequenciaCobranca'];
 
         $campos = Helper::validarRequest($request, $campos);
 
@@ -62,6 +62,8 @@ class PlanoController extends Controller
             'valor' => $request->valor,
             'frequenciaCobranca' => $request->frequencia,
             'quantidadeTags' => $request->quantidadeTags,
+            'quantidadePastas' => $request->quantidadePastas,
+
             'idHost' => $request->online ? $responseApi['data']['plan_id'] : null
         ]);
         isset($plano->id) ?
