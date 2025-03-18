@@ -32,12 +32,12 @@ class ApiEfi
 
     }
 
-    public function createPlan(string $name , bool $monthly = true):mixed
+    public function createPlan(string $name , int $frequencia):mixed
     {
         try {
             $body = [
                 "name" => $name,
-                "interval" => $monthly ? Helper::INTERVALO_MENSAL : Helper::INTERVALO_ANUAL,
+                "interval" => $frequencia,
                 "repeats" => null
             ];
 

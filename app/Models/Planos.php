@@ -10,7 +10,18 @@ class Planos extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nome', 'descricao', 'valor', 'tempoGratuidade', 'status','quantidadeTags','quantidadeFotos','quantidadePastas', 'idHost'];
+    protected $fillable = [
+        'nome',
+        'descricao',
+        'valor',
+        'tempoGratuidade',
+        'status',
+        'quantidadeTags',
+        'quantidadeFotos',
+        'quantidadePastas',
+        'idHost',
+        'frequenciaCobranca'
+    ];
 
     public function usuarios()
     {
