@@ -302,6 +302,12 @@ class UsuarioController extends Controller
         }
 
         if ($user) {
+            if($user->status ==0){
+                return response()->json([
+                    'codRetorno' => 400,
+                    'message' => $this->codes[-13]
+                ]);
+            }
             $plano = Planos::where('id', $user->idPlano)->first();
             $diasRenovacao = $plano->tempoGratuidade;
             if ($plano->idHost == null) {
@@ -317,7 +323,8 @@ class UsuarioController extends Controller
                     'codRetorno' => 400,
                     'message' => $this->codes[-8]
                 ]);
-            } else {
+            }
+            else {
                 $token = JWTAuth::fromUser($user);
                 $pastas = $user->pastas->map(function ($pasta) {
                     return [

@@ -28,6 +28,8 @@ class Helper
     const int TEMPO_RENOVACAO_MENSAL = 30;
     const int TEMPO_RENOVACAO_ANUAL = 360;
 
+    const int TEMPO_RENOVACAO_SEMESTRAL = 180;
+
     const string STATUS_APROVADO = 'paid';
     const string STATUS_AGUARDANDO_APROVACAO = 'waiting';
     const string STATUS_CANCELADO = 'CANCELLED';
@@ -122,7 +124,9 @@ class Helper
             -9 => 'Error: A request possui campos obrigatórios não preenchidos ou inválidos.',
             -10 => 'Error: O pagamento ainda não foi realizado.',
             -11 => 'Error: Limite de criação de pastas mensal atingido.' ,
-            -12 => 'Error: Erro ao realizar venda do plano de assinatura.'
+            -12 => 'Error: Erro ao realizar venda do plano de assinatura.',
+            -13 => 'Error: Usuário bloqueado por inatividade superior a 180 dias.'
+
         ];
     }
 

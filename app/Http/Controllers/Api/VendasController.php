@@ -106,6 +106,7 @@ class VendasController extends Controller
                     $plano = Planos::find($usuario->idPlano);
                     $usuario->dataUltimoPagamento = Carbon::parse($item['received_by_bank_at'])->format('Y-m-d');
                     $usuario->dataLimiteCompra = $usuario->dataUltimoPagamento->addDays( $plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife');
+                    $usuario->status = 1;
                     $usuario->save();
                 }
             }
