@@ -53,14 +53,14 @@ class PlanoController extends Controller
         }
 
         if($request->online) {
-            $responseApi = json_decode($this->apiEfi->createPlan($request->nome, $request->frequencia), true);
+            $responseApi = json_decode($this->apiEfi->createPlan($request->nome, $request->frequenciaCobranca), true);
         }
 
         $plano = Planos::create([
             'nome' => $request->nome,
             'descricao' => $request->descricao,
             'valor' => $request->valor,
-            'frequenciaCobranca' => $request->frequencia,
+            'frequenciaCobranca' => $request->frequenciaCobranca,
             'quantidadeTags' => $request->quantidadeTags,
             'quantidadePastas' => $request->quantidadePastas,
             'idHost' => $request->online ? $responseApi['data']['plan_id'] : null
