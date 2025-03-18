@@ -103,8 +103,9 @@ class VendasController extends Controller
             if ($item['type'] === 'subscription_charge' && $item['status']['current'] === Helper::STATUS_APROVADO) {
                 $usuario = Usuarios::where('idUltimaCobranca', $item['identifiers']['charge_id'])->first();
                 if ($usuario) {
+                    $plano = Planos::find($usuario->idPlano);
                     $usuario->dataUltimoPagamento = Carbon::parse($item['received_by_bank_at'])->format('Y-m-d');
-                    $usuario->dataLimiteCompra = $usuario->dataUltimoPagamento->addDays(Helper::TEMPO_RENOVACAO)->setTimezone('America/Recife');
+                    $usuario->dataLimiteCompra = $usuario->dataUltimoPagamento->addDays( $plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife');
                     $usuario->save();
                 }
             }

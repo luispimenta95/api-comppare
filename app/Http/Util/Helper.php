@@ -24,7 +24,8 @@ class Helper
     const int LIMITE_PASTAS = 10;
 
 
-    const int TEMPO_RENOVACAO = 30;
+    const int TEMPO_RENOVACAO_MENSAL = 30;
+    const int TEMPO_RENOVACAO_ANUAL = 360;
 
     const string STATUS_APROVADO = 'paid';
     const string STATUS_AGUARDANDO_APROVACAO = 'waiting';
