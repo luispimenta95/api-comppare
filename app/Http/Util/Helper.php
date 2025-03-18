@@ -2,6 +2,7 @@
 
 namespace App\Http\Util;
 
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -215,5 +216,12 @@ class Helper
             // Em caso de erro na requisição
             return response()->json(['message' => 'Erro ao realizar request', 'code'  => 500],500);
         }
+    }
+// Checa se uma data informada já passou. Caso positivo, return true | return false
+    public static function checkDateIsPassed($date): bool
+    {
+        $dataAtual = Carbon::now();
+        return $date->lt($dataAtual);
+
     }
 }

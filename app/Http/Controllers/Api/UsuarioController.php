@@ -310,9 +310,7 @@ class UsuarioController extends Controller
                     Carbon::parse($user->created_at)->addDays(Helper::TEMPO_GRATUIDADE);
             }
 
-            $dataAtual = Carbon::now();
-
-            if ($dataLimiteCompra->lt($dataAtual)) {
+            if (Helper::checkDateIsPassed($dataLimiteCompra)) {
                 return response()->json([
                     'codRetorno' => 400,
                     'message' => $this->codes[-8]
