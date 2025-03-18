@@ -31,7 +31,8 @@ class Usuarios extends Authenticatable implements JWTSubject
         'idPlano',
         'idPerfil',
         'pastasCriadas',
-        'pontos'
+        'pontos',
+        'ultimoAcesso'
     ];
 
     protected $hidden = ['senha'];

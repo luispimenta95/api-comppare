@@ -323,6 +323,8 @@ class UsuarioController extends Controller
                         'caminho' => $pasta->caminho
                     ];
                 });
+                $user->ultimoAcesso = Carbon::now();
+                $user->save();
 
                 return response()->json([
                     'codRetorno' => 200,
