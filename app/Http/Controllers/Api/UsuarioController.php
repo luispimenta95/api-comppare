@@ -14,7 +14,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class UsuarioController extends Controller
 {
-    private array $codes = [];
+    private array $codes;
 
     public function __construct()
     {
@@ -23,14 +23,13 @@ class UsuarioController extends Controller
 
     public function index(): JsonResponse
     {
-        $usuariosAtivos = Usuarios::where('status', 1)->count();
 
         $response = [
             'codRetorno' => 200,
             'message' => $this->codes[200],
             'totalUsuarios' => Usuarios::count(),
-            'usuariosAtivos' => $usuariosAtivos,
-            'data' => Usuarios::all(),
+            'usuariosAtivos' => Usuarios::where('status', 1)->count(),
+            'data' => Usuarios::all()
         ];
 
         return response()->json($response);
@@ -53,7 +52,7 @@ class UsuarioController extends Controller
         if (!Helper::validaCPF($request->cpf)) {
             $response = [
                 'codRetorno' => 400,
-                'message' => $this->codes[-2],
+                'message' => $this->codes[-2]
             ];
             return response()->json($response);
         }
@@ -61,7 +60,7 @@ class UsuarioController extends Controller
         if ($this->confirmaUser($request)) {
             $response = [
                 'codRetorno' => 400,
-                'message' => $this->codes[-6],
+                'message' => $this->codes[-6]
             ];
             return response()->json($response);
         }
@@ -78,18 +77,18 @@ class UsuarioController extends Controller
             'dataNascimento' => $dataNascimento,
             'idPlano' => $request->idPlano,
             'idPerfil' => Helper::ID_PERFIL_USUARIO,
-            'dataLimiteCompra' => Carbon::now()->addDays($limite)->format('Y-m-d'),
+            'dataLimiteCompra' => Carbon::now()->addDays($limite)->format('Y-m-d')
         ]);
 
         if (isset($usuario->id)) {
             $response = [
                 'codRetorno' => 200,
-                'message' => $this->codes[200],
+                'message' => $this->codes[200]
             ];
         } else {
             $response = [
                 'codRetorno' => 500,
-                'message' => $this->codes[500],
+                'message' => $this->codes[500]
             ];
         }
 
@@ -105,7 +104,7 @@ class UsuarioController extends Controller
             $response = [
                 'codRetorno' => 400,
                 'message' => $this->codes[-9],
-                'campos' => $campos,
+                'campos' => $campos
             ];
             return response()->json($response);
         }
@@ -115,10 +114,10 @@ class UsuarioController extends Controller
         $response = isset($usuario->id) ? [
             'codRetorno' => 200,
             'message' => $this->codes[200],
-            'data' => $usuario,
+            'data' => $usuario
         ] : [
             'codRetorno' => 404,
-            'message' => $this->codes[404],
+            'message' => $this->codes[404]
         ];
 
         return response()->json($response);
@@ -133,7 +132,7 @@ class UsuarioController extends Controller
             $response = [
                 'codRetorno' => 400,
                 'message' => $this->codes[-9],
-                'campos' => $campos,
+                'campos' => $campos
             ];
             return response()->json($response);
         }
@@ -203,7 +202,7 @@ class UsuarioController extends Controller
             $response = [
                 'codRetorno' => 400,
                 'message' => $this->codes[-9],
-                'campos' => $campos,
+                'campos' => $campos
             ];
             return response()->json($response);
         }
@@ -231,7 +230,7 @@ class UsuarioController extends Controller
             $response = [
                 'codRetorno' => 400,
                 'message' => $this->codes[-9],
-                'campos' => $campos,
+                'campos' => $campos
             ];
             return response()->json($response);
         }
@@ -264,7 +263,7 @@ class UsuarioController extends Controller
             $response = [
                 'codRetorno' => 400,
                 'message' => $this->codes[-9],
-                'campos' => $campos,
+                'campos' => $campos
             ];
             return response()->json($response);
         }
