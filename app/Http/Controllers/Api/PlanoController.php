@@ -39,7 +39,7 @@ class PlanoController extends Controller
     }
 
     public function createPlan(Request $request){
-        $campos = ['nome', 'descricao', 'valor', 'quantidadeTags'];
+        $campos = ['nome', 'descricao', 'valor', 'quantidadeTags', 'mensal'];
 
         $campos = Helper::validarRequest($request, $campos);
 
@@ -53,7 +53,7 @@ class PlanoController extends Controller
         }
 
 
-        $responseApi = json_decode($this->apiEfi->createPlan($request->nome),true);
+        $responseApi = json_decode($this->apiEfi->createPlan($request->nome, $request->mensal),true);
         $plano = Planos::create([
             'nome' => $request->nome,
             'descricao' => $request->descricao,

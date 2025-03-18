@@ -37,7 +37,8 @@ class Helper
     const string STATUS_AUTORIZADO = 'authorized';
 
     const int QUANTIDADE = 1;
-    const INTERVALO_MENSAL = 1;
+    const int INTERVALO_MENSAL = 1;
+    const int INTERVALO_ANUAL= 12;
 
     /**
      * Retorna todos os códigos HTTP e suas descrições.
