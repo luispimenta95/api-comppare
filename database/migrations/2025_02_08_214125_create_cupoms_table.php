@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('cupom');
             $table->boolean('status')->default(true);
             $table->integer('percentualDesconto');
+            $table->integer('quantidadeUsos')->default(0);
             $table->timestamp('dataExpiracao')->nullable();
             $table->timestamps();
 
