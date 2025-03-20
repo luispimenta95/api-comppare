@@ -7,156 +7,172 @@ use App\Http\Util\Helper;
 use App\Models\Tag;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Enums\HttpCodesEnum;
 
 class TagController extends Controller
 {
-    private array $codes;
-    private $userLogado;
 
     public function __construct()
     {
-        $this->codes = Helper::getHttpCodes();
-
+        // Não é mais necessário armazenar códigos, pois agora usamos a HttpCodesEnum diretamente.
     }
 
     /**
      * Display a listing of the resource.
      */
-    public function index(): object
+    public function index(): JsonResponse
     {
-        $tags = Tag::where('status', 1)->count();
-        $response = [
-            'codRetorno' => 200,
-            'message' => $this->codes[200],
-            'totalTags' => Tag::count(),
-            'tagsAtivas' => $tags,
-            'data' => Tag::all()
+        $tagsAtivas = Tag::where('status', 1)->count();
 
+        $response = [
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => HttpCodesEnum::OK->description(),
+            'totalTags' => Tag::count(),
+            'tagsAtivas' => $tagsAtivas,
+            'data' => Tag::all()
         ];
+
         return response()->json($response);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Cadastrar uma nova tag.
      */
-    public function cadastrarTag(Request $request): object
+    public function cadastrarTag(Request $request): JsonResponse
     {
         $campos = ['nome', 'descricao', 'usuario'];
-
         $campos = Helper::validarRequest($request, $campos);
+
         if ($campos !== true) {
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
-                'campos' => $campos
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::MissingRequiredFields->description(),
+                'campos' => $campos,
             ];
             return response()->json($response);
         }
 
         Tag::create([
-
             'nome' => $request->nome,
             'descricao' => $request->descricao,
-            'idUsuarioCriador' => $request->usuario
+            'idUsuarioCriador' => $request->usuario,
         ]);
+
         $response = [
-            'codRetorno' => 200,
-            'message' => $this->codes[200]
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => HttpCodesEnum::OK->description(),
         ];
+
         return response()->json($response);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Atualizar o status de uma tag.
      */
     public function atualizarStatus(Request $request): JsonResponse
     {
         $campos = ['idTag'];
-
         $campos = Helper::validarRequest($request, $campos);
+
         if ($campos !== true) {
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
-                'campos' => $campos
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::MissingRequiredFields->description(),
+                'campos' => $campos,
             ];
             return response()->json($response);
         }
+
         $tag = Tag::findOrFail($request->idTag);
+
         if (isset($tag->id)) {
             $tag->status = $request->status;
             $tag->save();
-            $response = [
-                'codRetorno' => 200,
-                'message' => $this->codes[200]
-            ];
-        } else {
 
             $response = [
-                'codRetorno' => 500,
-                'message' => $this->codes[500]
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => HttpCodesEnum::OK->description(),
+            ];
+        } else {
+            $response = [
+                'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                'message' => HttpCodesEnum::InternalServerError->description(),
             ];
         }
+
         return response()->json($response);
     }
 
+    /**
+     * Atualizar os dados de uma tag.
+     */
     public function atualizarDados(Request $request): JsonResponse
     {
         $campos = ['nome', 'descricao', 'idTag'];
-
         $campos = Helper::validarRequest($request, $campos);
+
         if ($campos !== true) {
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
-                'campos' => $campos
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::MissingRequiredFields->description(),
+                'campos' => $campos,
             ];
             return response()->json($response);
         }
 
         $tag = Tag::findOrFail($request->idTag);
+
         if (isset($tag->id)) {
             $tag->nome = $request->nome;
             $tag->descricao = $request->descricao;
             $tag->save();
+
             $response = [
-                'codRetorno' => 200,
-                'message' => $this->codes[200]
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => HttpCodesEnum::OK->description(),
+            ];
+        } else {
+            $response = [
+                'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                'message' => HttpCodesEnum::InternalServerError->description(),
             ];
         }
+
         return response()->json($response);
     }
 
+    /**
+     * Buscar tags por usuário.
+     */
     public function getTagsByUsuario(Request $request): JsonResponse
     {
         $campos = ['usuario'];
-
         $campos = Helper::validarRequest($request, $campos);
+
         if ($campos !== true) {
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
-                'campos' => $campos
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::MissingRequiredFields->description(),
+                'campos' => $campos,
             ];
             return response()->json($response);
         }
 
-        $tags = Tag::where('idUsuarioCriador', $request->usuario)  // Tags do usuário logado
-        ->where('status', Helper::ATIVO)  // Filtro para tags com status ATIVO
-        ->orWhereHas('usuario', function ($query) {
-            $query->where('idPerfil', Helper::ID_PERFIL_ADMIN);  // Tags dos admins
-        })
-            ->where('status', Helper::ATIVO)  // Filtro para tags com status ATIVO também para administradores
+        $tags = Tag::where('idUsuarioCriador', $request->usuario)
+            ->where('status', Helper::ATIVO)
+            ->orWhereHas('usuario', function ($query) {
+                $query->where('idPerfil', Helper::ID_PERFIL_ADMIN);
+            })
+            ->where('status', Helper::ATIVO)
             ->get();
 
         $response = [
-            'codRetorno' => 200,
-            'message' => $this->codes[200],
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => HttpCodesEnum::OK->description(),
             'totalTags' => count($tags),
-            'data' => $tags
-            ];
+            'data' => $tags,
+        ];
+
         return response()->json($response);
     }
-
 }
