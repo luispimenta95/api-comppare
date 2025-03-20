@@ -36,6 +36,7 @@ Route::middleware('api')->group(function () {
     Route::post('/api/cupons/recuperar', [CupomController::class, 'getTicketDiscount']);
     Route::post('/api/cupons/atualizar-status', [CupomController::class, 'atualizarStatus']);
     Route::post('/api/cupons/atualizar-dados', [CupomController::class, 'atualizarDados']);
+    Route::get('/api/cupons/listar-ativos', [CupomController::class, 'getTicketsAvaliables']);
 
 
     //Tags

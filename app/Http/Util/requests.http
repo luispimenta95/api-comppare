@@ -111,4 +111,14 @@ Content-Type: application/json
     "percentualDesconto": 1
 }
 
+###assinatura
+POST {{baseUrl}}/vendas/criar-assinatura
+Content-Type: application/json
+
+{
+    "usuario":1,
+    "plano": 1,
+    "valor": 39.9,
+    "token": "acvvcyt"
+}
 

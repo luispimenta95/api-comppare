@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Util\Helper;
 use Illuminate\Http\Request;
 use App\Models\Cupom;
+use Illuminate\Http\JsonResponse;
 
 class CupomController extends Controller
 {
@@ -18,21 +19,20 @@ class CupomController extends Controller
         $this->codes = Helper::getHttpCodes();
     }
 
-    public function index() : object
+    public function index() : JsonResponse
     {
-        $cuponsAtivos = Cupom::where('status', 1)->count();
         $response = [
             'codRetorno' => 200,
             'message' => $this->codes[200],
             'totalCupons' => Cupom::count(),
-            'cuponsAtivos' => $cuponsAtivos,
+            'cuponsAtivos' =>  Cupom::where('status', 1)->count(),
             'data' => Cupom::all()
 
         ];
         return response()->json($response);
     }
 
-    public function saveTicket(Request $request) : object
+    public function saveTicket(Request $request) : JsonResponse
     {
         $campos = ['cupom', 'percentualDesconto', 'quantidadeDias'];
 
@@ -69,7 +69,7 @@ class CupomController extends Controller
         return response()->json($response);
     }
 
-    public function getTicketDiscount(Request $request) : object
+    public function getTicketDiscount(Request $request) : JsonResponse
     {
         $cupom = Cupom::find($request->idCupom);
         isset($cupom->id) ?
@@ -84,7 +84,7 @@ class CupomController extends Controller
         return response()->json($response);
     }
 
-    public function atualizarDados(Request $request) : object
+    public function atualizarDados(Request $request) : JsonResponse
     {
         $campos = ['idCupom', 'percentualDesconto', 'quantidadeDias'];
 
@@ -119,7 +119,7 @@ class CupomController extends Controller
         return response()->json($response);
     }
 
-    public function atualizarStatus(Request $request) : object
+    public function atualizarStatus(Request $request) : JsonResponse
     {
         $campos = ['idCupom', 'status'];
 
@@ -148,6 +148,19 @@ class CupomController extends Controller
                 'message' => $this->codes[500]
             ];
         }
+        return response()->json($response);
+    }
+
+    public function getTicketsAvaliables() : JsonResponse
+    {
+        $response = [
+            'codRetorno' => 200,
+            'message' => $this->codes[200],
+            'totalCupons' => Cupom::count(),
+            'cuponsAtivos' =>  Cupom::where('status', 1)->count(),
+            'data' => Cupom::all()
+
+        ];
         return response()->json($response);
     }
 }
