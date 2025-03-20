@@ -11,22 +11,22 @@ use Illuminate\Support\Facades\Hash;
 use App\Http\Util\Helper;
 use Carbon\Carbon;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use App\Enums\HttpCodesEnum;
 
 class UsuarioController extends Controller
 {
-    private array $codes;
+    private HttpCodesEnum $messages;
 
     public function __construct()
     {
-        $this->codes = Helper::getHttpCodes();
+        $this->messages = HttpCodesEnum::OK;  // Usando a enum para um valor inicial
     }
 
     public function index(): JsonResponse
     {
-
         $response = [
-            'codRetorno' => 200,
-            'message' => $this->codes[200],
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => HttpCodesEnum::OK->description(),
             'totalUsuarios' => Usuarios::count(),
             'usuariosAtivos' => Usuarios::where('status', 1)->count(),
             'data' => Usuarios::all()
@@ -41,26 +41,30 @@ class UsuarioController extends Controller
         $campos = Helper::validarRequest($request, $campos);
 
         if ($campos !== true) {
+            $this->messages = HttpCodesEnum::MissingRequiredFields;
+
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => $this->messages->description(),
                 'campos' => $campos,
             ];
             return response()->json($response);
         }
 
         if (!Helper::validaCPF($request->cpf)) {
+            $this->messages = HttpCodesEnum::InvalidCPF;
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-2]
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => $this->messages->description()
             ];
             return response()->json($response);
         }
 
         if ($this->confirmaUser($request)) {
+            $this->messages = HttpCodesEnum::CPFAlreadyRegistered;
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-6]
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => $this->messages->description()
             ];
             return response()->json($response);
         }
@@ -82,13 +86,13 @@ class UsuarioController extends Controller
 
         if (isset($usuario->id)) {
             $response = [
-                'codRetorno' => 200,
-                'message' => $this->codes[200]
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => HttpCodesEnum::OK->description()
             ];
         } else {
             $response = [
-                'codRetorno' => 500,
-                'message' => $this->codes[500]
+                'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                'message' => HttpCodesEnum::InternalServerError->description()
             ];
         }
 
@@ -102,8 +106,8 @@ class UsuarioController extends Controller
 
         if ($campos !== true) {
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::MissingRequiredFields->description(),
                 'campos' => $campos
             ];
             return response()->json($response);
@@ -112,12 +116,12 @@ class UsuarioController extends Controller
         $usuario = Usuarios::find($request->idUsuario);
 
         $response = isset($usuario->id) ? [
-            'codRetorno' => 200,
-            'message' => $this->codes[200],
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => HttpCodesEnum::OK->description(),
             'data' => $usuario
         ] : [
-            'codRetorno' => 404,
-            'message' => $this->codes[404]
+            'codRetorno' => HttpCodesEnum::NotFound->value,
+            'message' => HttpCodesEnum::NotFound->description()
         ];
 
         return response()->json($response);
@@ -130,8 +134,8 @@ class UsuarioController extends Controller
 
         if ($campos !== true) {
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::MissingRequiredFields->description(),
                 'campos' => $campos
             ];
             return response()->json($response);
@@ -139,8 +143,8 @@ class UsuarioController extends Controller
 
         if (!Helper::validaCPF($request->cpf)) {
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[400],
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::InvalidCPF->description(),
             ];
             return response()->json($response);
         }
@@ -158,13 +162,13 @@ class UsuarioController extends Controller
             $usuario->save();
 
             $response = [
-                'codRetorno' => 200,
-                'message' => $this->codes[200],
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => HttpCodesEnum::OK->description(),
             ];
         } else {
             $response = [
-                'codRetorno' => 500,
-                'message' => $this->codes[500],
+                'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                'message' => HttpCodesEnum::InternalServerError->description(),
             ];
         }
 
@@ -180,13 +184,13 @@ class UsuarioController extends Controller
             $usuario->save();
 
             $response = [
-                'codRetorno' => 200,
-                'message' => $this->codes[200],
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => HttpCodesEnum::OK->description(),
             ];
         } else {
             $response = [
-                'codRetorno' => 500,
-                'message' => $this->codes[500],
+                'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                'message' => HttpCodesEnum::InternalServerError->description(),
             ];
         }
 
@@ -200,8 +204,8 @@ class UsuarioController extends Controller
 
         if ($campos !== true) {
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::MissingRequiredFields->description(),
                 'campos' => $campos
             ];
             return response()->json($response);
@@ -211,8 +215,8 @@ class UsuarioController extends Controller
 
         if (!$user) {
             $response = [
-                'codRetorno' => 404,
-                'message' => $this->codes[404],
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => HttpCodesEnum::NotFound->description(),
             ];
             return response()->json($response);
         }
@@ -221,22 +225,21 @@ class UsuarioController extends Controller
         return response()->json($response);
     }
 
-    private function confirmaUser(Request $request): mixed{
+    private function confirmaUser(Request $request): mixed
+    {
         $campos = ['cpf'];
         $campos = Helper::validarRequest($request, $campos);
 
-
         if ($campos !== true) {
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::MissingRequiredFields->description(),
                 'campos' => $campos
             ];
             return response()->json($response);
         }
 
         $usuario = Usuarios::where('cpf', $request->cpf)->first();
-
 
         return isset($usuario->id) ? true : false;
     }
@@ -246,11 +249,11 @@ class UsuarioController extends Controller
         $existe = $this->confirmaUser($request);
 
         $response = $existe ? [
-            'codRetorno' => 200,
-            'message' => $this->codes[200],
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => HttpCodesEnum::OK->description(),
         ] : [
-            'codRetorno' => 404,
-            'message' => $this->codes[404],
+            'codRetorno' => HttpCodesEnum::NotFound->value,
+            'message' => HttpCodesEnum::NotFound->description(),
         ];
 
         return response()->json($response);
@@ -263,8 +266,8 @@ class UsuarioController extends Controller
 
         if ($campos !== true) {
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::MissingRequiredFields->description(),
                 'campos' => $campos
             ];
             return response()->json($response);
@@ -277,13 +280,13 @@ class UsuarioController extends Controller
             $usuario->save();
 
             $response = [
-                'codRetorno' => 200,
-                'message' => $this->codes[200],
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => HttpCodesEnum::OK->description(),
             ];
         } else {
             $response = [
-                'codRetorno' => 500,
-                'message' => $this->codes[500],
+                'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                'message' => HttpCodesEnum::InternalServerError->description(),
             ];
         }
 
@@ -296,16 +299,16 @@ class UsuarioController extends Controller
 
         if (!$user || !Hash::check($request->input('senha'), $user->senha)) {
             return response()->json([
-                'codRetorno' => 404,
-                'message' => $this->codes[404]
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => HttpCodesEnum::NotFound->description()
             ]);
         }
 
         if ($user) {
-            if($user->status ==0){
+            if ($user->status == 0) {
                 return response()->json([
-                    'codRetorno' => 400,
-                    'message' => $this->codes[-13]
+                    'codRetorno' => HttpCodesEnum::BadRequest->value,
+                    'message' => HttpCodesEnum::UserBlockedDueToInactivity->description()
                 ]);
             }
             $plano = Planos::where('id', $user->idPlano)->first();
@@ -320,11 +323,10 @@ class UsuarioController extends Controller
 
             if (Helper::checkDateIsPassed($dataLimiteCompra)) {
                 return response()->json([
-                    'codRetorno' => 400,
-                    'message' => $this->codes[-8]
+                    'codRetorno' => HttpCodesEnum::BadRequest->value,
+                    'message' => HttpCodesEnum::ExpiredSubscription->description()
                 ]);
-            }
-            else {
+            } else {
                 $token = JWTAuth::fromUser($user);
                 $pastas = $user->pastas->map(function ($pasta) {
                     return [
@@ -336,8 +338,8 @@ class UsuarioController extends Controller
                 $user->save();
 
                 return response()->json([
-                    'codRetorno' => 200,
-                    'message' => $this->codes[200],
+                    'codRetorno' => HttpCodesEnum::OK->value,
+                    'message' => HttpCodesEnum::OK->description(),
                     'token' => $token,
                     'dados' => $user->only('id', 'nome', 'cpf', 'telefone'),
                     'pastas' => $pastas

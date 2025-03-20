@@ -108,7 +108,8 @@ Content-Type: application/json
 
 {
     "cupom": "Teste",
-    "percentualDesconto": 1
+    "percentualDesconto": 10,
+    "quantidadeDias": 5
 }
 
 ###assinatura
