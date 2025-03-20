@@ -157,7 +157,7 @@ class CupomController extends Controller
 
     public function checkStatusTicket(Request $request): JsonResponse
     {
-        $campos = ['idCupom'];
+        $campos = ['cupom'];
         $campos = Helper::validarRequest($request, $campos);
 
         if ($campos !== true) {
@@ -169,7 +169,7 @@ class CupomController extends Controller
             return response()->json($response);
         }
 
-        $cupom = Cupom::findOrFail($request->idCupom);
+        $cupom = Cupom::where('cupom', strtoupper(str_replace(' ', '', $request->cupom)))->firstOrFail();
 
         $response = $cupom->status == 1 ? [
             'codRetorno' => HttpCodesEnum::OK->value,
