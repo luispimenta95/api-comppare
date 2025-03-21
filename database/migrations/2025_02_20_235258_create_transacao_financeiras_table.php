@@ -18,13 +18,9 @@ return new class extends Migration
             $table->unsignedBigInteger('idUsuario'); //
             $table->foreign('idUsuario')->references('id')->on('usuarios');
             $table->string('formaPagamento')->nullable();
-            $table->float('valorPlano');
-            $table->float('valorFinalPago')->nullable();
-            $table->string('idPedido');
+            $table->float('valorPagamento')->nullable();
             $table->integer('idPagamento')->nullable();
-
             $table->boolean('pagamentoEfetuado')->default(false);
-
             $table->timestamps();
         });
     }

@@ -15,9 +15,7 @@ class TransacaoFinanceira extends Model
         'idPlano',
         'idUsuario',
         'formaPagamento',
-        'valorPlano',
-        'valorFinalPago',
-        'idPedido',
+        'valorPagamento',
         'pagamentoEfetuado',
         'idPagamento'
     ];

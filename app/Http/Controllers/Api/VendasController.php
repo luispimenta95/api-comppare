@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use App\Http\Util\MailHelper;
 use Illuminate\Support\Facades\Log;
+use App\Models\TransacaoFinanceira;
 
 // Inicializar chave do Mercado Pago
 
@@ -22,6 +23,7 @@ class VendasController extends Controller
     //update server
     private array $codes = [];
     private ApiEfi $apiEfi;
+    private const CARTAO = 'Cartão de crédito';
 
 
     public function __construct()
@@ -106,6 +108,15 @@ class VendasController extends Controller
                     $usuario->dataLimiteCompra = $usuario->dataUltimoPagamento->addDays( $plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife');
                     $usuario->status = 1;
                     $usuario->save();
+
+                   TransacaoFinanceira::create([
+                        'idPlano' => $plano->idPlano,
+                        'idUsuario' => $request->idUsuario,
+                        'formaPagamento' => self:: CARTAO,
+                        'valorPagamento' => ($item['value'] /100),
+                        'idPagamento' => $item['identifiers']['charge_id'],
+                        'pagamentoEfetuado' => 1
+                    ]);
                 }
             }
         }
