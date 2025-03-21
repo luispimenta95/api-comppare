@@ -30,7 +30,6 @@ class VendasController extends Controller
     {
         $this->codes = Helper::getHttpCodes();
         $this->apiEfi = new ApiEfi();
-
     }
 
 
@@ -73,7 +72,7 @@ class VendasController extends Controller
         $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
         if ($responseApi['code'] == 200) {
             $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
-            $usuario->dataLimiteCompra = Carbon::parse( $responseApi['data']['first_execution'])->format('Y-m-d');
+            $usuario->dataLimiteCompra = Carbon::parse($responseApi['data']['first_execution'])->format('Y-m-d');
             $usuario->save();
             $response = [
                 'codRetorno' => 200,
@@ -97,7 +96,7 @@ class VendasController extends Controller
     {
 
 
-        $chargeNotification = json_decode($this->apiEfi->getSubscriptionDetail($request->notification),true);
+        $chargeNotification = json_decode($this->apiEfi->getSubscriptionDetail($request->notification), true);
 
         foreach ($chargeNotification['data'] as $item) {
             if ($item['type'] === 'subscription_charge' && $item['status']['current'] === Helper::STATUS_APROVADO) {
@@ -105,15 +104,15 @@ class VendasController extends Controller
                 if ($usuario) {
                     $plano = Planos::find($usuario->idPlano);
                     $usuario->dataUltimoPagamento = Carbon::parse($item['received_by_bank_at'])->format('Y-m-d');
-                    $usuario->dataLimiteCompra = $usuario->dataUltimoPagamento->addDays( $plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife');
+                    $usuario->dataLimiteCompra = $usuario->dataUltimoPagamento->addDays($plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife');
                     $usuario->status = 1;
                     $usuario->save();
 
-                   TransacaoFinanceira::create([
+                    TransacaoFinanceira::create([
                         'idPlano' => $plano->idPlano,
                         'idUsuario' => $request->idUsuario,
-                        'formaPagamento' => self:: CARTAO,
-                        'valorPagamento' => ($item['value'] /100),
+                        'formaPagamento' => self::CARTAO,
+                        'valorPagamento' => ($item['value'] / 100),
                         'idPagamento' => $item['identifiers']['charge_id'],
                         'pagamentoEfetuado' => 1
                     ]);
