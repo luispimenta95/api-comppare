@@ -95,11 +95,9 @@ class VendasController extends Controller
     {
 
 
-        $chargeNotification = $this->apiEfi->getSubscriptionDetail($request->notification);
-        $data = json_decode($chargeNotification, true);
+        $chargeNotification = json_decode($this->apiEfi->getSubscriptionDetail($request->notification),true);
 
-        foreach ($data['data'] as $item) {
-            // Verificar se o tipo é 'subscription_charge' e o status 'current' é 'paid'
+        foreach ($chargeNotification['data'] as $item) {
             if ($item['type'] === 'subscription_charge' && $item['status']['current'] === Helper::STATUS_APROVADO) {
                 $usuario = Usuarios::where('idUltimaCobranca', $item['identifiers']['charge_id'])->first();
                 if ($usuario) {
