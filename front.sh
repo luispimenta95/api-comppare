@@ -20,7 +20,7 @@ arquivo_zip="backup_$data_atual.zip"
 
 
 # Cria o arquivo zip e adiciona as pastas (exceto as pastas 'api' e 'backup')
-zip -r "$arquivo_zip" / -x "api/" -x "backups/*"
+zip -r "$arquivo_zip" / -x "api-comppare/" -x "backups/*"
 
 # Move o arquivo zip para a pasta 'backups'
 mv "$arquivo_zip" backups/
@@ -31,7 +31,7 @@ echo "Backup criado: backups/$arquivo_zip"
     echo $SEPARATOR
   echo "Iniciando atualização"
   for dir in */; do
-  if [[ "$dir" != "api/" && "$dir" != "backups/" ]]; then
+  if [[ "$dir" != "api-comppare/" && "$dir" != "backups/" ]]; then
     # Remove a pasta
     rm -rf "$dir"
   fi
