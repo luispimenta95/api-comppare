@@ -30,6 +30,12 @@ echo "Backup criado: backups/$arquivo_zip"
   
     echo $SEPARATOR
   echo "Iniciando atualização"
+  for dir in */; do
+  if [[ "$dir" != "api/" && "$dir" != "backups/" ]]; then
+    # Remove a pasta
+    rm -rf "$dir"
+  fi
+done
   unzip build.zip
   cd build;
   mv * ..
