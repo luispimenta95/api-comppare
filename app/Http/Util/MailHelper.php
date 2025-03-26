@@ -6,6 +6,8 @@ use App\Mail\EmailAssinatura;
 use App\Mail\EmailPagamento;
 use App\Mail\EmailWelcome;
 use Illuminate\Support\Facades\Mail;
+use App\Mail\EmailConvite;
+
 
 class MailHelper
 
@@ -56,6 +58,20 @@ class MailHelper
 
 
         Mail::to($mailTo)->send(new EmailAssinatura($dadosEmail));
+    }
+
+    public static function emailConvite(array $dados, string $mailTo): void //testing webhocks
+    {
+        $dadosEmail = [
+            'to' => $mailTo,
+            'body' => [
+                'nomePasta' => $dados['nomePasta'],
+                'url' => env('FRONT_URL')
+            ]
+        ];
+
+
+        Mail::to($mailTo)->send(new EmailConvite($dadosEmail));
     }
 
 }

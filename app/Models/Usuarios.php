@@ -63,6 +63,6 @@ class Usuarios extends Authenticatable implements JWTSubject
     }
     public function pastas()
     {
-        return $this->hasMany(Pastas::class, 'idUsuario');
+        return $this->belongsToMany(Pastas::class, 'pasta_usuario', 'usuario_id', 'pasta_id');
     }
 }

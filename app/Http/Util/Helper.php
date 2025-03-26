@@ -14,6 +14,8 @@ class Helper
 {
     const int ID_PERFIL_ADMIN = 1;
     const int ID_PERFIL_USUARIO = 2;
+    const int ID_PERFIL_CONVIDADO = 3;
+    const int ID_PLANO_CONVIDADO = 7;
 
     const int ATIVO = 1;
 

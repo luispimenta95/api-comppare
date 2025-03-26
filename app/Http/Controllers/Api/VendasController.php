@@ -12,9 +12,6 @@ use Illuminate\Http\JsonResponse;
 use App\Http\Util\MailHelper;
 use Illuminate\Support\Facades\Log;
 use App\Models\TransacaoFinanceira;
-
-// Inicializar chave do Mercado Pago
-
 use App\Http\Util\Payments\ApiMercadoPago;
 use Illuminate\Http\Request;
 

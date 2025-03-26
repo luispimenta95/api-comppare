@@ -11,6 +11,10 @@ class Pastas extends Model
 
     public function usuario()
     {
-        return $this->belongsTo(Usuarios::class, 'idUsuario');
+        return $this->belongsToMany(Usuarios::class, 'pasta_usuario', 'pasta_id', 'usuario_id');
+    }
+    public function convite()
+    {
+        return $this->hasOne(Convite::class);
     }
 }

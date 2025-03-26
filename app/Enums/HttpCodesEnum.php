@@ -80,6 +80,8 @@ enum HttpCodesEnum: int
     case SubscriptionPurchaseError = -12;
     case UserBlockedDueToInactivity = -13;
     case InactiveTicket = -14;
+    case SendInviteError = -15;
+
 
     public function description(): string
     {
@@ -158,6 +160,7 @@ enum HttpCodesEnum: int
             self::SubscriptionPurchaseError => 'Error: Erro ao realizar venda do plano de assinatura.',
             self::UserBlockedDueToInactivity => 'Error: Usuário bloqueado por inatividade superior a 180 dias.',
             self::InactiveTicket => 'Error: Cupom inativo.',
+            self::SendInviteError => 'Error: Erro ao enviar o convite.',
         };
     }
 }

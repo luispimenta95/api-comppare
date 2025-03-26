@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Convite;
+use App\Models\Pastas;
 use App\Models\Planos;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -85,6 +87,12 @@ class UsuarioController extends Controller
         ]);
 
         if (isset($usuario->id)) {
+
+            $convite = Convite::where('email', $request->email)->firstOrFail();
+            if($convite){
+                $this->associarPastasUsuario($convite, $usuario);
+            }
+
             $response = [
                 'codRetorno' => HttpCodesEnum::OK->value,
                 'message' => HttpCodesEnum::OK->description()
@@ -337,6 +345,7 @@ class UsuarioController extends Controller
                 $user->ultimoAcesso = Carbon::now();
                 $user->save();
 
+
                 return response()->json([
                     'codRetorno' => HttpCodesEnum::OK->value,
                     'message' => HttpCodesEnum::OK->description(),
@@ -347,5 +356,21 @@ class UsuarioController extends Controller
             }
         }
         return response()->json($response);
+    }
+
+    private function associarPastasUsuario(Convite $convite, Usuarios $usuario):void
+    {
+        $usuario->idPerfil = Helper::ID_PERFIL_CONVIDADO;
+        $usuario->idPlano = Helper::ID_PLANO_CONVIDADO;
+        $usuario->save();
+        $pasta = Pastas::findOrFail($convite->idPasta);
+
+        // Associa o criador da pasta à pasta
+        $pasta->usuarios()->attach($convite->idUsuario);
+
+        // Associa o usuário que recebeu o convite à pasta
+        $pasta->usuarios()->attach($usuario->id);
+
+
     }
 }

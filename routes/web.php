@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\PlanoController;
 use App\Http\Controllers\Api\TagController;
 use App\Http\Controllers\Api\UsuarioController;
 use App\Http\Controllers\Api\VendasController;
+use App\Http\Controllers\ConviteController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\RankingController;
 
@@ -53,5 +54,8 @@ Route::middleware('api')->group(function () {
 
     Route::post('/api/notification', [VendasController::class, 'updatePayment']);
 
+    //Convites
+
+    Route::post('api/convites/enviar', [ConviteController::class, 'create']);
 
 });
