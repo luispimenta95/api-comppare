@@ -2,20 +2,16 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
-
-
 
 class Usuarios extends Authenticatable implements JWTSubject
 {
-    use HasFactory;
-    use Notifiable;
+    use HasFactory, Notifiable;
 
     protected $fillable = [
         'nome',
@@ -32,6 +28,7 @@ class Usuarios extends Authenticatable implements JWTSubject
         'idPerfil',
         'pastasCriadas',
         'pontos',
+        'quantidadeConvites',
         'ultimoAcesso'
     ];
 
@@ -44,12 +41,12 @@ class Usuarios extends Authenticatable implements JWTSubject
 
     public function getJWTIdentifier()
     {
-        return $this->getKey();
+        return $this->getKey(); // Retorna a chave primária do usuário
     }
 
     public function getJWTCustomClaims()
     {
-        return [];
+        return []; // Retorne qualquer dado extra que você precise no payload do JWT
     }
 
     public function transacoesFinanceiras(): HasMany
@@ -59,8 +56,9 @@ class Usuarios extends Authenticatable implements JWTSubject
 
     public function tags()
     {
-        return $this->hasMany(Tag::class , 'idUsuarioCriador');
+        return $this->hasMany(Tag::class, 'idUsuarioCriador');
     }
+
     public function pastas()
     {
         return $this->belongsToMany(Pastas::class, 'pasta_usuario', 'usuario_id', 'pasta_id');

@@ -81,6 +81,10 @@ enum HttpCodesEnum: int
     case UserBlockedDueToInactivity = -13;
     case InactiveTicket = -14;
     case SendInviteError = -15;
+    case InvitesLimit = -16;
+    case UserNotFound = -17;
+    case PlanNotFoundForUser = -18;
+
 
 
     public function description(): string
@@ -161,6 +165,9 @@ enum HttpCodesEnum: int
             self::UserBlockedDueToInactivity => 'Error: Usuário bloqueado por inatividade superior a 180 dias.',
             self::InactiveTicket => 'Error: Cupom inativo.',
             self::SendInviteError => 'Error: Erro ao enviar o convite.',
+            self::InvitesLimit => 'Error: Numero de convites permitidos atingido.',
+            self::UserNotFound => 'Error : Usuário não encontrado',
+            self::PlanNotFoundForUser => 'Error: Usuário sem plano associado'
         };
     }
 }

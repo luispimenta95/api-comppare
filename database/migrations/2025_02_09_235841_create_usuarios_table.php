@@ -26,6 +26,7 @@ return new class extends Migration
             $table->integer('idUltimaCobranca')->nullable();
             $table->integer('pastasCriadas')->default(0);
             $table->integer('pontos')->default(0);
+            $table->integer('quantidadeConvites')->default(0);
             $table->timestamp('ultimoAcesso')->nullable();
             $table->unsignedBigInteger('idPlano');
             $table->foreign('idPlano')->references('id')->on('planos');
