@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api;
-
+use App\Enums\HttpCodesEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Util\Helper;
 use App\Models\Pastas;
@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 
 class PastasController extends Controller
 {
-    private array $codes = [];
+
     const ROOT_PATH = 'usuarios/';
     /**
      * Display a listing of the resource.
@@ -29,12 +29,13 @@ class PastasController extends Controller
     {
         $campos = ['nomePasta', 'idUsuario'];
 
+        // Validação dos campos obrigatórios
         $campos = Helper::validarRequest($request, $campos);
 
         if ($campos !== true) {
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::MissingRequiredFields->description(),
                 'campos' => $campos
             ];
             return response()->json($response);
@@ -42,53 +43,83 @@ class PastasController extends Controller
 
         $user = Usuarios::find($request->idUsuario);
 
-// Verifica se o usuário possui o atributo 'pastasCriadas' e calcula as pastas criadas no mês atual
+        // Verifica se o usuário foi encontrado
+        if (!$user) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => HttpCodesEnum::UserNotFound->description(),
+            ]);
+        }
+
         $currentMonth = now()->month;
         $currentYear = now()->year;
         $idPlano = $user->idPlano;
-        $limitePastas = Planos::find($idPlano)->limitePastas;
+        $monthLimit = Planos::find($idPlano)->limitePastas;
 
+        // Contagem de pastas e subpastas criadas pelo usuário no mês atual
         $pastasCriadasNoMes = Pastas::where('idUsuario', $user->id)
             ->whereYear('created_at', $currentYear)  // Filtra pelo ano atual
             ->whereMonth('created_at', $currentMonth)  // Filtra pelo mês atual
             ->count();
 
-// Verifica se o número de pastas criadas é menor que o numero de pastas do plano associado
-        if ($pastasCriadasNoMes < $limitePastas) {
-            // Prossegue com a criação da pasta
+        // Contagem de subpastas associadas a este usuário
+        $subpastasCriadasNoMes = Pastas::whereHas('subpastas', function ($query) use ($user, $currentYear, $currentMonth) {
+            $query->where('idUsuario', $user->id)
+                ->whereYear('created_at', $currentYear)
+                ->whereMonth('created_at', $currentMonth);
+        })->count();
+
+        $totalFolders = $pastasCriadasNoMes + $subpastasCriadasNoMes;
+
+        // Verifica se o número de pastas (incluindo subpastas) criadas é menor que o limite do plano
+        if ($totalFolders < $monthLimit) {
+            // Prossegue com a criação da pasta ou subpasta
             $folderName = self::ROOT_PATH . $user->id . '/' . $request->nomePasta;
             $folder = json_decode(Helper::createFolder($folderName));
 
             if ($folder->path !== null) {
-                Pastas::create([
+                // Criação da pasta principal
+                $novaPasta = Pastas::create([
                     'nome' => $folderName,
                     'idUsuario' => $user->id,
                     'caminho' => $folder->path
                 ]);
+
+                // Se a pasta for criada com sucesso, associamos o usuário à pasta
+                $novaPasta->usuarios()->attach($user->id);
+
+                // Se a pasta for uma subpasta, associamos à pasta pai
+                if ($request->idPastaPai) {
+                    $pastaPai = Pastas::find($request->idPastaPai);
+                    if ($pastaPai) {
+                        $novaPasta->pastaPai()->associate($pastaPai);
+                        $novaPasta->save();
+                    }
+                }
+
+                // Se o convite foi bem sucedido, atualiza o número de pastas criadas
+                $user->increment('pastasCriadas');
+                // Retorna a resposta de sucesso
+                $response = [
+                    'codRetorno' => HttpCodesEnum::OK->value,
+                    'message' => HttpCodesEnum::OK->description()
+                ];
+                return response()->json($response);
+            } else {
+                $response = [
+                    'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                    'message' => HttpCodesEnum::InternalServerError->description()
+                ];
+                return response()->json($response);
             }
         } else {
-            // Retorna uma mensagem ou erro indicando que o limite de pastas foi atingido
+            // Caso o limite de pastas ou subpastas tenha sido atingido
             $response = [
-                'codRetorno' => 500,
-                'message' => $this->codes[-11]
-            ];
-            return response()->json($response);
-
-        }
-        if ($folder->path === null) {
-            $response = [
-                'codRetorno' => 500,
-                'message' => $this->codes[500]
+                'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                'message' => HttpCodesEnum::MonthlyFolderLimitReached->description()
             ];
             return response()->json($response);
         }
-        $user->pastasCriadas = $user->pastasCriadas +1;
-        $response = [
-            'codRetorno' => 200,
-            'message' => $this->codes[200]
-
-        ];
-        return response()->json($response);
     }
 
     /**
@@ -134,8 +165,8 @@ class PastasController extends Controller
 
         if ($campos !== true) {
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::MissingRequiredFields->description(),
                 'campos' => $campos
             ];
             return response()->json($response);

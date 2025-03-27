@@ -12,6 +12,8 @@ use App\Models\Planos;
 use App\Models\Usuarios;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use PHPUnit\TextUI\Help;
+
 class ConviteController extends Controller
 {
     /**
@@ -72,6 +74,8 @@ class ConviteController extends Controller
             'email' => $request->email,
         ]);
 
+        $pasta->usuarios()->attach($usuario->id);
+        Helper::relacionarPastas($pasta, $usuario);
         if ($convite) {
             $usuario->convites()->save($convite);
             $usuario->increment('quantidadeConvites');

@@ -2,6 +2,8 @@
 
 namespace App\Http\Util;
 
+use App\Models\Pastas;
+use App\Models\Usuarios;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -229,5 +231,19 @@ class Helper
         $dataAtual = Carbon::now();
         return $date->lt($dataAtual);
 
+    }
+
+    public static function relacionarPastas(Pastas $pasta, Usuarios $usuario):void
+    {
+
+        $subpastas = $pasta->subpastas;
+
+        foreach ($subpastas as $subpasta) {
+            // Adiciona o usuário à subpasta
+            $subpasta->usuarios()->attach($usuario->id);
+
+            // Chama a função recursivamente para adicionar as subpastas das subpastas
+            self::relacionarPastas($subpasta, $usuario);
+        }
     }
 }
