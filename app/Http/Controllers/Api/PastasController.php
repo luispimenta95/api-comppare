@@ -9,11 +9,11 @@ use App\Models\Planos;
 use App\Models\Usuarios;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class PastasController extends Controller
 {
 
-    const ROOT_PATH = 'usuarios/';
     /**
      * Display a listing of the resource.
      */
@@ -74,7 +74,7 @@ class PastasController extends Controller
         // Verifica se o número de pastas (incluindo subpastas) criadas é menor que o limite do plano
         if ($totalFolders < $monthLimit) {
             // Prossegue com a criação da pasta ou subpasta
-            $folderName = self::ROOT_PATH . $user->id . '/' . $request->nomePasta;
+            $folderName = $user->id . '/' . $request->nomePasta;
             $folder = json_decode(Helper::createFolder($folderName));
 
             if ($folder->path !== null) {
@@ -173,8 +173,56 @@ class PastasController extends Controller
         }
 
         $user = Usuarios::find($request->idUsuario);
-        $folderName = self::ROOT_PATH . $user->id . '/' . $request->nomePasta;
+        $folderName = 'public/' . $user->id . '/' . $request->nomePasta;
         $response = json_decode(Helper::deleteFolder($folderName));
         return $response->message;     //
     }
+
+    public function saveImageInFolder(Request $request)
+    {
+        // Validação para garantir que o idPasta e a imagem estão presentes
+        $request->validate([
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validação da imagem
+            'idPasta' => 'required|exists:pastas,id', // Validar se o idPasta existe
+        ]);
+
+        // Recuperar a pasta com base no idPasta
+        $pasta = Pastas::find($request->idPasta);
+
+        // Verificar se a pasta foi encontrada
+        if (!$pasta || !Storage::exists($pasta->path)) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => 'Pasta não encontrada.',
+            ]);
+        }
+
+        // Verificar se existe o arquivo de imagem no request
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+
+            // Gerar um nome único para a imagem
+            $imageName = time() . '.' . $image->getClientOriginalExtension();
+
+            // Armazenar a imagem na pasta recuperada (path)
+            $path = $image->storeAs($pasta->path, $imageName, 'public'); // 'public' indica o disco público
+
+            // Retornar o caminho da imagem armazenada
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => 'Imagem carregada com sucesso!',
+                'image_path' => Storage::url($path),  // Retorna o caminho público da imagem
+            ]);
+        }
+
+        // Caso o arquivo não tenha sido enviado
+        return response()->json([
+            'codRetorno' => HttpCodesEnum::BadRequest->value,
+            'message' => 'Nenhuma imagem foi enviada.',
+        ]);
+    }
+    //Rodar commando abaixo:
+//php artisan storage:link
+
+
 }

@@ -60,6 +60,13 @@ return [
             'report' => false,
         ],
 
+        // Disco para imagens
+        'images' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/images'), // A pasta onde as imagens serão armazenadas
+            'visibility' => 'public',
+        ],
+
     ],
 
     /*
