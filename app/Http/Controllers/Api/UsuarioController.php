@@ -364,12 +364,7 @@ class UsuarioController extends Controller
         $usuario->idPlano = Helper::ID_PLANO_CONVIDADO;
         $usuario->save();
         $pasta = Pastas::findOrFail($convite->idPasta);
-
-        // Associa o criador da pasta à pasta
-        $pasta->usuarios()->attach($convite->idUsuario);
-
-        // Associa o usuário que recebeu o convite à pasta
-        $pasta->usuarios()->attach($usuario->id);
+        Helper::relacionarPastas($pasta, $usuario);
 
 
     }
