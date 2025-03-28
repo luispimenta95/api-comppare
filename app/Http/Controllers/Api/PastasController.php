@@ -28,19 +28,10 @@ class PastasController extends Controller
      */
     public function create(Request $request): JsonResponse
     {
-        $campos = ['nomePasta', 'idUsuario'];
-
-        // Validação dos campos obrigatórios
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
-            $response = [
-                'codRetorno' => HttpCodesEnum::BadRequest->value,
-                'message' => HttpCodesEnum::MissingRequiredFields->description(),
-                'campos' => $campos
-            ];
-            return response()->json($response);
-        }
+        $request->validate([
+            'idUsuario' => 'required|exists:usuarios,id', // Validar se o idUsuario existe
+            'nomePasta' => 'required|string|max:255', // Validar se o nomePasta é uma string e tem no máximo 255 caracteres
+        ]);
 
         $user = Usuarios::find($request->idUsuario);
 
@@ -160,23 +151,14 @@ class PastasController extends Controller
      */
     public function destroy(Request $request)
     {
-        $campos = ['nomePasta', 'idUsuario'];
-
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
-            $response = [
-                'codRetorno' => HttpCodesEnum::BadRequest->value,
-                'message' => HttpCodesEnum::MissingRequiredFields->description(),
-                'campos' => $campos
-            ];
-            return response()->json($response);
-        }
-
+        $request->validate([
+            'idUsuario' => 'required|exists:usuarios,id', // Validar se o idUsuario existe
+            'nomePasta' => 'required|string|max:255', // Validar se o nomePasta é uma string e tem no máximo 255 caracteres
+        ]);
         $user = Usuarios::find($request->idUsuario);
         $folderName = 'public/' . $user->id . '/' . $request->nomePasta;
         $response = json_decode(Helper::deleteFolder($folderName));
-        return $response->message;     //
+        return $response->message;
     }
 
     public function saveImageInFolder(Request $request)

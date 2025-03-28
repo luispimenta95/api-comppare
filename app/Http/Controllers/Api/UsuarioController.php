@@ -12,6 +12,7 @@ use App\Models\Usuarios;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Util\Helper;
 use Carbon\Carbon;
+use Illuminate\Validation\Rules\Password;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Enums\HttpCodesEnum;
 
@@ -39,19 +40,16 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Request $request): JsonResponse
     {
-        $campos = ['nome', 'senha', 'cpf', 'telefone', 'idPlano', 'email', 'nascimento', 'cardToken'];
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
-            $this->messages = HttpCodesEnum::MissingRequiredFields;
-
-            $response = [
-                'codRetorno' => HttpCodesEnum::BadRequest->value,
-                'message' => $this->messages->description(),
-                'campos' => $campos,
-            ];
-            return response()->json($response);
-        }
+        $request->validate([
+            'nome' => 'required|string|max:255', // Nome não pode ser vazio, deve ser uma string e ter no máximo 255 caracteres
+            'senha' => 'required', 'string', Password::min(8)->mixedCase()->letters()->numbers()->symbols()->uncompromised(), 'max:255', // Senha deve ter no mínimo 8 caracteres
+            'cpf' => 'required|string|unique:usuarios,cpf', // CPF é obrigatório, válido e único na tabela de usuários
+            'telefone' => 'required|string|size:11', // Telefone deve ser uma string e ter exatamente 11 caracteres (pode ser alterado conforme o formato do seu telefone)
+            'idPlano' => 'required|exists:planos,id', // O idPlano deve existir na tabela planos
+            'email' => 'required|email|unique:usuarios,email', // Email obrigatório, deve ser válido e único na tabela de usuários
+            'nascimento' => 'required|date|before:today', // Nascimento obrigatório e deve ser uma data antes de hoje
+            'cardToken' => 'required|string', // cardToken é obrigatório e deve ser uma string
+        ]);
 
         if (!Helper::validaCPF($request->cpf)) {
             $this->messages = HttpCodesEnum::InvalidCPF;
@@ -109,17 +107,9 @@ class UsuarioController extends Controller
 
     public function getUser(Request $request): JsonResponse
     {
-        $campos = ['idUsuario'];
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
-            $response = [
-                'codRetorno' => HttpCodesEnum::BadRequest->value,
-                'message' => HttpCodesEnum::MissingRequiredFields->description(),
-                'campos' => $campos
-            ];
-            return response()->json($response);
-        }
+        $request->validate([
+            'idUsuario' => 'required|exists:usuarios,id', // Validar se o idUsuario existe
+        ]);
 
         $usuario = Usuarios::find($request->idUsuario);
 
@@ -137,17 +127,13 @@ class UsuarioController extends Controller
 
     public function atualizarDados(Request $request): JsonResponse
     {
-        $campos = ['nome', 'senha', 'email', 'cpf', 'telefone', 'nascimento'];
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
-            $response = [
-                'codRetorno' => HttpCodesEnum::BadRequest->value,
-                'message' => HttpCodesEnum::MissingRequiredFields->description(),
-                'campos' => $campos
-            ];
-            return response()->json($response);
-        }
+        $request->validate([
+            'nome' => 'required|string|max:255', // Nome não pode ser vazio, deve ser uma string e ter no máximo 255 caracteres
+            'email' => 'required|email|unique:usuarios,email', // Email obrigatório, deve ser válido e único na tabela de usuários
+            'cpf' => 'required|string|cpf|unique:usuarios,cpf', // CPF obrigatório, válido e único na tabela de usuários
+            'telefone' => 'required|string|size:11', // Telefone obrigatório, válido e deve ter 11 caracteres (ajuste conforme seu formato de telefone)
+            'nascimento' => 'required|date|before:today', // Nascimento obrigatório, válido como data e anterior a hoje
+        ]);
 
         if (!Helper::validaCPF($request->cpf)) {
             $response = [
@@ -207,17 +193,10 @@ class UsuarioController extends Controller
 
     public function autenticar(Request $request): JsonResponse
     {
-        $campos = ['cpf', 'senha'];
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
-            $response = [
-                'codRetorno' => HttpCodesEnum::BadRequest->value,
-                'message' => HttpCodesEnum::MissingRequiredFields->description(),
-                'campos' => $campos
-            ];
-            return response()->json($response);
-        }
+        $request->validate([
+            'senha' => 'required|string', // Senha obrigatória, deve ser uma string e ter no mínimo 8 caracteres
+            'cpf' => 'required|string', // CPF obrigatório, deve ser uma string e validado como CPF (você pode precisar de um pacote para a validação de CPF)
+        ]);
 
         $user = Usuarios::where('cpf', $request->cpf)->first();
 
@@ -235,17 +214,9 @@ class UsuarioController extends Controller
 
     private function confirmaUser(Request $request): mixed
     {
-        $campos = ['cpf'];
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
-            $response = [
-                'codRetorno' => HttpCodesEnum::BadRequest->value,
-                'message' => HttpCodesEnum::MissingRequiredFields->description(),
-                'campos' => $campos
-            ];
-            return response()->json($response);
-        }
+        $request->validate([
+            'cpf' => 'required|string', // CPF obrigatório, deve ser uma string e validado como CPF (você pode precisar de um pacote para a validação de CPF)
+        ]);
 
         $usuario = Usuarios::where('cpf', $request->cpf)->first();
 
@@ -269,17 +240,10 @@ class UsuarioController extends Controller
 
     public function atualizarSenha(Request $request): JsonResponse
     {
-        $campos = ['cpf', 'senha'];
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
-            $response = [
-                'codRetorno' => HttpCodesEnum::BadRequest->value,
-                'message' => HttpCodesEnum::MissingRequiredFields->description(),
-                'campos' => $campos
-            ];
-            return response()->json($response);
-        }
+        $request->validate([
+            'senha' => 'required', 'string', Password::min(8)->mixedCase()->letters()->numbers()->symbols()->uncompromised(), 'max:255', // Senha deve ter no mínimo 8 caracteres
+            'cpf' => 'required|string|unique:usuarios,cpf', // CPF é obrigatório, válido e único na tabela de usuários
+        ]);
 
         $usuario = Usuarios::findOrFail($request->cpf);
 
