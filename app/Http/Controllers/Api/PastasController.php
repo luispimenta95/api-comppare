@@ -10,6 +10,7 @@ use App\Models\Usuarios;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class PastasController extends Controller
 {
@@ -180,46 +181,60 @@ class PastasController extends Controller
 
     public function saveImageInFolder(Request $request)
     {
-        // Validação para garantir que o idPasta e a imagem estão presentes
-        $request->validate([
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validação da imagem
-            'idPasta' => 'required|exists:pastas,id', // Validar se o idPasta existe
-        ]);
+        try {
+            // Validação dos dados
+            $request->validate([
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048', // Validação da imagem
+                'idPasta' => 'required|exists:pastas,id', // Validar se o idPasta existe
+            ]);
 
-        // Recuperar a pasta com base no idPasta
-        $pasta = Pastas::find($request->idPasta);
+            // Recuperar a pasta com base no idPasta
+            $pasta = Pastas::find($request->idPasta);
 
-        // Verificar se a pasta foi encontrada
-        if (!$pasta || !Storage::exists($pasta->path)) {
+            // Verificar se a pasta foi encontrada
+            if (!$pasta || !Storage::exists($pasta->path)) {
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::NotFound->value,
+                    'message' => 'Pasta não encontrada.',
+                ]);
+            }
+
+            // Verificar se existe o arquivo de imagem no request
+            if ($request->hasFile('image')) {
+                $image = $request->file('image');
+
+                // Gerar um nome único para a imagem
+                $imageName = time() . '.' . $image->getClientOriginalExtension();
+
+                // Armazenar a imagem na pasta recuperada (path)
+                $path = $image->storeAs($pasta->path, $imageName, 'public'); // 'public' indica o disco público
+
+                // Retornar o caminho da imagem armazenada
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::OK->value,
+                    'message' => 'Imagem carregada com sucesso!',
+                    'image_path' => Storage::url($path),  // Retorna o caminho público da imagem
+                ]);
+            }
+
+            // Caso o arquivo não tenha sido enviado
             return response()->json([
-                'codRetorno' => HttpCodesEnum::NotFound->value,
-                'message' => 'Pasta não encontrada.',
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => 'Nenhuma imagem foi enviada.',
+            ]);
+
+
+            // O resto do código que processa a imagem
+            // ...
+
+        } catch (ValidationException $e) {
+            // Retornar a resposta personalizada com erros de validação
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => 'Validação falhou. Dados fornecidos inválidos.',
             ]);
         }
 
-        // Verificar se existe o arquivo de imagem no request
-        if ($request->hasFile('image')) {
-            $image = $request->file('image');
-
-            // Gerar um nome único para a imagem
-            $imageName = time() . '.' . $image->getClientOriginalExtension();
-
-            // Armazenar a imagem na pasta recuperada (path)
-            $path = $image->storeAs($pasta->path, $imageName, 'public'); // 'public' indica o disco público
-
-            // Retornar o caminho da imagem armazenada
-            return response()->json([
-                'codRetorno' => HttpCodesEnum::OK->value,
-                'message' => 'Imagem carregada com sucesso!',
-                'image_path' => Storage::url($path),  // Retorna o caminho público da imagem
-            ]);
-        }
-
-        // Caso o arquivo não tenha sido enviado
-        return response()->json([
-            'codRetorno' => HttpCodesEnum::BadRequest->value,
-            'message' => 'Nenhuma imagem foi enviada.',
-        ]);
     }
     //Rodar commando abaixo:
 //php artisan storage:link
