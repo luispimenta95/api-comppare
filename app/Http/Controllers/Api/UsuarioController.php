@@ -40,16 +40,15 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Request $request): JsonResponse
     {
-        dd($request->all());
         $request->validate([
             'nome' => 'required|string|max:255', // Nome não pode ser vazio, deve ser uma string e ter no máximo 255 caracteres
-            'senha' => 'required', 'string', Password::min(8)->mixedCase()->letters()->numbers()->symbols()->uncompromised(), 'max:255', // Senha deve ter no mínimo 8 caracteres
+            'senha' => 'required', 'string',  'max:255', // Senha deve ter no mínimo 8 caracteres
             'cpf' => 'required|string|unique:usuarios,cpf', // CPF é obrigatório, válido e único na tabela de usuários
             'telefone' => 'required|string|size:11', // Telefone deve ser uma string e ter exatamente 11 caracteres (pode ser alterado conforme o formato do seu telefone)
-            'idPlano' => 'required|exists:planos,id', // O idPlano deve existir na tabela planos
+            //'idPlano' => 'required|exists:planos,id', // O idPlano deve existir na tabela planos
             'email' => 'required|email|unique:usuarios,email', // Email obrigatório, deve ser válido e único na tabela de usuários
             'nascimento' => 'required|date|before:today', // Nascimento obrigatório e deve ser uma data antes de hoje
-            'cardToken' => 'required|string', // cardToken é obrigatório e deve ser uma string
+            //'cardToken' => 'required|string', // cardToken é obrigatório e deve ser uma string
         ]);
 
         if (!Helper::validaCPF($request->cpf)) {
@@ -70,8 +69,8 @@ class UsuarioController extends Controller
             return response()->json($response);
         }
 
-        $dataNascimento = Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d');
-        $limite = Planos::where('id', $request->idPlano)->first()->tempoGratuidade;
+        //$dataNascimento = Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d');
+        $limite = Planos::where('id', 1)->first()->tempoGratuidade;
 
         $usuario = Usuarios::create([
             'nome' => $request->nome,
@@ -79,8 +78,8 @@ class UsuarioController extends Controller
             'cpf' => $request->cpf,
             'telefone' => $request->telefone,
             'email' => $request->email,
-            'dataNascimento' => $dataNascimento,
-            'idPlano' => $request->idPlano,
+            'dataNascimento' => '2024-01-01',
+            'idPlano' => 1,
             'idPerfil' => Helper::ID_PERFIL_USUARIO,
             'dataLimiteCompra' => Carbon::now()->addDays($limite)->format('Y-m-d')
         ]);
