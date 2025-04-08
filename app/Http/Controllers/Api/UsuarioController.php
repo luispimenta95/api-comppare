@@ -40,6 +40,7 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Request $request): JsonResponse
     {
+
         $request->validate([
             'nome' => 'required|string|max:255', // Nome não pode ser vazio, deve ser uma string e ter no máximo 255 caracteres
             'senha' => 'required', 'string',  'max:255', // Senha deve ter no mínimo 8 caracteres
@@ -47,7 +48,7 @@ class UsuarioController extends Controller
             'telefone' => 'required|string|size:11', // Telefone deve ser uma string e ter exatamente 11 caracteres (pode ser alterado conforme o formato do seu telefone)
             //'idPlano' => 'required|exists:planos,id', // O idPlano deve existir na tabela planos
             'email' => 'required|email|unique:usuarios,email', // Email obrigatório, deve ser válido e único na tabela de usuários
-            'nascimento' => 'required|date|before:today', // Nascimento obrigatório e deve ser uma data antes de hoje
+            //'nascimento' => 'required|date|before:today', // Nascimento obrigatório e deve ser uma data antes de hoje
             //'cardToken' => 'required|string', // cardToken é obrigatório e deve ser uma string
         ]);
 
