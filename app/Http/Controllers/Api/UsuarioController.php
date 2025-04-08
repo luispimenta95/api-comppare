@@ -40,6 +40,7 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Request $request): JsonResponse
     {
+        dd($request->all());
         $request->validate([
             'nome' => 'required|string|max:255', // Nome não pode ser vazio, deve ser uma string e ter no máximo 255 caracteres
             'senha' => 'required', 'string', Password::min(8)->mixedCase()->letters()->numbers()->symbols()->uncompromised(), 'max:255', // Senha deve ter no mínimo 8 caracteres
