@@ -70,8 +70,8 @@ class UsuarioController extends Controller
             return response()->json($response);
         }
 
-        //$dataNascimento = Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d');
-        $limite = Planos::where('id', 1)->first()->tempoGratuidade;
+        $dataNascimento = Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d');
+        $limite = Planos::where('id', $request->idPlano)->first()->tempoGratuidade;
 
         $usuario = Usuarios::create([
             'nome' => $request->nome,
@@ -79,8 +79,8 @@ class UsuarioController extends Controller
             'cpf' => $request->cpf,
             'telefone' => $request->telefone,
             'email' => $request->email,
-            'dataNascimento' => '2024-01-01',
-            'idPlano' => 1,
+            'dataNascimento' => $dataNascimento,
+            'idPlano' => $request->idPlano,
             'idPerfil' => Helper::ID_PERFIL_USUARIO,
             'dataLimiteCompra' => Carbon::now()->addDays($limite)->format('Y-m-d')
         ]);
