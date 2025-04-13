@@ -46,10 +46,9 @@ class UsuarioController extends Controller
             'senha' => 'required', 'string',  'max:255', // Senha deve ter no mínimo 8 caracteres
             'cpf' => 'required|string|unique:usuarios,cpf', // CPF é obrigatório, válido e único na tabela de usuários
             'telefone' => 'required|string|size:11', // Telefone deve ser uma string e ter exatamente 11 caracteres (pode ser alterado conforme o formato do seu telefone)
-            //'idPlano' => 'required|exists:planos,id', // O idPlano deve existir na tabela planos
+            'idPlano' => 'required|exists:planos,id', // O idPlano deve existir na tabela planos
             'email' => 'required|email|unique:usuarios,email', // Email obrigatório, deve ser válido e único na tabela de usuários
-            //'nascimento' => 'required|date|before:today', // Nascimento obrigatório e deve ser uma data antes de hoje
-            //'cardToken' => 'required|string', // cardToken é obrigatório e deve ser uma string
+            'nascimento' => 'required|date|before:today', // Nascimento obrigatório e deve ser uma data antes de hoje
         ]);
 
         if (!Helper::validaCPF($request->cpf)) {

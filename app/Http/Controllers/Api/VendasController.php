@@ -32,18 +32,13 @@ class VendasController extends Controller
 
     public function createSubscription(Request $request): JsonResponse
     {
-        $campos = ['usuario', 'plano', 'token', 'valor'];
+        $request->validate([
+            'usuario' => 'required|exists:usuarios,id', // O usuario deve existir na tabela usuarios
+            'plano' => 'required|exists:planos,id', // O plano deve existir na tabela planos
+            'token' => 'required|string', // cardToken é obrigatório e deve ser uma string
+            'valor' => 'required|float'
+        ]);
 
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
-            $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
-                'campos' => $campos
-            ];
-            return response()->json($response);
-        }
         $usuario = Usuarios::find($request->usuario);
         $plano = Planos::find($request->plano);
 
