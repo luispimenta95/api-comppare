@@ -13,9 +13,9 @@ class Tag extends Model
         'status'
     ];
 
-    public function criador()
+    public function usuario()
     {
-        return $this->belongsTo(User::class, 'idUsuarioCriador');
+        return $this->belongsTo(Usuarios::class, 'idUsuarioCriador');
     }
 
     //

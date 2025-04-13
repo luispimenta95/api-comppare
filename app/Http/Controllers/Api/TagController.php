@@ -4,37 +4,43 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Util\Helper;
-use App\Models\Cupom;
-use Illuminate\Http\Request;
+use App\Models\Tag;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use App\Enums\HttpCodesEnum;
 
-class CupomController extends Controller
+class TagController extends Controller
 {
-    // Atualizando para utilizar a enum HttpCodesEnum
 
     public function __construct()
     {
-        // Inicializando a variável codes para utilizar a enum HttpCodesEnum
-
+        // Não é mais necessário armazenar códigos, pois agora usamos a HttpCodesEnum diretamente.
     }
 
+    /**
+     * Display a listing of the resource.
+     */
     public function index(): JsonResponse
     {
+        $tagsAtivas = Tag::where('status', 1)->count();
+
         $response = [
             'codRetorno' => HttpCodesEnum::OK->value,
             'message' => HttpCodesEnum::OK->description(),
-            'totalCupons' => Cupom::count(),
-            'cuponsAtivos' => Cupom::where('status', 1)->count(),
-            'data' => Cupom::all(),
+            'totalTags' => Tag::count(),
+            'tagsAtivas' => $tagsAtivas,
+            'data' => Tag::all()
         ];
 
         return response()->json($response);
     }
 
-    public function saveTicket(Request $request): JsonResponse
+    /**
+     * Cadastrar uma nova tag.
+     */
+    public function cadastrarTag(Request $request): JsonResponse
     {
-        $campos = ['cupom', 'percentualDesconto', 'quantidadeDias'];
+        $campos = ['nome', 'descricao', 'usuario'];
         $campos = Helper::validarRequest($request, $campos);
 
         if ($campos !== true) {
@@ -46,84 +52,26 @@ class CupomController extends Controller
             return response()->json($response);
         }
 
-        $cupom = Cupom::create([
-            'cupom' => $request->cupom,
-            'percentualDesconto' => $request->percentualDesconto,
+        Tag::create([
+            'nome' => $request->nome,
+            'descricao' => $request->descricao,
+            'idUsuarioCriador' => $request->usuario,
         ]);
 
-        if (isset($cupom->id)) {
-            $cupom->dataExpiracao = $cupom->created_at->addDays($request->quantidadeDias);
-            $cupom->save();
-
-            $response = [
-                'codRetorno' => HttpCodesEnum::OK->value,
-                'message' => HttpCodesEnum::OK->description(),
-            ];
-        } else {
-            $response = [
-                'codRetorno' => HttpCodesEnum::InternalServerError->value,
-                'message' => HttpCodesEnum::InternalServerError->description(),
-            ];
-        }
-
-        return response()->json($response);
-    }
-
-    public function getTicketDiscount(Request $request): JsonResponse
-    {
-        $cupom = Cupom::find($request->idCupom);
-
-        $response = isset($cupom->id) ? [
+        $response = [
             'codRetorno' => HttpCodesEnum::OK->value,
             'message' => HttpCodesEnum::OK->description(),
-            'data' => $cupom,
-        ] : [
-            'codRetorno' => HttpCodesEnum::NotFound->value,
-            'message' => HttpCodesEnum::NotFound->description(),
         ];
 
         return response()->json($response);
     }
 
-    public function atualizarDados(Request $request): JsonResponse
-    {
-        $campos = ['idCupom', 'percentualDesconto', 'quantidadeDias'];
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
-            $response = [
-                'codRetorno' => HttpCodesEnum::BadRequest->value,
-                'message' => HttpCodesEnum::MissingRequiredFields->description(),
-                'campos' => $campos,
-            ];
-            return response()->json($response);
-        }
-
-        $cupom = Cupom::findOrFail($request->idCupom);
-
-        if (isset($cupom->id)) {
-            $cupom->cupom = $request->cupom;
-            $cupom->percentualDesconto = $request->percentualDesconto;
-            $cupom->quantidadeDias = $request->quantidadeDias;
-            $cupom->save();
-
-            $response = [
-                'codRetorno' => HttpCodesEnum::OK->value,
-                'message' => HttpCodesEnum::OK->description(),
-            ];
-        } else {
-            $response = [
-                'codRetorno' => HttpCodesEnum::InternalServerError->value,
-                'message' => HttpCodesEnum::InternalServerError->description(),
-            ];
-        }
-
-        return response()->json($response);
-    }
-
+    /**
+     * Atualizar o status de uma tag.
+     */
     public function atualizarStatus(Request $request): JsonResponse
     {
-        $campos = ['idCupom', 'status'];
+        $campos = ['idTag'];
         $campos = Helper::validarRequest($request, $campos);
 
         if ($campos !== true) {
@@ -135,11 +83,11 @@ class CupomController extends Controller
             return response()->json($response);
         }
 
-        $cupom = Cupom::findOrFail($request->idCupom);
+        $tag = Tag::findOrFail($request->idTag);
 
-        if (isset($cupom->id)) {
-            $cupom->status = $request->status;
-            $cupom->save();
+        if (isset($tag->id)) {
+            $tag->status = $request->status;
+            $tag->save();
 
             $response = [
                 'codRetorno' => HttpCodesEnum::OK->value,
@@ -155,9 +103,12 @@ class CupomController extends Controller
         return response()->json($response);
     }
 
-    public function checkStatusTicket(Request $request): JsonResponse
+    /**
+     * Atualizar os dados de uma tag.
+     */
+    public function atualizarDados(Request $request): JsonResponse
     {
-        $campos = ['cupom'];
+        $campos = ['nome', 'descricao', 'idTag'];
         $campos = Helper::validarRequest($request, $campos);
 
         if ($campos !== true) {
@@ -169,15 +120,57 @@ class CupomController extends Controller
             return response()->json($response);
         }
 
-        $cupom = Cupom::where('cupom', strtoupper(str_replace(' ', '', $request->cupom)))->firstOrFail();
+        $tag = Tag::findOrFail($request->idTag);
 
-        $response = $cupom->status == 1 ? [
+        if (isset($tag->id)) {
+            $tag->nome = $request->nome;
+            $tag->descricao = $request->descricao;
+            $tag->save();
+
+            $response = [
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => HttpCodesEnum::OK->description(),
+            ];
+        } else {
+            $response = [
+                'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                'message' => HttpCodesEnum::InternalServerError->description(),
+            ];
+        }
+
+        return response()->json($response);
+    }
+
+    /**
+     * Buscar tags por usuário.
+     */
+    public function getTagsByUsuario(Request $request): JsonResponse
+    {
+        $campos = ['usuario'];
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::MissingRequiredFields->description(),
+                'campos' => $campos,
+            ];
+            return response()->json($response);
+        }
+
+        $tags = Tag::where('idUsuarioCriador', $request->usuario)
+            ->where('status', Helper::ATIVO)
+            ->orWhereHas('usuario', function ($query) {
+                $query->where('idPerfil', Helper::ID_PERFIL_ADMIN);
+            })
+            ->where('status', Helper::ATIVO)
+            ->get();
+
+        $response = [
             'codRetorno' => HttpCodesEnum::OK->value,
             'message' => HttpCodesEnum::OK->description(),
-            'data' => $cupom,
-        ] : [
-            'codRetorno' => HttpCodesEnum::BadRequest->value,
-            'message' => HttpCodesEnum::InactiveTicket->description(),
+            'totalTags' => count($tags),
+            'data' => $tags,
         ];
 
         return response()->json($response);

@@ -19,11 +19,16 @@ return new class extends Migration
             $table->string('senha');
             $table->string('email');
             $table->string('telefone');
+            $table->date('dataNascimento');
             $table->boolean('status')->default(true);
-            $table->timestamp('dataLimiteCompra')->nullable();
+            $table->timestamp('dataLimiteCompra');
             $table->timestamp('dataUltimoPagamento')->nullable();
-            $table->integer('idUltimoPagamento')->nullable();
-            $table->unsignedBigInteger('idPlano'); //
+            $table->integer('idUltimaCobranca')->nullable();
+            $table->integer('pastasCriadas')->default(0);
+            $table->integer('pontos')->default(0);
+            $table->integer('quantidadeConvites')->default(0);
+            $table->timestamp('ultimoAcesso')->nullable();
+            $table->unsignedBigInteger('idPlano');
             $table->foreign('idPlano')->references('id')->on('planos');
             $table->unsignedBigInteger('idPerfil')->default(Helper::ID_PERFIL_USUARIO);
             $table->foreign('idPerfil')->references('id')->on('perfil');

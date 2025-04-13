@@ -61,16 +61,14 @@
 <div class="container">
     <div class="content">
         <p>Olá, {{ $dados['nome'] }}!</p>
-        <p>Obrigado por se interessar em nosso produto {{$dados['nomePlano']}}. Para confirmar o seu cadastro em nosso site, por favor, clique no botão abaixo para realizar o pagamento:</p>
-    </div>
-    <div class="btn-container">
-        <a href="{{ $dados['url'] }}" class="btn">Realizar Pagamento</a>
+        <p>Seu pagamento foi realizado com sucesso!</p>
+        <p>Obrigado por confiar em nós! Seu acesso estará ativo até o dia {{ date('d/m/Y', strtotime('+30 days'))}}</p>
     </div>
     <div class="footer">
-        <p>Se você não se cadastrou em nosso site, ignore este e-mail.</p>
-        <p>Atenciosamente, <br>
+        <p>Se você não reconhece esta compra, ignore este e-mail.</p>
+        <p>Atenciosamente,
+
             {{ config('app.name') }}</p>
-        <br>
         <p>&copy; {{ date('Y') }} Todos os direitos reservados.</p>
     </div>
 </div>

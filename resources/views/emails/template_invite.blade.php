@@ -60,14 +60,14 @@
 <body>
 <div class="container">
     <div class="content">
-        <p>Olá, {{ $dados['nome'] }}!</p>
-        <p>Obrigado por se interessar em nosso produto {{$dados['nomePlano']}}. Para confirmar o seu cadastro em nosso site, por favor, clique no botão abaixo para realizar o pagamento:</p>
+        <p>Olá!</p>
+        <p>Você foi convidado para visualizar as fotos da pasta {{$dados['nomePasta']}}. Para confirmar o seu cadastro em nosso site, por favor, clique no botão abaixo:</p>
     </div>
     <div class="btn-container">
-        <a href="{{ $dados['url'] }}" class="btn">Realizar Pagamento</a>
+        <a href="{{ $dados['url'] }}" class="btn">Realizar Cadastro</a>
     </div>
     <div class="footer">
-        <p>Se você não se cadastrou em nosso site, ignore este e-mail.</p>
+        <p>Se você desconhece o assunto, por favor ignore este e-mail.</p>
         <p>Atenciosamente, <br>
             {{ config('app.name') }}</p>
         <br>

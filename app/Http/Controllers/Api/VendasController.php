@@ -2,82 +2,119 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Http\Util\Helper;
+use App\Http\Util\Payments\ApiEfi;
+use Carbon\Carbon;
 use App\Models\Planos;
 use App\Models\Usuarios;
-use Illuminate\Http\Request;
-
-use MercadoPago\MercadoPagoConfig;
-use MercadoPago\Client\Common\RequestOptions;
+use App\Http\Util\Helper;
+use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
+use App\Http\Util\MailHelper;
+use Illuminate\Support\Facades\Log;
 use App\Models\TransacaoFinanceira;
-use Carbon\Carbon;
-
-
-// Inicializar chave do Mercado Pago
-
 use App\Http\Util\Payments\ApiMercadoPago;
+use Illuminate\Http\Request;
 
 class VendasController extends Controller
 {
     //update server
-    private $apiMercadoPago;
+    private array $codes = [];
+    private ApiEfi $apiEfi;
+    private const CARTAO = 'Cartão de crédito';
 
 
     public function __construct()
     {
-        $this->apiMercadoPago = new ApiMercadoPago();
+        $this->codes = Helper::getHttpCodes();
+        $this->apiEfi = new ApiEfi();
     }
 
-    public function realizarVenda(Usuarios $usuario, Planos $plano)
+
+    public function createSubscription(Request $request): JsonResponse
     {
+        $campos = ['usuario', 'plano', 'token', 'valor'];
+
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $this->codes[-9],
+                'campos' => $campos
+            ];
+            return response()->json($response);
+        }
+        $usuario = Usuarios::find($request->usuario);
+        $plano = Planos::find($request->plano);
+
         $data = [
-            "id" => $plano->id,
-            "title" => $plano->nome,
-            "description" => $plano->descricao,
-            "price" => $plano->valor
+            "cardToken" => $request->token,
+            "idPlano" => $plano->idHost,
+            "usuario" => [
+                "name" => $usuario->nome,
+                "cpf" => $usuario->cpf,
+                "phone_number" => $usuario->telefone,
+                "email" => $usuario->email,
+                "birth" => Carbon::parse($usuario->dataNascimento)->format('Y-m-d')
+            ],
+
+            "produto" => [
+                "name" => $plano->nome,
+                "amount" => Helper::QUANTIDADE,
+                "value" => $request->valor * 100 // Valor = Valor plano * 100
+            ]
+
         ];
-        MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
 
-        return $this->apiMercadoPago->salvarVenda($data);
-    }
-
-    public function recuperarVenda(int $idPagamento)
-    {
-        MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
-
-        return $this->apiMercadoPago->getPaymentById((int) $idPagamento);
-    }
-
-    public function listarVendas()
-    {
-        MercadoPagoConfig::setAccessToken(env('ACCESS_TOKEN_TST'));
-
-        $response = $this->apiMercadoPago->getPayments();
-        echo json_encode($response);
-    }
-
-    public function updatePayment(): void
-    {
-        // Captura os parâmetros repassados na URL do redirecionamento
-        $orderId = (int) $_GET['collection_id'];
-        $orderStatus = $_GET['collection_status'];
-        $preferenceId = $_GET['preference_id'];
-        $response = $this->recuperarVenda($orderId);
-        $pedidio = TransacaoFinanceira::where('idPedido', $preferenceId)->first(); // Obtém o objeto corretamente
-        if ($pedidio && strtoupper($orderStatus) == Helper::STATUS_APROVADO) {
-            $pedidio->pagamentoEfetuado = true;
-            $pedidio->valorFinalPago = $response['valorFinal'];
-            $pedidio->idUltimoPagamento = $response['id'];
-            $pedidio->formaPagamento = $response['payment_method'];
-
-            $pedidio->save();
-
-            $usuario = Usuarios::find($pedidio->idUsuario);
-            $usuario->dataUltimoPagamento = $response['dataPagamento'];
-            $usuario->idUltimoPagamento  = $orderId;
-            $usuario->dataLimiteCompra =  Carbon::parse($usuario->dataUltimoPagamento)->addDays(Helper::TEMPO_RENOVACAO)->format('Y-m-d H:i:s');
+        $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
+        if ($responseApi['code'] == 200) {
+            $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
+            $usuario->dataLimiteCompra = Carbon::parse($responseApi['data']['first_execution'])->format('Y-m-d');
             $usuario->save();
+            $response = [
+                'codRetorno' => 200,
+                'message' => $this->codes[200]
+            ];
+            $dadosEmail = [
+                'nome' => $usuario->nome,
+            ];
+
+            MailHelper::confirmacaoAssinatura($dadosEmail, $usuario->email);
+        } else {
+            $response = [
+                'codRetorno' => 400,
+                'message' => $responseApi['description']
+            ];
+        }
+        return response()->json($response);
+    }
+
+    public function updatePayment(Request $request)
+    {
+
+
+        $chargeNotification = json_decode($this->apiEfi->getSubscriptionDetail($request->notification), true);
+
+        foreach ($chargeNotification['data'] as $item) {
+            if ($item['type'] === 'subscription_charge' && $item['status']['current'] === Helper::STATUS_APROVADO) {
+                $usuario = Usuarios::where('idUltimaCobranca', $item['identifiers']['charge_id'])->first();
+                if ($usuario) {
+                    $plano = Planos::find($usuario->idPlano);
+                    $usuario->dataUltimoPagamento = Carbon::parse($item['received_by_bank_at'])->format('Y-m-d');
+                    $usuario->dataLimiteCompra = $usuario->dataUltimoPagamento->addDays($plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife');
+                    $usuario->status = 1;
+                    $usuario->save();
+
+                    TransacaoFinanceira::create([
+                        'idPlano' => $plano->idPlano,
+                        'idUsuario' => $request->idUsuario,
+                        'formaPagamento' => self::CARTAO,
+                        'valorPagamento' => ($item['value'] / 100),
+                        'idPagamento' => $item['identifiers']['charge_id'],
+                        'pagamentoEfetuado' => 1
+                    ]);
+                }
+            }
         }
     }
 }

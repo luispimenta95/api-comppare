@@ -1,5 +1,5 @@
-@baseUrl = https://api.comppare.com.br/api
-#@baseUrl = http://127.0.0.1:8000/api
+#@baseUrl = https://api.comppare.com.br/api
+@baseUrl = http://127.0.0.1:8000/api
 ### GET request para testar a api
 GET {{baseUrl}}/test
 
@@ -10,12 +10,14 @@ Content-Type: application/json
 
 {
     "nome": "Luis Pimenta",
-    "cpf": "12345678909",
+    "cpf": "01234567890",
     "senha": "13151319",
     "telefone": "61998690313",
-    "email": "luis@teste.com",
+    "email": "luispimenta.contato@gmail.com",
     "idPlano": 1,
-    "idPerfil": 2
+    "idPerfil": 2,
+    "nascimento": "19/09/1995",
+    "cardToken": "0a9fc512fa67d3a9a217a1c34be522e878a2baa7"
 }
 
 
@@ -28,8 +30,8 @@ POST {{baseUrl}}/usuarios/autenticar
 Content-Type: application/json
 
 {
-    "cpf": "12929503742",
-    "senha": "123"
+    "cpf": "02342288140",
+    "senha": "13151319"
 }
 
 ###recuperar
@@ -65,10 +67,13 @@ POST {{baseUrl}}/planos/cadastrar
 Content-Type: application/json
 
 {
-    "nome": "Teste plano gratuito",
+    "nome": "Teste plano EFI",
     "descricao": "Teste",
-    "valor": 0,
-    "quantidadeTags": 1
+    "valor": 45,
+    "quantidadeTags": 1,
+    "quantidadeFotos": 1,
+    "quantidadePastas": 1
+
 }
 
 
@@ -103,7 +108,18 @@ Content-Type: application/json
 
 {
     "cupom": "Teste",
-    "percentualDesconto": 1
+    "percentualDesconto": 10,
+    "quantidadeDias": 5
 }
 
+###assinatura
+POST {{baseUrl}}/vendas/criar-assinatura
+Content-Type: application/json
+
+{
+    "usuario":1,
+    "plano": 1,
+    "valor": 39.9,
+    "token": "acvvcyt"
+}
 

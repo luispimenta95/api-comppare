@@ -11,15 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('cupoms', function (Blueprint $table) {
+        Schema::create('pontos', function (Blueprint $table) {
             $table->id();
-            $table->string('cupom');
-            $table->boolean('status')->default(true);
-            $table->integer('percentualDesconto');
-            $table->integer('quantidadeUsos')->default(0);
-            $table->timestamp('dataExpiracao')->nullable();
+            $table->string('acao');
+            $table->unsignedBigInteger('idUsuario');
+            $table->integer('pontos')->default(0);
+            $table->foreign('idUsuario')->references('id')->on('usuarios');
             $table->timestamps();
-
         });
     }
 
@@ -28,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cupoms');
+        Schema::dropIfExists('pontos');
     }
 };

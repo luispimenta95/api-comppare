@@ -3,380 +3,334 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Convite;
+use App\Models\Pastas;
 use App\Models\Planos;
-use App\Models\TransacaoFinanceira;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\Usuarios;
 use Illuminate\Support\Facades\Hash;
 use App\Http\Util\Helper;
 use Carbon\Carbon;
+use Illuminate\Validation\Rules\Password;
 use Tymon\JWTAuth\Facades\JWTAuth;
-
-
+use App\Enums\HttpCodesEnum;
 
 class UsuarioController extends Controller
 {
-    private array $codes = [];
-    private int $planoGratuito = 1;
-    private int $tempoRenovacao = 30;
-
+    private HttpCodesEnum $messages;
 
     public function __construct()
     {
-        $this->codes = Helper::getHttpCodes();
-
+        $this->messages = HttpCodesEnum::OK;  // Usando a enum para um valor inicial
     }
 
-    public function index():JsonResponse
+    public function index(): JsonResponse
     {
-        $usuariosAtivos = Usuarios::where('status', 1)->count();
         $response = [
-            'codRetorno' => 200,
-            'message' => $this->codes[200],
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => HttpCodesEnum::OK->description(),
             'totalUsuarios' => Usuarios::count(),
-            'usuariosAtivos' => $usuariosAtivos,
+            'usuariosAtivos' => Usuarios::where('status', 1)->count(),
             'data' => Usuarios::all()
-
         ];
+
         return response()->json($response);
     }
 
     public function cadastrarUsuario(Request $request): JsonResponse
     {
-        $campos = ['nome', 'senha', 'cpf', 'telefone', 'idPlano', 'email' , 'idPerfil'];
 
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
-            $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
-                'campos' => $campos
-            ];
-            return response()->json($response);
-        }
+        $request->validate([
+            'nome' => 'required|string|max:255', // Nome não pode ser vazio, deve ser uma string e ter no máximo 255 caracteres
+            'senha' => 'required', 'string',  'max:255', // Senha deve ter no mínimo 8 caracteres
+            'cpf' => 'required|string|unique:usuarios,cpf', // CPF é obrigatório, válido e único na tabela de usuários
+            'telefone' => 'required|string|size:11', // Telefone deve ser uma string e ter exatamente 11 caracteres (pode ser alterado conforme o formato do seu telefone)
+            //'idPlano' => 'required|exists:planos,id', // O idPlano deve existir na tabela planos
+            'email' => 'required|email|unique:usuarios,email', // Email obrigatório, deve ser válido e único na tabela de usuários
+            //'nascimento' => 'required|date|before:today', // Nascimento obrigatório e deve ser uma data antes de hoje
+            //'cardToken' => 'required|string', // cardToken é obrigatório e deve ser uma string
+        ]);
 
         if (!Helper::validaCPF($request->cpf)) {
+            $this->messages = HttpCodesEnum::InvalidCPF;
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-2]
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => $this->messages->description()
             ];
             return response()->json($response);
-        } else {
-            if ($this->confirmaUser($request)) {
-                $response = [
-                    'codRetorno' => 400,
-                    'message' => $this->codes[-6]
-                ];
-                return response()->json($response);
-
-            } else {
-
-
-                $usuario = Usuarios::create([
-                    'nome' => $request->nome,
-                    'senha' => bcrypt($request->senha), //
-                    'cpf' => $request->cpf,
-                    'telefone' => $request->telefone,
-                    'email' => $request->email,
-                    'idPlano' => $request->idPlano,
-                    'idPerfil' => $request->idPerfil
-                ]);
-
-                $token = JWTAuth::fromUser($usuario);
-
-                if (isset($usuario->id)) {
-                    $idPlano = $usuario->idPlano;
-                    $plano = Planos::find($idPlano);
-                    $vendasController = new VendasController();
-                    $responseApi = $vendasController->realizarVenda($usuario, $plano);
-                    if (!str_contains(strtolower($plano->nome), 'gratuito')) {
-                        $usuario->dataLimiteCompra = $usuario->created_at->addDays(Planos::find($idPlano)->tempoGratuidade)->setTimezone('America/Recife');
-                        $usuario->save();
-                    }
-                    TransacaoFinanceira::create([
-                        'idPlano' => $idPlano,
-                        'valorPlano' => $plano->valor,
-                        'idUsuario' => $usuario->id,
-                        'idPedido' => $responseApi['idPedido']
-                    ]);
-                    $response = [
-                        'codRetorno' => 200,
-                        'message' => $this->codes[200],
-                        'token' => $token,
-                        'url' => $responseApi['link']
-                    ];
-                    /*$dadosEmail = [
-                        'nome' => $usuario->nome,
-                        'url' => $responseApi['link'],
-                        'nomePlano' => $plano->nome,
-
-                    ];
-                    Helper::enviarEmailBoasVindas($dadosEmail,$request->email);*/
-                } else {
-                    $response = [
-                        'codRetorno' => 500,
-                        'message' => $this->codes[500]
-                    ];
-
-                }
-                return response()->json($response);
-            }
         }
+
+        if ($this->confirmaUser($request)) {
+            $this->messages = HttpCodesEnum::CPFAlreadyRegistered;
+            $response = [
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => $this->messages->description()
+            ];
+            return response()->json($response);
+        }
+
+        //$dataNascimento = Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d');
+        $limite = Planos::where('id', 1)->first()->tempoGratuidade;
+
+        $usuario = Usuarios::create([
+            'nome' => $request->nome,
+            'senha' => bcrypt($request->senha),
+            'cpf' => $request->cpf,
+            'telefone' => $request->telefone,
+            'email' => $request->email,
+            'dataNascimento' => '2024-01-01',
+            'idPlano' => 1,
+            'idPerfil' => Helper::ID_PERFIL_USUARIO,
+            'dataLimiteCompra' => Carbon::now()->addDays($limite)->format('Y-m-d')
+        ]);
+
+        if (isset($usuario->id)) {
+
+            $convite = Convite::where('email', $request->email)->firstOrFail();
+            if($convite){
+                $this->associarPastasUsuario($convite, $usuario);
+            }
+
+            $response = [
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => HttpCodesEnum::OK->description()
+            ];
+        } else {
+            $response = [
+                'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                'message' => HttpCodesEnum::InternalServerError->description()
+            ];
+        }
+
+        return response()->json($response);
     }
 
-    public function getUser(Request $request) :JsonResponse
+    public function getUser(Request $request): JsonResponse
     {
-        $campos = ['idUsuario'];
+        $request->validate([
+            'idUsuario' => 'required|exists:usuarios,id', // Validar se o idUsuario existe
+        ]);
 
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
-            $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
-                'campos' => $campos
-            ];
-            return response()->json($response);
-        }
         $usuario = Usuarios::find($request->idUsuario);
-        isset($usuario->id) ?
-            $response = [
-                'codRetorno' => 200,
-                'message' => $this->codes[200],
-                'data' => $usuario
-            ] : $response = [
-            'codRetorno' => 404,
-            'message' => $this->codes[404]
+
+        $response = isset($usuario->id) ? [
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => HttpCodesEnum::OK->description(),
+            'data' => $usuario
+        ] : [
+            'codRetorno' => HttpCodesEnum::NotFound->value,
+            'message' => HttpCodesEnum::NotFound->description()
         ];
+
         return response()->json($response);
     }
 
-    public function atualizarDados(Request $request) :JsonResponse
+    public function atualizarDados(Request $request): JsonResponse
     {
-        $campos = ['nome', 'senha', 'email','cpf', 'telefone'];
+        $request->validate([
+            'nome' => 'required|string|max:255', // Nome não pode ser vazio, deve ser uma string e ter no máximo 255 caracteres
+            'email' => 'required|email|unique:usuarios,email', // Email obrigatório, deve ser válido e único na tabela de usuários
+            'cpf' => 'required|string|cpf|unique:usuarios,cpf', // CPF obrigatório, válido e único na tabela de usuários
+            'telefone' => 'required|string|size:11', // Telefone obrigatório, válido e deve ter 11 caracteres (ajuste conforme seu formato de telefone)
+            'nascimento' => 'required|date|before:today', // Nascimento obrigatório, válido como data e anterior a hoje
+        ]);
 
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
-            $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
-                'campos' => $campos
-            ];
-            return response()->json($response);
-        }
         if (!Helper::validaCPF($request->cpf)) {
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[400]
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::InvalidCPF->description(),
             ];
             return response()->json($response);
-        } else {
-            $usuario = Usuarios::findOrFail($request->idUsuario);
-            if (isset($usuario->id)) {
-                $usuario->nome = $request->nome;
-                $usuario->senha = bcrypt($request->senha);
-                $usuario->cpf = $request->cpf;
-                $usuario->telefone = $request->telefone;
-                $usuario->email = $request->email;
-                $usuario->save();
-                $response = [
-                    'codRetorno' => 200,
-                    'message' => $this->codes[200]
-                ];
-            } else {
-                $response = [
-                    'codRetorno' => 500,
-                    'message' => $this->codes[500]
-                ];
-            }
         }
+
+        $usuario = Usuarios::findOrFail($request->idUsuario);
+        $dataNascimento = Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d');
+
+        if (isset($usuario->id)) {
+            $usuario->nome = $request->nome;
+            $usuario->senha = bcrypt($request->senha);
+            $usuario->cpf = $request->cpf;
+            $usuario->telefone = $request->telefone;
+            $usuario->email = $request->email;
+            $usuario->dataNascimento = $dataNascimento;
+            $usuario->save();
+
+            $response = [
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => HttpCodesEnum::OK->description(),
+            ];
+        } else {
+            $response = [
+                'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                'message' => HttpCodesEnum::InternalServerError->description(),
+            ];
+        }
+
         return response()->json($response);
     }
 
-
-    public function atualizarStatus(Request $request) :JsonResponse
+    public function atualizarStatus(Request $request): JsonResponse
     {
         $usuario = Usuarios::findOrFail($request->idUsuario);
+
         if (isset($usuario->id)) {
             $usuario->status = $request->status;
             $usuario->save();
-            $response = [
-                'codRetorno' => 200,
-                'message' => $this->codes[200]
-            ];
-        } else {
 
             $response = [
-                'codRetorno' => 500,
-                'message' => $this->codes[500]
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => HttpCodesEnum::OK->description(),
+            ];
+        } else {
+            $response = [
+                'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                'message' => HttpCodesEnum::InternalServerError->description(),
             ];
         }
+
         return response()->json($response);
     }
 
-    public function autenticar(Request $request) :JsonResponse
+    public function autenticar(Request $request): JsonResponse
     {
+        $request->validate([
+            'senha' => 'required|string', // Senha obrigatória, deve ser uma string e ter no mínimo 8 caracteres
+            'cpf' => 'required|string', // CPF obrigatório, deve ser uma string e validado como CPF (você pode precisar de um pacote para a validação de CPF)
+        ]);
 
-        // Validar os dados de entrada
-        $campos = ['cpf', 'senha'];
+        $user = Usuarios::where('cpf', $request->cpf)->first();
 
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
+        if (!$user) {
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
-                'campos' => $campos
-            ];
-            return response()->json($response);
-        }
-        // Recuperar o usuário com base no CPF
-        $user = Usuarios::where('cpf', $request->input('cpf'))->first();
-        if(!$user){
-            $response = [
-                'codRetorno' => 404,
-                'message' => $this->codes[404]
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => HttpCodesEnum::NotFound->description(),
             ];
             return response()->json($response);
         }
 
-       $response = $this->checaPermissoes($user, $request);
-
+        $response = $this->checaPermissoes($user, $request);
         return response()->json($response);
     }
 
     private function confirmaUser(Request $request): mixed
     {
-        $campos = ['cpf'];
+        $request->validate([
+            'cpf' => 'required|string', // CPF obrigatório, deve ser uma string e validado como CPF (você pode precisar de um pacote para a validação de CPF)
+        ]);
 
-        $campos = Helper::validarRequest($request, $campos);
+        $usuario = Usuarios::where('cpf', $request->cpf)->first();
 
-        if ($campos !== true) {
-            $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
-                'campos' => $campos
-            ];
-            return response()->json($response);
-        }
-        $exists = Usuarios::where('cpf', $request->cpf)->exists();
-        return $exists;
-
+        return isset($usuario->id) ? true : false;
     }
 
-    public function validaExistenciaUsuario(Request $request) :JsonResponse
+    public function validaExistenciaUsuario(Request $request): JsonResponse
     {
         $existe = $this->confirmaUser($request);
-        $existe ?
-        $response = [
-            'codRetorno' => 200,
-            'message' => $this->codes[200]
-        ]:
-            $response = [
-                'codRetorno' => 404,
-                'message' => $this->codes[404]
-            ];
+
+        $response = $existe ? [
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => HttpCodesEnum::OK->description(),
+        ] : [
+            'codRetorno' => HttpCodesEnum::NotFound->value,
+            'message' => HttpCodesEnum::NotFound->description(),
+        ];
+
         return response()->json($response);
     }
 
-    public function atualizarSenha(Request $request) :JsonResponse
+    public function atualizarSenha(Request $request): JsonResponse
     {
-        $campos = ['cpf', 'senha'];
-
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
-            $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
-                'campos' => $campos
-            ];
-            return response()->json($response);
-        }
+        $request->validate([
+            'senha' => 'required', 'string', Password::min(8)->mixedCase()->letters()->numbers()->symbols()->uncompromised(), 'max:255', // Senha deve ter no mínimo 8 caracteres
+            'cpf' => 'required|string|unique:usuarios,cpf', // CPF é obrigatório, válido e único na tabela de usuários
+        ]);
 
         $usuario = Usuarios::findOrFail($request->cpf);
+
         if (isset($usuario->cpf)) {
             $usuario->senha = bcrypt($request->senha);
             $usuario->save();
-            $token = JWTAuth::fromUser($usuario);
 
             $response = [
-                'codRetorno' => 200,
-                'message' => $this->codes[200],
-                'token' => $token
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => HttpCodesEnum::OK->description(),
             ];
         } else {
-
             $response = [
-                'codRetorno' => 500,
-                'message' => $this->codes[500]
+                'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                'message' => HttpCodesEnum::InternalServerError->description(),
             ];
         }
+
         return response()->json($response);
     }
 
-    private function checaPermissoes(Usuarios $user, Request $request) :JsonResponse
+    private function checaPermissoes(Usuarios $user, Request $request): JsonResponse
     {
-        $osTime = Carbon::now()->setTimezone('America/Recife');
-        $dataLimiteCompra = Carbon::parse($user->dataLimiteCompra)->setTimezone('America/Recife');
+        $response = [];
 
-        // Verificar se a senha fornecida corresponde à senha armazenada no banco
         if (!$user || !Hash::check($request->input('senha'), $user->senha)) {
-            $response = [
-                'codRetorno' => 404,
-                'message' => $this->codes[404]
-            ];
-        } else {
-            $token = JWTAuth::fromUser($user);
-            //Verifica validade de perio de testes para planos pagos
-            if (($user->idPlano != $this->planoGratuito) && $dataLimiteCompra > $osTime) {
-                $response = [
-                    'codRetorno' => 400,
-                    'message' => $this->codes[-7]
-                ];
-                return response()->json($response);
-            }
-            //Verifica data do ultimo pagamento
-            if (($user->idPlano != $this->planoGratuito) && $user->dataUltimoPagamento == null) {
-                $response = [
-                    'codRetorno' => 400,
-                    'message' => $this->codes[-7]
-                ];
-                return response()->json($response);
-            }
-            if ($user->idPlano != $this->planoGratuito) {
-                $daLimiteAcesso = $user->dataUltimoPagamento->addDays($this->tempoRenovacao)->setTimezone('America/Recife');
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => HttpCodesEnum::NotFound->description()
+            ]);
+        }
 
-                if (($user->idPlano != $this->planoGratuito) && $daLimiteAcesso > $osTime) {
-                    $response = [
-                        'codRetorno' => 400,
-                        'message' => $this->codes[-8]
-                    ];
-                    return response()->json($response);
-                }
-
+        if ($user) {
+            if ($user->status == 0) {
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::BadRequest->value,
+                    'message' => HttpCodesEnum::UserBlockedDueToInactivity->description()
+                ]);
+            }
+            $plano = Planos::where('id', $user->idPlano)->first();
+            $diasRenovacao = $plano->tempoGratuidade;
+            if ($plano->idHost == null) {
+                $dataLimiteCompra = Carbon::parse($user->created_at)->addDays($diasRenovacao);
             } else {
+                $dataLimiteCompra = $user->dataUltimoPagamento != null ?
+                    Carbon::parse($user->dataUltimoPagamento)->addDays($diasRenovacao) :
+                    Carbon::parse($user->created_at)->addDays(Helper::TEMPO_GRATUIDADE);
+            }
+
+            if (Helper::checkDateIsPassed($dataLimiteCompra)) {
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::BadRequest->value,
+                    'message' => HttpCodesEnum::ExpiredSubscription->description()
+                ]);
+            } else {
+                $token = JWTAuth::fromUser($user);
                 $pastas = $user->pastas->map(function ($pasta) {
                     return [
                         'nome' => $pasta->nome,
                         'caminho' => $pasta->caminho
                     ];
                 });
+                $user->ultimoAcesso = Carbon::now();
+                $user->save();
 
-                $response = [
-                    'codRetorno' => 200,
-                    'message' => $this->codes[200],
+
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::OK->value,
+                    'message' => HttpCodesEnum::OK->description(),
                     'token' => $token,
                     'dados' => $user->only('id', 'nome', 'cpf', 'telefone'),
                     'pastas' => $pastas
-                ];
+                ]);
             }
-
         }
         return response()->json($response);
     }
 
+    private function associarPastasUsuario(Convite $convite, Usuarios $usuario):void
+    {
+        $usuario->idPerfil = Helper::ID_PERFIL_CONVIDADO;
+        $usuario->idPlano = Helper::ID_PLANO_CONVIDADO;
+        $usuario->save();
+        $pasta = Pastas::findOrFail($convite->idPasta);
+        Helper::relacionarPastas($pasta, $usuario);
+
+
+    }
 }

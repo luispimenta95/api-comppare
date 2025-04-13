@@ -2,30 +2,51 @@
 
 namespace App\Http\Util;
 
-use App\Mail\ComppareEmailWelcome;
+use App\Models\Pastas;
+use App\Models\Usuarios;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 
 class Helper
 
 
 {
-    const ID_PERFIL_ADMIN = 1;
-    const ID_PERFIL_USUARIO = 2;
+    const int ID_PERFIL_ADMIN = 1;
+    const int ID_PERFIL_USUARIO = 2;
+    const int ID_PERFIL_CONVIDADO = 3;
+    const int ID_PLANO_CONVIDADO = 7;
 
-    const TEMPO_GRATUIDADE = 15;
-    const LIMITE_FOTOS = 2;
+    const int ATIVO = 1;
 
-    const LIMITE_TAGS = 5;
+    const int TEMPO_GRATUIDADE = 15;
+    const int LIMITE_FOTOS = 2;
 
-    const LIMITE_PASTAS = 10;
+    const int LIMITE_TAGS = 5;
+
+    const int LIMITE_PASTAS = 10;
 
 
-    const TEMPO_RENOVACAO = 30;
-    
-    const STATUS_APROVADO = 'APPROVED';
+    const int TEMPO_RENOVACAO_MENSAL = 30;
+    const int TEMPO_RENOVACAO_ANUAL = 360;
+
+    const int TEMPO_RENOVACAO_SEMESTRAL = 180;
+
+    const string STATUS_APROVADO = 'paid';
+    const string STATUS_AGUARDANDO_APROVACAO = 'waiting';
+    const string STATUS_CANCELADO = 'CANCELLED';
+    const string MOEDA = "BRL";
+    const TIPO_RENOVACAO_MENSAL = 'months';
+    const string TIPO_RENOVACAO_DIARIA = 'days';
+    const int DIA_COBRANCA = 05;
+    const string STATUS_ATIVO = 'active';
+    const string STATUS_AUTORIZADO = 'authorized';
+
+    const int QUANTIDADE = 1;
+    const int INTERVALO_MENSAL = 1;
+    const int INTERVALO_ANUAL= 12;
 
     /**
      * Retorna todos os códigos HTTP e suas descrições.
@@ -36,66 +57,65 @@ class Helper
     {
         return [
             100 => 'Continue',
-            101 => 'Mudando Protocolos',
-            102 => 'Processando',
+            101 => 'Switching Protocols',
+            102 => 'Processing',
             200 => 'OK',
-            201 => 'Criado',
-            202 => 'Aceito',
-            203 => 'Informação Não Autoritativa',
-            204 => 'Sem Conteúdo',
-            205 => 'Redefinir Conteúdo',
-            206 => 'Conteúdo Parcial',
+            201 => 'Created',
+            202 => 'Accepted',
+            203 => 'Non-Authoritative Information',
+            204 => 'No Content',
+            205 => 'Reset Content',
+            206 => 'Partial Content',
             207 => 'Multi-Status',
-            208 => 'Já Reportado',
-            226 => 'IM Usado',
-            300 => 'Múltiplas Opções',
-            301 => 'Movido Permanentemente',
-            302 => 'Encontrado',
-            303 => 'Ver Outro',
-            304 => 'Não Modificado',
-            305 => 'Usar Proxy',
-            307 => 'Redirecionamento Temporário',
-            308 => 'Redirecionamento Permanente',
-            400 => 'Requisição Inválida',
-            401 => 'Não Autorizado',
-            402 => 'Pagamento Requerido',
-            403 => 'Acesso Restrito',
-            404 => 'Não Encontrado',
-            405 => 'Método Não Permitido',
-            406 => 'Não Aceitável',
-            407 => 'Autenticação de Proxy Requerida',
-            408 => 'Tempo de Requisição Esgotado',
-            409 => 'Dado já existente no banco de dados',
-            410 => 'Desaparecido',
-            411 => 'Comprimento Requerido',
-            412 => 'Falha de Pré-Condição',
-            413 => 'Carga Útil Muito Grande',
-            414 => 'URI Muito Longa',
-            415 => 'Tipo de Mídia Não Suportado',
-            416 => 'Intervalo Não Satisfatório',
-            417 => 'Falha na Expectativa',
-            418 => 'Sou um bule de chá',
-            421 => 'Requisição Desviada',
-            422 => 'Entidade Não Processável',
-            423 => 'Bloqueado',
-            424 => 'Falha de Dependência',
-            425 => 'Muito Cedo',
-            426 => 'Atualização Requerida',
-            428 => 'Pré-Condição Requerida',
-            429 => 'Muitas Requisições',
-            431 => 'Campos de Cabeçalho de Requisição Muito Grandes',
-            451 => 'Indisponível por Razões Legais',
-            500 => 'Erro Interno do Servidor',
-            501 => 'Não Implementado',
+            208 => 'Already Reported',
+            226 => 'IM Used',
+            300 => 'Multiple Choices',
+            301 => 'Moved Permanently',
+            302 => 'Found',
+            303 => 'See Other',
+            304 => 'Not Modified',
+            305 => 'Use Proxy',
+            307 => 'Temporary Redirect',
+            308 => 'Permanent Redirect',
+            400 => 'Bad Request',
+            401 => 'Unauthorized',
+            402 => 'Payment Required',
+            403 => 'Forbidden',
+            404 => 'Not Found',
+            405 => 'Method Not Allowed',
+            406 => 'Not Acceptable',
+            407 => 'Proxy Authentication Required',
+            408 => 'Request Timeout',
+            409 => 'Conflict',
+            410 => 'Gone',
+            411 => 'Length Required',
+            412 => 'Precondition Failed',
+            413 => 'Payload Too Large',
+            414 => 'URI Too Long',
+            415 => 'Unsupported Media Type',
+            416 => 'Range Not Satisfiable',
+            417 => 'Expectation Failed',
+            421 => 'Misdirected Request',
+            422 => 'Unprocessable Entity',
+            423 => 'Locked',
+            424 => 'Failed Dependency',
+            425 => 'Too Early',
+            426 => 'Upgrade Required',
+            428 => 'Precondition Required',
+            429 => 'Too Many Requests',
+            431 => 'Request Header Fields Too Large',
+            451 => 'Unavailable For Legal Reasons',
+            500 => 'Internal Server Error',
+            501 => 'Not Implemented',
             502 => 'Bad Gateway',
-            503 => 'Serviço Indisponível',
-            504 => 'Tempo de Espera do Gateway Esgotado',
-            505 => 'Versão HTTP Não Suportada',
-            506 => 'Variação Também Negocia',
-            507 => 'Armazenamento Insuficiente',
-            508 => 'Loop Detectado',
-            510 => 'Não Estendido',
-            511 => 'Autenticação de Rede Requerida',
+            503 => 'Service Unavailable',
+            504 => 'Gateway Timeout',
+            505 => 'HTTP Version Not Supported',
+            506 => 'Variant Also Negotiates',
+            507 => 'Insufficient Storage',
+            508 => 'Loop Detected',
+            510 => 'Not Extended',
+            511 => 'Network Authentication Required',
             //Especificos do COMPPARE APP
             -1 => 'Error: Erro desconhecido',
             -2 => 'Error: Erro ao validar CPF',
@@ -105,7 +125,12 @@ class Helper
             -6 => 'Error: CPF já cadastrado no banco de dados',
             -7 => 'Error: Período de gratuidade expirado. Por favor, atualize sua assinatura adquirindo um novo plano.',
             -8 => 'Error: Assinatura exiprada. Por favor, atualize sua assinatura adquirindo um novo plano.',
-            '-9' => 'Error: A request possui campos obrigatórios não preenchidos ou inválidos.'
+            -9 => 'Error: A request possui campos obrigatórios não preenchidos ou inválidos.',
+            -10 => 'Error: O pagamento ainda não foi realizado.',
+            -11 => 'Error: Limite de criação de pastas mensal atingido.' ,
+            -12 => 'Error: Erro ao realizar venda do plano de assinatura.',
+            -13 => 'Error: Usuário bloqueado por inatividade superior a 180 dias.'
+
         ];
     }
 
@@ -151,20 +176,7 @@ class Helper
         return empty($camposNulos) ? true : $camposNulos; // Return true if valid, otherwise return all null fields
     }
 
-    public static function enviarEmailBoasVindas(array $dados, string $mailTo): void //testing webhocks
-    {
-        $dadosEmail = [
-            'to' => $mailTo,
-            'body' => [
-                'nome' => $dados['nome'],
-                'url' => $dados['url'],
-                'nomePlano' => $dados['nomePlano']
-            ],
-        ];
 
-
-        Mail::to($mailTo)->send(new ComppareEmailWelcome($dadosEmail));
-    }
 
     public static function createFolder(string $folderName): JsonResponse
     {
@@ -182,7 +194,6 @@ class Helper
         }
 
         return response()->json(['message' => 'Erro ao criar a pasta.'], 500);
-
     }
 
     public static function deleteFolder(string $folderName): JsonResponse
@@ -192,10 +203,47 @@ class Helper
             $delete = false;
         }
         return response()->json([
-            'message' => $delete ? 'Pasta deletada com sucesso!' : 'Erro ao deletar a pasta.',
+            'message' => $delete ? 'Pasta deletada com sucesso!' : 'Erro ao deletar a pasta.'
         ]);
     }
 
+    public static  function makeRequest(string $url, array $data): mixed
+    {
+        $route = url($url);
 
+        // Faz a requisição POST para o endpoint interno
+        $response = Http::post($route, $data);
+        // Verifique a resposta
+        if ($response->successful()) {
+            // A requisição foi bem-sucedida
+            return response()->json(
+                ['message' => 'Processo finalizado com sucesso',
+                'code'  => 200
+                ]);
+        } else {
+            // Em caso de erro na requisição
+            return response()->json(['message' => 'Erro ao realizar request', 'code'  => 500],500);
+        }
+    }
+// Checa se uma data informada já passou. Caso positivo, return true | return false
+    public static function checkDateIsPassed($date): bool
+    {
+        $dataAtual = Carbon::now();
+        return $date->lt($dataAtual);
 
+    }
+
+    public static function relacionarPastas(Pastas $pasta, Usuarios $usuario):void
+    {
+
+        $subpastas = $pasta->subpastas;
+
+        foreach ($subpastas as $subpasta) {
+            // Adiciona o usuário à subpasta
+            $subpasta->usuarios()->attach($usuario->id);
+
+            // Chama a função recursivamente para adicionar as subpastas das subpastas
+            self::relacionarPastas($subpasta, $usuario);
+        }
+    }
 }

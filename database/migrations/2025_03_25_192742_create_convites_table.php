@@ -11,15 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('cupoms', function (Blueprint $table) {
+        Schema::create('convites', function (Blueprint $table) {
             $table->id();
-            $table->string('cupom');
-            $table->boolean('status')->default(true);
-            $table->integer('percentualDesconto');
-            $table->integer('quantidadeUsos')->default(0);
-            $table->timestamp('dataExpiracao')->nullable();
+            $table->string('email');
+            $table->unsignedBigInteger('idUsuario');
+            $table->foreign('idUsuario')->references('id')->on('usuarios');
+            $table->unsignedBigInteger('idPasta');
+            $table->foreign('idPasta')->references('id')->on('pastas');
             $table->timestamps();
-
         });
     }
 
@@ -28,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cupoms');
+        Schema::dropIfExists('convites');
     }
 };

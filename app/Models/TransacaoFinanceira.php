@@ -15,20 +15,17 @@ class TransacaoFinanceira extends Model
         'idPlano',
         'idUsuario',
         'formaPagamento',
-        'valorPlano',
-        'valorFinalPago',
-        'idPedido',
+        'valorPagamento',
         'pagamentoEfetuado',
-        'idUltimoPagamento'
+        'idPagamento'
     ];
     public function usuario(): BelongsTo
     {
         return $this->belongsTo(Usuarios::class);
     }
 
-    public function planos() :HasMany
+    public function planos(): HasMany
     {
         return $this->hasMany(Planos::class);
     }
-
 }
