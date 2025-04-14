@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\VendasController;
 use App\Http\Controllers\ConviteController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\RankingController;
+use App\Http\Controllers\Api\PastasController;
 
 Route::middleware('api')->group(function () {
     Route::get('/api/test', function () {
@@ -57,5 +58,6 @@ Route::middleware('api')->group(function () {
     //Convites
 
     Route::post('api/convites/enviar', [ConviteController::class, 'create']);
+    Route::post('/api/pastas/criar', [PastasController::class, 'create']);
 
 });
