@@ -66,7 +66,7 @@ class PastasController extends Controller
         // Verifica se o número de pastas (incluindo subpastas) criadas é menor que o limite do plano
         if ($totalFolders < $monthLimit) {
             // Prossegue com a criação da pasta ou subpasta
-            $folderName = $user->id . '/' . $request->nomePasta;
+            $folderName =  $user->nome . '/' . $request->nomePasta;
             $folder = json_decode(Helper::createFolder($folderName));
 
             if ($folder->path !== null) {
