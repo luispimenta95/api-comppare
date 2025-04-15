@@ -302,6 +302,7 @@ class UsuarioController extends Controller
                 $token = JWTAuth::fromUser($user);
                 $pastas = $user->pastas->map(function ($pasta) {
                     return [
+                        'id' => $pasta->id,
                         'nome' => $pasta->nome,
                         'caminho' => $pasta->caminho
                     ];
