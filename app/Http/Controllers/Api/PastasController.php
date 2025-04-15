@@ -65,6 +65,7 @@ class PastasController extends Controller
                 ->whereMonth('created_at', $currentMonth);
         })->count();
         dd($subpastasCriadasNoMes);
+      teste
 */
         $totalFolders = $pastasCriadasNoMes;
 
