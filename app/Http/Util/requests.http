@@ -123,3 +123,13 @@ Content-Type: application/json
     "token": "acvvcyt"
 }
 
+
+###pastas
+###cadastrar
+POST {{baseUrl}}/pasta/create
+Content-Type: application/json
+
+{
+    "idUsuario": 1,
+    "nomePasta": "teste"
+  }

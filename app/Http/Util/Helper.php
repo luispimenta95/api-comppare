@@ -178,22 +178,23 @@ class Helper
 
 
 
-    public static function createFolder(string $folderName): JsonResponse
+    public static function createFolder(string $folderName): array
     {
 
-
+    $folderName = str_replace(" ", "_", $folderName);
         // Cria a pasta no caminho storage/app/
         if (Storage::makeDirectory($folderName)) {
             // Gera o caminho completo da pasta criada
             $fullPath = Storage::path($folderName);
 
-            return response()->json([
+
+            return [
                 'message' => 'Pasta criada com sucesso!',
                 'path' => $fullPath, // Retorna o path no response
-            ]);
+            ];
         }
 
-        return response()->json(['message' => 'Erro ao criar a pasta.'], 500);
+        return ['message' => 'Erro ao criar a pasta.'];
     }
 
     public static function deleteFolder(string $folderName): JsonResponse

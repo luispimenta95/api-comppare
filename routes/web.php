@@ -58,6 +58,5 @@ Route::middleware('api')->group(function () {
     //Convites
 
     Route::post('api/convites/enviar', [ConviteController::class, 'create']);
-    Route::post('/api/pastas/criar', [PastasController::class, 'create']);
-
+    Route::post('/api/pasta/create', [PastasController::class, 'create']);
 });
