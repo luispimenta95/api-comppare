@@ -49,7 +49,6 @@ class PastasController extends Controller
         //dd($currentMonth, $currentYear, $idPlano);
 
         $monthLimit = Planos::find($idPlano)->quantidadePastas;
-        $plano = Planos::find($idPlano);
 
 
         // Contagem de pastas e subpastas criadas pelo usuário no mês atual
@@ -65,7 +64,7 @@ class PastasController extends Controller
                 ->whereMonth('created_at', $currentMonth);
         })->count();
         dd($subpastasCriadasNoMes);
-      teste
+      testekk
 */
         $totalFolders = $pastasCriadasNoMes;
 
