@@ -180,17 +180,15 @@ class Helper
 
     public static function createFolder(string $folderName): array
     {
+        $folderName = str_replace(" ", "_", $folderName);
 
-    $folderName = str_replace(" ", "_", $folderName);
-        // Cria a pasta no caminho storage/app/
-        if (Storage::makeDirectory($folderName)) {
-            // Gera o caminho completo da pasta criada
-            $fullPath = Storage::path($folderName);
-
+        // Usa o disk "public" para criar dentro de storage/app/public
+        if (Storage::disk('public')->makeDirectory($folderName)) {
+            $fullPath = Storage::disk('public')->path($folderName);
 
             return [
                 'message' => 'Pasta criada com sucesso!',
-                'path' => $fullPath, // Retorna o path no response
+                'path' => $fullPath,
             ];
         }
 
