@@ -351,6 +351,7 @@ class UsuarioController extends Controller
 
         return response()->json([
             'token' => $token,
+            'payload' => $payload->toArray(),
         ]);
     }
 }
