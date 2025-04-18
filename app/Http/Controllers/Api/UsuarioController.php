@@ -52,6 +52,7 @@ class UsuarioController extends Controller
             'email' => 'required|email|unique:usuarios,email', // Email obrigatório, deve ser válido e único na tabela de usuários
             //'nascimento' => 'required|date|before:today', // Nascimento obrigatório e deve ser uma data antes de hoje
         ]);
+        dd($request);
 
         if (!Helper::validaCPF($request->cpf)) {
             $this->messages = HttpCodesEnum::InvalidCPF;
