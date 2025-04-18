@@ -25,7 +25,7 @@ return new class extends Migration
             $table->integer('quantidadeConvites')->default(0);
             $table->boolean('status')->default(true);
             $table->integer('idHost')->nullable();
-            $table->boolean('status')->default(true);
+            $table->boolean('exibicao')->default(true);
             $table->timestamps();
         });
     }
