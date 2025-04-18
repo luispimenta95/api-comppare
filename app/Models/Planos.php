@@ -21,7 +21,8 @@ class Planos extends Model
         'quantidadePastas',
         'quantidadeConvites',
         'idHost',
-        'frequenciaCobranca'
+        'frequenciaCobranca',
+        'exibicao'
     ];
 
     public function usuarios()

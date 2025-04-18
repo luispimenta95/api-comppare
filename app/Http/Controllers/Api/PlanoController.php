@@ -28,7 +28,7 @@ class PlanoController extends Controller
             'message' => HttpCodesEnum::OK->description(),
             'totalPlanos' => Planos::count(),
             'planosAtivos' => $planosAtivos,
-            'data' => Planos::all(),
+            'data' => Planos::where('exibicao', 1)->get()
         ];
 
         return response()->json($response);
