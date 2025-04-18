@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Validation\Rules\Password;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Enums\HttpCodesEnum;
+use Tymon\JWTAuth\Facades\JWTFactory;
 
 class UsuarioController extends Controller
 {
@@ -336,5 +337,20 @@ class UsuarioController extends Controller
         $usuario->save();
         $pasta = Pastas::findOrFail($convite->idPasta);
         Helper::relacionarPastas($pasta, $usuario);
+    }
+
+    public function generateTokenCustom()
+    {
+        $payload = JWTFactory::make([
+            'sub' => 'acesso-livre',     // qualquer identificador único
+            'role' => 'externo',
+            'exp' => now()->addDays(1)->timestamp // expiração (opcional)
+        ]);
+
+        $token = JWTAuth::encode($payload)->get();
+
+        return response()->json([
+            'token' => $token,
+        ]);
     }
 }

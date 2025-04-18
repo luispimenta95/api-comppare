@@ -25,6 +25,7 @@ Route::middleware('api')->group(function () {
     Route::post('/api/usuarios/atualizar-dados', [UsuarioController::class, 'atualizarDados']);
     Route::post('/api/usuarios/valida-existencia-usuario', [UsuarioController::class, 'validaExistenciaUsuario']);
     Route::post('/api/usuarios/atualizar-senha', [UsuarioController::class, 'atualizarSenha']);
+    Route::get('/api/usuarios/get-token', [UsuarioController::class, 'generateTokenCustom']);
     //Rotas planos
     Route::post('/api/planos/cadastrar', [PlanoController::class, 'createPlan']);
     Route::get('/api/planos/listar', [PlanoController::class, 'index']);
@@ -54,7 +55,7 @@ Route::middleware('api')->group(function () {
     Route::get('/api/ranking/classificacao', [RankingController::class, 'index']);
 
     Route::post('/api/notification', [VendasController::class, 'updatePayment']);
-//update branch
+    //update branch
     //Convites
 
     Route::post('api/convites/enviar', [ConviteController::class, 'create']);
