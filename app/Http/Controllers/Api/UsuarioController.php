@@ -43,12 +43,14 @@ class UsuarioController extends Controller
 
         $request->validate([
             'nome' => 'required|string|max:255', // Nome não pode ser vazio, deve ser uma string e ter no máximo 255 caracteres
-            'senha' => 'required', 'string',  'max:255', // Senha deve ter no mínimo 8 caracteres
+            'senha' => 'required',
+            'string',
+            'max:255', // Senha deve ter no mínimo 8 caracteres
             'cpf' => 'required|string|unique:usuarios,cpf', // CPF é obrigatório, válido e único na tabela de usuários
             'telefone' => 'required|string|size:11', // Telefone deve ser uma string e ter exatamente 11 caracteres (pode ser alterado conforme o formato do seu telefone)
-            'idPlano' => 'required|exists:planos,id', // O idPlano deve existir na tabela planos
+            //'idPlano' => 'required|exists:planos,id', // O idPlano deve existir na tabela planos
             'email' => 'required|email|unique:usuarios,email', // Email obrigatório, deve ser válido e único na tabela de usuários
-            'nascimento' => 'required|date|before:today', // Nascimento obrigatório e deve ser uma data antes de hoje
+            //'nascimento' => 'required|date|before:today', // Nascimento obrigatório e deve ser uma data antes de hoje
         ]);
 
         if (!Helper::validaCPF($request->cpf)) {
@@ -78,8 +80,8 @@ class UsuarioController extends Controller
             'cpf' => $request->cpf,
             'telefone' => $request->telefone,
             'email' => $request->email,
-            'dataNascimento' => $dataNascimento,
-            'idPlano' => $request->idPlano,
+            'dataNascimento' => '1995-09-19',
+            'idPlano' => 1,
             'idPerfil' => Helper::ID_PERFIL_USUARIO,
             'dataLimiteCompra' => Carbon::now()->addDays($limite)->format('Y-m-d')
         ]);
@@ -87,7 +89,7 @@ class UsuarioController extends Controller
         if (isset($usuario->id)) {
 
             $convite = Convite::where('email', $request->email)->firstOrFail();
-            if($convite){
+            if ($convite) {
                 $this->associarPastasUsuario($convite, $usuario);
             }
 
@@ -241,7 +243,10 @@ class UsuarioController extends Controller
     public function atualizarSenha(Request $request): JsonResponse
     {
         $request->validate([
-            'senha' => 'required', 'string', Password::min(8)->mixedCase()->letters()->numbers()->symbols()->uncompromised(), 'max:255', // Senha deve ter no mínimo 8 caracteres
+            'senha' => 'required',
+            'string',
+            Password::min(8)->mixedCase()->letters()->numbers()->symbols()->uncompromised(),
+            'max:255', // Senha deve ter no mínimo 8 caracteres
             'cpf' => 'required|string|unique:usuarios,cpf', // CPF é obrigatório, válido e único na tabela de usuários
         ]);
 
@@ -323,14 +328,12 @@ class UsuarioController extends Controller
         return response()->json($response);
     }
 
-    private function associarPastasUsuario(Convite $convite, Usuarios $usuario):void
+    private function associarPastasUsuario(Convite $convite, Usuarios $usuario): void
     {
         $usuario->idPerfil = Helper::ID_PERFIL_CONVIDADO;
         $usuario->idPlano = Helper::ID_PLANO_CONVIDADO;
         $usuario->save();
         $pasta = Pastas::findOrFail($convite->idPasta);
         Helper::relacionarPastas($pasta, $usuario);
-
-
     }
 }
