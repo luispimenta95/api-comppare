@@ -338,20 +338,4 @@ class UsuarioController extends Controller
         $pasta = Pastas::findOrFail($convite->idPasta);
         Helper::relacionarPastas($pasta, $usuario);
     }
-
-    public function generateTokenCustom()
-    {
-        $payload = JWTFactory::make([
-            'sub' => 'acesso-livre',     // qualquer identificador único
-            'role' => 'externo',
-            'exp' => now()->addDays(1)->timestamp // expiração (opcional)
-        ]);
-
-        $token = JWTAuth::encode($payload)->get();
-
-        return response()->json([
-            'token' => $token,
-            'payload' => $payload->toArray(),
-        ]);
-    }
 }
