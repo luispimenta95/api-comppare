@@ -40,19 +40,19 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Request $request): JsonResponse
     {
+        $campos = ['nome', 'senha', 'cpf', 'telefone',  'email']; // campos nascimento e idPlano devem ser inseridos
+        $campos = Helper::validarRequest($request, $campos);
 
-        $request->validate([
-            'nome' => 'required|string|max:255', // Nome não pode ser vazio, deve ser uma string e ter no máximo 255 caracteres
-            'senha' => 'required',
-            'string',
-            'max:255', // Senha deve ter no mínimo 8 caracteres
-            'cpf' => 'required|string|unique:usuarios,cpf', // CPF é obrigatório, válido e único na tabela de usuários
-            'telefone' => 'required|string|size:11', // Telefone deve ser uma string e ter exatamente 11 caracteres (pode ser alterado conforme o formato do seu telefone)
-            //'idPlano' => 'required|exists:planos,id', // O idPlano deve existir na tabela planos
-            'email' => 'required|email|unique:usuarios,email', // Email obrigatório, deve ser válido e único na tabela de usuários
-            //'nascimento' => 'required|date|before:today', // Nascimento obrigatório e deve ser uma data antes de hoje
-        ]);
-        dd($request);
+        if ($campos !== true) {
+            $this->messages = HttpCodesEnum::MissingRequiredFields;
+
+            $response = [
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => $this->messages->description(),
+                'campos' => $campos,
+            ];
+            return response()->json($response);
+        }
 
         if (!Helper::validaCPF($request->cpf)) {
             $this->messages = HttpCodesEnum::InvalidCPF;
@@ -89,7 +89,7 @@ class UsuarioController extends Controller
 
         if (isset($usuario->id)) {
 
-            $convite = Convite::where('email', $request->email)->firstOrFail();
+            $convite = Convite::where('email', $request->email)->first();
             if ($convite) {
                 $this->associarPastasUsuario($convite, $usuario);
             }
