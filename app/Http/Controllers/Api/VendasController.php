@@ -72,9 +72,9 @@ class VendasController extends Controller
             ]
 
         ];
-        dd('14');
 
         $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
+        dd($responseApi);
         if ($responseApi['code'] == 200) {
             $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
             $usuario->dataLimiteCompra = Carbon::parse($responseApi['data']['first_execution'])->format('Y-m-d');
