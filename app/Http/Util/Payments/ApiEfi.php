@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Util\Payments;
+
 use App\Http\Util\Helper;
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
@@ -27,12 +28,12 @@ class ApiEfi
             "responseHeaders" => false
         ];
 
+        dd($this->options);
+
         $this->efiPay = new EfiPay($this->options);
-
-
     }
 
-    public function createPlan(string $name , int $frequencia):mixed
+    public function createPlan(string $name, int $frequencia): mixed
     {
         try {
             $body = [
@@ -53,14 +54,15 @@ class ApiEfi
             );
         }
     }
-    public function createSubscription(array $dados): mixed{
+    public function createSubscription(array $dados): mixed
+    {
         $params = [
             "id" => $dados["idPlano"],
         ];
         //dd($dados['cardToken']);
 
         $body = [
-            "items" =>  [ $dados['produto']],
+            "items" =>  [$dados['produto']],
             "metadata" =>  ["notification_url" =>   env('APP_URL') . 'api/notification?sandbox=true'],
             "payment" => [
                 "credit_card" => [
@@ -72,7 +74,7 @@ class ApiEfi
         ];
         try {
             return json_encode($this->efiPay->createOneStepSubscription($params, $body));
-        }catch (EfiException $e) {
+        } catch (EfiException $e) {
             return json_encode(
                 [
                     "code" => $e->code,
@@ -81,16 +83,16 @@ class ApiEfi
                 ]
             );
         }
-
     }
-    public function getSubscriptionDetail(string $token): mixed{
+    public function getSubscriptionDetail(string $token): mixed
+    {
         try {
             $params = [
                 "token" => $token
             ];
             //Erro ao recuperar dados
             return json_encode($this->efiPay->getNotification($params));
-        }catch (EfiException $e) {
+        } catch (EfiException $e) {
             return json_encode(
                 [
                     "code" => $e->code,
