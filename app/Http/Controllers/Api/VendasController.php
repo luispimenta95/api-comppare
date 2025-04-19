@@ -54,7 +54,7 @@ class VendasController extends Controller
         $usuario = Usuarios::find($request->usuario);
         $plano = Planos::find($request->plano);
 
-        dd($plano->Idhost);
+        dd($plano);
         $data = [
             "cardToken" => $request->token,
             "idPlano" => $plano->idHost,
