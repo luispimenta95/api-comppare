@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\TransacaoFinanceira;
 use App\Http\Util\Payments\ApiMercadoPago;
 use Illuminate\Http\Request;
+use App\Enums\HttpCodesEnum;
 
 class VendasController extends Controller
 {
@@ -21,23 +22,34 @@ class VendasController extends Controller
     private array $codes = [];
     private ApiEfi $apiEfi;
     private const CARTAO = 'Cartão de crédito';
+    private HttpCodesEnum $messages;
+
+
 
 
     public function __construct()
     {
         $this->codes = Helper::getHttpCodes();
         $this->apiEfi = new ApiEfi();
+        $this->messages = HttpCodesEnum::OK;  // Usando a enum para um valor inicial
     }
 
 
     public function createSubscription(Request $request): JsonResponse
     {
-        $request->validate([
-            'usuario' => 'required|exists:usuarios,id', // O usuario deve existir na tabela usuarios
-            'plano' => 'required|exists:planos,id', // O plano deve existir na tabela planos
-            'token' => 'required|string', // cardToken é obrigatório e deve ser uma string
-            'valor' => 'required|float'
-        ]);
+        $campos = ['usuario', 'plano', 'token',  'valor']; // campos nascimento e idPlano devem ser inseridos
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $this->messages = HttpCodesEnum::MissingRequiredFields;
+
+            $response = [
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => $this->messages->description(),
+                'campos' => $campos,
+            ];
+            return response()->json($response);
+        }
 
         $usuario = Usuarios::find($request->usuario);
         $plano = Planos::find($request->plano);
