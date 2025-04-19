@@ -28,7 +28,6 @@ class ApiEfi
             "responseHeaders" => false
         ];
 
-        dd($this->options);
 
         $this->efiPay = new EfiPay($this->options);
     }
