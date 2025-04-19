@@ -25,7 +25,8 @@ class ApiEfi
             "sandbox" => $this->enviroment == "local" ? true : false,  // False = PRD | TRUE = DEV
             "debug" => false, // Opcional | Padrão = false | Ativa/desativa os logs de requisições do Guzzle
             "timeout" => 30, // Opcional | Padrão = 30 | Define o tempo máximo de resposta das requisições
-            "responseHeaders" => false
+            "responseHeaders" => false,
+            "urlNotification" => $this->enviroment == "local" ? env("APP_URL") . 'api/notification?sandbox=true' : env("APP_URL") . "api/notification",
         ];
 
 
@@ -62,7 +63,7 @@ class ApiEfi
 
         $body = [
             "items" =>  [$dados['produto']],
-            "metadata" =>  ["notification_url" =>   env('APP_URL') . 'api/notification?sandbox=true'],
+            "metadata" =>  ["notification_url" =>  $this->options['urlNotification']],
             "payment" => [
                 "credit_card" => [
                     "trial_days" =>  Helper::TEMPO_GRATUIDADE,
