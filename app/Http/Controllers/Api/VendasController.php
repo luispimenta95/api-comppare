@@ -87,7 +87,6 @@ class VendasController extends Controller
                     'codRetorno' => 200,
                     'message' => $this->codes[200]
                 ];
-
             } else {
                 $response = [
                     'codRetorno' => 400,
@@ -97,8 +96,6 @@ class VendasController extends Controller
         } else {
             // Caso idHost esteja nulo, salva dataLimiteCompra para amanhã
             $usuario->dataLimiteCompra = Carbon::tomorrow()->format('Y-m-d');
-
-           
         }
         $usuario->save();
         MailHelper::confirmacaoAssinatura($dadosEmail, $usuario->email);
@@ -133,6 +130,41 @@ class VendasController extends Controller
                     ]);
                 }
             }
+        }
+    }
+
+    public function cancelarAssinatura(Request $request)
+    {
+        $campos = ['assinatura', 'usuario'];
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $this->messages = HttpCodesEnum::MissingRequiredFields;
+
+            $response = [
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => $this->messages->description(),
+                'campos' => $campos,
+            ];
+            return response()->json($response);
+        }
+
+        $responseApi = json_decode($this->apiEfi->cancelSubscription($request->assinatura), true);
+        $response = [];
+
+        if ($responseApi['code'] == 200) {
+            $usuario = Usuarios::where('id', $request->usuario)->first();
+            $usuario->status = 0;
+
+            $response = [
+                'codRetorno' => 200,
+                'message' => $this->codes[200]
+            ];
+        } else {
+            $response =   [
+                'codRetorno' => 400,
+                'message' => $responseApi['description']
+            ];
         }
     }
 }

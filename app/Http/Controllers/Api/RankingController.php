@@ -20,7 +20,8 @@ class RankingController extends Controller
         'like_received' => 2,
     ];
 
-    public function __construct(){
+    public function __construct()
+    {
         $this->codes = Helper::getHttpCodes();
     }
     public function index()
@@ -36,7 +37,7 @@ class RankingController extends Controller
      */
     public function updatePoints(Request $request): JsonResponse
     {
-        $campos = ['acao', 'usuario'];
+        $campos = ['pontos', 'usuario'];
 
         $campos = Helper::validarRequest($request, $campos);
 
@@ -52,11 +53,11 @@ class RankingController extends Controller
 
         Ponto::create([
             'idUsuario' => $request->usuario,
-            'pontos' => $this->pointRules[$request->acao],
+            'pontos' => $request->pontos,
             'acao' => $request->acao,
         ]);
 
-        $user->pontos = $user->pontos + $this->pointRules[$request->acao];
+        $user->pontos = $user->pontos + $request->pontos;
         $response = [
             'codRetorno' => 200,
             'message' => $this->codes[200]
@@ -100,5 +101,4 @@ class RankingController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-
 }

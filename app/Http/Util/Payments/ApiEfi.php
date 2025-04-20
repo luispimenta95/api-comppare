@@ -104,4 +104,23 @@ class ApiEfi
             );
         }
     }
+
+    public function cancelSubscription(int $id): mixed
+    {
+        try {
+            $params = [
+                "id" => $id
+            ];
+            //Erro ao recuperar dados
+            return json_encode($this->efiPay->cancelSubscription($params));
+        } catch (EfiException $e) {
+            return json_encode(
+                [
+                    "code" => $e->code,
+                    "Erro" => $e->error,
+                    "description" => $e->errorDescription
+                ]
+            );
+        }
+    }
 }
