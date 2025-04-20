@@ -105,7 +105,7 @@ class ApiEfi
         }
     }
 
-    public function cancelSubscription(int $id): mixed
+    public function cancelSubscription($id): mixed
     {
         try {
             $params = [
