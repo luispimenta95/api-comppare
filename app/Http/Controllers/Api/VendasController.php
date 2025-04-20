@@ -82,7 +82,7 @@ class VendasController extends Controller
             if ($responseApi['code'] == 200) {
                 $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
                 $usuario->dataLimiteCompra = Carbon::parse($responseApi['data']['first_execution'])->format('Y-m-d');
-
+                $usuario->idAssinatura = $responseApi['data']['subscription_id'];
                 $response = [
                     'codRetorno' => 200,
                     'message' => $this->codes[200]
