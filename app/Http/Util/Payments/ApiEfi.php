@@ -14,10 +14,13 @@ class ApiEfi
     private array $params = [];
     private string $enviroment;
     private EfiPay $efiPay;
-
+    private string $url;
     public function __construct()
     {
         $this->enviroment =   env('APP_ENV');
+        $this->url = $this->enviroment == "local" ?
+            env("APP_URL") . 'api/notification?sandbox=true' :
+            env("APP_URL") . "api/notification";
 
         $this->options = [
             "clientId" =>  $this->enviroment == "local" ? env('ID_EFI_HML') : env('ID_EFI_PRD'),
@@ -26,7 +29,6 @@ class ApiEfi
             "debug" => false, // Opcional | Padrão = false | Ativa/desativa os logs de requisições do Guzzle
             "timeout" => 30, // Opcional | Padrão = 30 | Define o tempo máximo de resposta das requisições
             "responseHeaders" => false,
-            "urlNotification" => $this->enviroment == "local" ? env("APP_URL") . 'api/notification?sandbox=true' : env("APP_URL") . "api/notification",
         ];
 
 
@@ -63,10 +65,10 @@ class ApiEfi
 
         $body = [
             "items" =>  [$dados['produto']],
-            "metadata" =>  ["notification_url" =>  $this->options['urlNotification']],
+            "metadata" =>  ["notification_url" =>  $this->url],
             "payment" => [
                 "credit_card" => [
-                    "trial_days" =>  Helper::TEMPO_GRATUIDADE,
+                    // "trial_days" =>  Helper::TEMPO_GRATUIDADE,
                     "payment_token" =>  $dados['cardToken'],
                     "customer" =>  $dados['usuario']
                 ]
