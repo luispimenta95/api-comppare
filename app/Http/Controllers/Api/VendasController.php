@@ -166,5 +166,7 @@ class VendasController extends Controller
                 'message' => $responseApi['description']
             ];
         }
+
+        return response()->json($response);
     }
 }
