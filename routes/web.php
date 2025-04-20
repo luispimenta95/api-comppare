@@ -28,7 +28,7 @@ Route::middleware('api')->group(function () {
     //Rotas planos
     Route::post('/api/planos/cadastrar', [PlanoController::class, 'createPlan']);
     Route::get('/api/planos/listar', [PlanoController::class, 'index']);
-    Route::put('/api/planos/recuperar/{id}', [PlanoController::class, 'getPlano']);
+    Route::get('/api/planos/recuperar/{id}', [PlanoController::class, 'getPlano']);
     Route::post('/api/planos/atualizar-status', [PlanoController::class, 'atualizarStatus']);
     Route::post('/api/planos/atualizar-dados', [PlanoController::class, 'atualizarDados']);
     Route::post('/api/planos/atualizar-funcionalidades', [PlanoController::class, 'adicionarFuncionalidades']);
