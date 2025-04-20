@@ -108,9 +108,11 @@ class ApiEfi
     public function cancelSubscription($id): mixed
     {
         try {
-
+            $params = [
+                "id" => (int)$id
+            ];
             //Erro ao recuperar dados
-            $response = json_encode($this->efiPay->cancelSubscription($id));
+            $response = json_encode($this->efiPay->cancelSubscription($params));
             return $response;
         } catch (EfiException $e) {
             return json_encode(
