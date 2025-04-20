@@ -75,9 +75,10 @@ class PlanoController extends Controller
         return response()->json($response);
     }
 
-    public function getPlano(Request $request): JsonResponse
+    public function getPlano(int $id): JsonResponse
     {
-        $plano = Planos::find($request->idPlano);
+        $idPlano = trim($id);
+        $plano = Planos::find($idPlano);
 
         $response = isset($plano->id) ?
             [

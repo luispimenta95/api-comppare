@@ -37,7 +37,7 @@ class VendasController extends Controller
 
     public function createSubscription(Request $request): JsonResponse
     {
-        $campos = ['usuario', 'plano', 'token',  'valor']; // campos nascimento e idPlano devem ser inseridos
+        $campos = ['usuario', 'plano', 'token', 'valor'];
         $campos = Helper::validarRequest($request, $campos);
 
         if ($campos !== true) {
@@ -54,48 +54,58 @@ class VendasController extends Controller
         $usuario = Usuarios::find($request->usuario);
         $plano = Planos::find($request->plano);
 
-        $data = [
-            "cardToken" => $request->token,
-            "idPlano" => $plano->idHost,
-            "usuario" => [
-                "name" => $usuario->nome,
-                "cpf" => $usuario->cpf,
-                "phone_number" => $usuario->telefone,
-                "email" => $usuario->email,
-                "birth" => Carbon::parse($usuario->dataNascimento)->format('Y-m-d')
-            ],
-
-            "produto" => [
-                "name" => $plano->nome,
-                "amount" => Helper::QUANTIDADE,
-                "value" => $request->valor * 100 // Valor = Valor plano * 100
-            ]
-
+        $dadosEmail = [
+            'nome' => $usuario->nome,
         ];
 
-        $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
-        dd($responseApi);
-        if ($responseApi['code'] == 200) {
-            $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
-            $usuario->dataLimiteCompra = Carbon::parse($responseApi['data']['first_execution'])->format('Y-m-d');
-            $usuario->save();
-            $response = [
-                'codRetorno' => 200,
-                'message' => $this->codes[200]
-            ];
-            $dadosEmail = [
-                'nome' => $usuario->nome,
+        // Verifica se o idHost está definido no plano
+        if ($plano && $plano->idHost !== null) {
+            $data = [
+                "cardToken" => $request->token,
+                "idPlano" => $plano->idHost,
+                "usuario" => [
+                    "name" => $usuario->nome,
+                    "cpf" => $usuario->cpf,
+                    "phone_number" => $usuario->telefone,
+                    "email" => $usuario->email,
+                    "birth" => Carbon::parse($usuario->dataNascimento)->format('Y-m-d')
+                ],
+                "produto" => [
+                    "name" => $plano->nome,
+                    "amount" => Helper::QUANTIDADE,
+                    "value" => $request->valor * 100
+                ]
             ];
 
-            MailHelper::confirmacaoAssinatura($dadosEmail, $usuario->email);
+            $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
+
+            if ($responseApi['code'] == 200) {
+                $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
+                $usuario->dataLimiteCompra = Carbon::parse($responseApi['data']['first_execution'])->format('Y-m-d');
+
+                $response = [
+                    'codRetorno' => 200,
+                    'message' => $this->codes[200]
+                ];
+
+            } else {
+                $response = [
+                    'codRetorno' => 400,
+                    'message' => $responseApi['description']
+                ];
+            }
         } else {
-            $response = [
-                'codRetorno' => 400,
-                'message' => $responseApi['description']
-            ];
+            // Caso idHost esteja nulo, salva dataLimiteCompra para amanhã
+            $usuario->dataLimiteCompra = Carbon::tomorrow()->format('Y-m-d');
+
+           
         }
+        $usuario->save();
+        MailHelper::confirmacaoAssinatura($dadosEmail, $usuario->email);
+
         return response()->json($response);
     }
+
 
     public function updatePayment(Request $request)
     {
