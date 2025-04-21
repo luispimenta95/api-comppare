@@ -112,8 +112,7 @@ class ApiEfi
                 "id" => (int)$id
             ];
             //Erro ao recuperar dados
-            $response = json_encode($this->efiPay->cancelSubscription($params));
-            return $response;
+            return json_encode($this->efiPay->cancelSubscription($params));
         } catch (EfiException $e) {
             return json_encode(
                 [
