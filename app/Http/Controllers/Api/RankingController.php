@@ -24,13 +24,22 @@ class RankingController extends Controller
     {
         $this->codes = Helper::getHttpCodes();
     }
-    public function index()
+    public function index(): JsonResponse
     {
         return Ponto::selectRaw('idUsuario, SUM(pontos) as total')
             ->groupBy('idUsuario')
             ->orderByDesc('total')
             ->with('usuario')
             ->get();
+
+        $resultado = $pontos->map(function ($item) {
+            return [
+                'nome' => $item->usuario->nome,
+                'pontos' => $item->total
+            ];
+        });
+
+        return response()->json($resultado);
     }
     /**
      * Show the form for creating a new resource.
@@ -53,8 +62,7 @@ class RankingController extends Controller
 
         Ponto::create([
             'idUsuario' => $request->usuario,
-            'pontos' => $request->pontos,
-            'acao' => $request->acao,
+            'pontos' => $request->pontos
         ]);
 
         $user->pontos = $user->pontos + $request->pontos;
