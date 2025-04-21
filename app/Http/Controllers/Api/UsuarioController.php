@@ -82,7 +82,7 @@ class UsuarioController extends Controller
             'cpf' => $request->cpf,
             'telefone' => $request->telefone,
             'email' => $request->email,
-            'dataNascimento' => '1995-09-19',
+            'dataNascimento' => $dataNascimento,
             'idPlano' => 1,
             'idPerfil' => Helper::ID_PERFIL_USUARIO,
             'dataLimiteCompra' => Carbon::now()->addDays($limite)->format('Y-m-d')
@@ -91,9 +91,11 @@ class UsuarioController extends Controller
         if (isset($usuario->id)) {
 
             $convite = Convite::where('email', $request->email)->first();
+
             if ($convite) {
                 $this->associarPastasUsuario($convite, $usuario);
             }
+
 
             $response = [
                 'codRetorno' => HttpCodesEnum::OK->value,
