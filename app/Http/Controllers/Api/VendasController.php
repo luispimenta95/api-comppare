@@ -135,7 +135,7 @@ class VendasController extends Controller
 
     public function cancelarAssinatura(Request $request)
     {
-        $campos = ['assinatura', 'usuario'];
+        $campos = ['usuario'];
         $campos = Helper::validarRequest($request, $campos);
 
         if ($campos !== true) {
@@ -149,21 +149,32 @@ class VendasController extends Controller
             return response()->json($response);
         }
 
-        $responseApi = json_decode($this->apiEfi->cancelSubscription($request->assinatura), true);
+        $usuario = Usuarios::where('id', $request->usuario)->first();
+
         $response = [];
 
-        if ($responseApi['code'] == 200) {
-            $usuario = Usuarios::where('id', $request->usuario)->first();
-            $usuario->status = 0;
+        if ($usuario) {
 
-            $response = [
-                'codRetorno' => 200,
-                'message' => $this->codes[200]
-            ];
+            $responseApi = json_decode($this->apiEfi->cancelSubscription($usuario->idAssinatura), true);
+
+
+            if ($responseApi['code'] == 200) {
+                $usuario->status = 0;
+
+                $response = [
+                    'codRetorno' => HttpCodesEnum::OK->value,
+                    'message' => HttpCodesEnum::SubscriptionCanceled->description()
+                ];
+            } else {
+                $response =   [
+                    'codRetorno' => HttpCodesEnum::BadRequest->value,
+                    'message' => $responseApi['description']
+                ];
+            }
         } else {
             $response =   [
-                'codRetorno' => 400,
-                'message' => $responseApi['description']
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' =>  HttpCodesEnum::NotFound->description()
             ];
         }
 
