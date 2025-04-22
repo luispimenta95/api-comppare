@@ -41,7 +41,7 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Request $request): JsonResponse
     {
-        $campos = ['nome', 'senha', 'cpf', 'telefone',  'email']; // campos nascimento e idPlano devem ser inseridos
+        $campos = ['nome', 'senha', 'cpf', 'telefone',  'email', 'nascimento', 'idPlano']; // campos nascimento e idPlano devem ser inseridos
         $campos = Helper::validarRequest($request, $campos);
 
         if ($campos !== true) {
@@ -83,7 +83,7 @@ class UsuarioController extends Controller
             'telefone' => $request->telefone,
             'email' => $request->email,
             'dataNascimento' => $dataNascimento,
-            'idPlano' => 1,
+            'idPlano' => $request->idPlano,
             'idPerfil' => Helper::ID_PERFIL_USUARIO,
             'dataLimiteCompra' => Carbon::now()->addDays($limite)->format('Y-m-d')
         ]);
