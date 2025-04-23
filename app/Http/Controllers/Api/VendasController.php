@@ -185,6 +185,6 @@ class VendasController extends Controller
     public function receberDadosAssinatura(Request $request)
     {
         $nome = $request->nome;
-        Log::info('Token:'+ $nome);
+        Log::info('Token: ' . $nome);
     }
 }
