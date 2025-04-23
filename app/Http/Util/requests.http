@@ -69,10 +69,12 @@ Content-Type: application/json
 {
     "nome": "Teste plano EFI",
     "descricao": "Teste",
-    "valor": 45,
+    "valor": 1,
     "quantidadeTags": 1,
     "quantidadeFotos": 1,
-    "quantidadePastas": 1
+    "quantidadePastas": 1,
+    "online": true,
+    "frequenciaCobranca": 12
 
 }
 

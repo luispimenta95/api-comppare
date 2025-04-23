@@ -180,4 +180,11 @@ class VendasController extends Controller
 
         return response()->json($response);
     }
+
+
+    public function receberDadosAssinatura(Request $request)
+    {
+        $nome = $request->nome;
+        Log::info('Token:'+ $nome);
+    }
 }

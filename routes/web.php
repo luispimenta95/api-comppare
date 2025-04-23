@@ -55,6 +55,8 @@ Route::middleware('api')->group(function () {
     Route::get('/api/ranking/classificacao', [RankingController::class, 'index']);
 
     Route::post('/api/notification', [VendasController::class, 'updatePayment']);
+    Route::post('/api/token/salvar', [VendasController::class, 'receberDadosAssinatura']);
+
     //update branch
     //Convites
 
