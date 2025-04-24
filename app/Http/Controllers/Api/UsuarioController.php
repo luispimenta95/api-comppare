@@ -99,7 +99,8 @@ class UsuarioController extends Controller
 
             $response = [
                 'codRetorno' => HttpCodesEnum::OK->value,
-                'message' => HttpCodesEnum::OK->description()
+                'message' => HttpCodesEnum::OK->description(),
+                'idUser' => $usuario->id
             ];
         } else {
             $response = [
