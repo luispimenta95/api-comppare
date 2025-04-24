@@ -14,11 +14,6 @@ use Illuminate\Http\Request;
 class RankingController extends Controller
 {
     private array $codes = [];
-    protected $pointRules = [
-        'post_created' => 10,
-        'comment_added' => 5,
-        'like_received' => 2,
-    ];
 
     public function __construct()
     {
@@ -59,6 +54,14 @@ class RankingController extends Controller
             return response()->json($response);
         }
         $user = Usuarios::find($request->usuario);
+        if(!$user){
+            $response = [
+                'codRetorno' => 404,
+                'message' => $this->codes[404],
+            ];
+
+            return response()->json($response);
+        }
 
         Ponto::create([
             'idUsuario' => $request->usuario,

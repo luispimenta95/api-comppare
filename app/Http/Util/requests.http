@@ -16,8 +16,7 @@ Content-Type: application/json
     "email": "luispimenta.contato@gmail.com",
     "idPlano": 1,
     "idPerfil": 2,
-    "nascimento": "19/09/1995",
-    "cardToken": "0a9fc512fa67d3a9a217a1c34be522e878a2baa7"
+    "nascimento": "19/09/1995"
 }
 
 
@@ -135,3 +134,14 @@ Content-Type: application/json
     "idUsuario": 1,
     "nomePasta": "teste"
   }
+
+
+###ranking
+###cadastrar
+POST {{baseUrl}}/ranking/atualizar
+Content-Type: application/json
+
+{
+"pontos": 100,
+ "usuario": 2
+}
