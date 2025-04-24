@@ -184,7 +184,14 @@ class VendasController extends Controller
 
     public function receberDadosAssinatura(Request $request)
     {
-        $nome = $request->nome;
-        Log::info('Token: ' . $nome);
+
+        if($request->nome !=null){
+            $response =   [
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+            ];
+
+        return response()->json($response);
+
+        }
     }
 }
