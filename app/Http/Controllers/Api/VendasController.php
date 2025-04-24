@@ -187,7 +187,7 @@ class VendasController extends Controller
 
         if($request->nome !=null){
             $response =   [
-                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'codRetorno' => HttpCodesEnum::OK->value,
             ];
 
         return response()->json($response);
