@@ -85,7 +85,7 @@ class VendasController extends Controller
                     "value" => $plano->valor * 100
                 ]
             ];
-
+            Log::info("Valor:" .$data['produto']['value']);
             $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
             Log::info("CodRetorno:" .$responseApi['code']);
             Log::info("Description:" .$responseApi['description']);
