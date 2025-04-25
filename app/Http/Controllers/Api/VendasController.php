@@ -69,6 +69,10 @@ class VendasController extends Controller
 
         // Verifica se o idHost está definido no plano
         if ($plano && $plano->idHost !== null) {
+            Log::info("valor plano:" .$plano->valor);
+            $valor = $plano->valor * 100;
+            Log::info("valor plano:" .$valor);
+
             $data = [
                 "cardToken" => $request->token,
                 "idPlano" => $plano->idHost,
@@ -82,17 +86,12 @@ class VendasController extends Controller
                 "produto" => [
                     "name" => $plano->nome,
                     "amount" => Helper::QUANTIDADE,
-                    "value" => (int)  $plano->valor * 100
+                    "value" => $valor
                 ]
             ];
             Log::info("Valor:" .$data['produto']['value']);
             $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
-            Log::info("CodRetorno:" .$responseApi['code']);
-            Log::info("Description:" .$responseApi['description']);
-            $response = [
-                'codRetorno' => 200,
-                'message' => $this->codes[200]
-            ];
+
             return response()->json($response);
 
             if ($responseApi['code'] == 200) {
