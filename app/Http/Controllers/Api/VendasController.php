@@ -43,11 +43,7 @@ class VendasController extends Controller
 
         $campos = ['usuario', 'plano', 'token'];
         $campos = Helper::validarRequest($request, $campos);
-        $response = [
-            'codRetorno' => 200,
-            'message' => $this->codes[200]
-        ];
-        //return response()->json($response);
+
 
         if ($campos !== true) {
             $this->messages = HttpCodesEnum::MissingRequiredFields;
@@ -92,7 +88,6 @@ class VendasController extends Controller
             Log::info("Valor:" .$data['produto']['value']);
             $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
 
-            return response()->json($response);
 
             if ($responseApi['code'] == 200) {
                 $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
