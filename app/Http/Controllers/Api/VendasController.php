@@ -90,6 +90,8 @@ class VendasController extends Controller
 
 
             if ($responseApi['code'] == 200) {
+                Log::info("Sucesso:");
+
                 $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
                 $usuario->dataLimiteCompra = Carbon::parse($responseApi['data']['first_execution'])->format('Y-m-d');
                 $usuario->idAssinatura = $responseApi['data']['subscription_id'];
@@ -98,6 +100,8 @@ class VendasController extends Controller
                     'message' => $this->codes[200]
                 ];
             } else {
+                Log::info("Valor:" .$responseApi['description']);
+
                 $response = [
                     'codRetorno' => 400,
                     'message' => $responseApi['description']
