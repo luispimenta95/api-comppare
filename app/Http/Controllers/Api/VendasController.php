@@ -82,7 +82,7 @@ class VendasController extends Controller
                 "produto" => [
                     "name" => $plano->nome,
                     "amount" => Helper::QUANTIDADE,
-                    "value" => $plano->valor * 100
+                    "value" => (int) round( $plano->valor * 100)
                 ]
             ];
             Log::info("Valor:" .$data['produto']['value']);
