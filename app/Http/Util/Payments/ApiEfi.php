@@ -63,7 +63,7 @@ class ApiEfi
             "id" => $dados["idPlano"],
         ];
         //dd($dados['cardToken']);
-          $dados['produto']['value'] = (int) $dados["produto"]['value'];
+          $dados['produto']['value'] = (int) round($dados["produto"]['value']);
         $body = [
             "items" =>  [$dados['produto']],
             "metadata" =>  ["notification_url" =>  $this->url],
