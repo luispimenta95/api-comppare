@@ -47,7 +47,7 @@ class VendasController extends Controller
             'codRetorno' => 200,
             'message' => $this->codes[200]
         ];
-        return response()->json($response);
+        //return response()->json($response);
 
         if ($campos !== true) {
             $this->messages = HttpCodesEnum::MissingRequiredFields;
