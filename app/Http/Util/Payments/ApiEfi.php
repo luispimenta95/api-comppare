@@ -6,6 +6,7 @@ use App\Http\Util\Helper;
 use Efi\Exception\EfiException;
 use Efi\EfiPay;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 
 class ApiEfi
 {
@@ -74,6 +75,7 @@ class ApiEfi
                 ]
             ]
         ];
+        Log::info("Value:" .$body['items']['value']);
         try {
             return json_encode($this->efiPay->createOneStepSubscription($params, $body));
         } catch (EfiException $e) {
