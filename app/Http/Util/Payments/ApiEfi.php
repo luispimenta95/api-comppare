@@ -75,7 +75,7 @@ class ApiEfi
                 ]
             ]
         ];
-        Log::info("Value:" .$body['items']['value']);
+        Log::info("Value:" .$body['items']['value']);//
         try {
             return json_encode($this->efiPay->createOneStepSubscription($params, $body));
         } catch (EfiException $e) {
