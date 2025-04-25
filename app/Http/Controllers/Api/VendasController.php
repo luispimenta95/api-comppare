@@ -75,7 +75,7 @@ class VendasController extends Controller
                 "usuario" => [
                     "name" => $usuario->nome,
                     "cpf" => $usuario->cpf,
-                    "phone_number" => $usuario->telefone,
+                    "phone_number" => preg_replace('/\D/', '', $usuario->telefone),
                     "email" => $usuario->email,
                     "birth" => Carbon::parse($usuario->dataNascimento)->format('Y-m-d')
                 ],
