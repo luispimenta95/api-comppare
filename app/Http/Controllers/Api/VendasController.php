@@ -37,7 +37,7 @@ class VendasController extends Controller
 
     public function createSubscription(Request $request): JsonResponse
     {
-        $campos = ['usuario', 'plano', 'token', 'valor'];
+        $campos = ['usuario', 'plano', 'token'];
         $campos = Helper::validarRequest($request, $campos);
 
         if ($campos !== true) {
@@ -73,7 +73,7 @@ class VendasController extends Controller
                 "produto" => [
                     "name" => $plano->nome,
                     "amount" => Helper::QUANTIDADE,
-                    "value" => $request->valor * 100
+                    "value" => $plano->valor * 100
                 ]
             ];
 
