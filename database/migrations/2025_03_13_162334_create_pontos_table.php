@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('pontos', function (Blueprint $table) {
             $table->id();
-            $table->string('acao');
             $table->unsignedBigInteger('idUsuario');
             $table->integer('pontos')->default(0);
             $table->foreign('idUsuario')->references('id')->on('usuarios');

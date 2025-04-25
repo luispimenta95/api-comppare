@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use Illuminate\Validation\Rules\Password;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Enums\HttpCodesEnum;
+use Tymon\JWTAuth\Facades\JWTFactory;
 
 class UsuarioController extends Controller
 {
@@ -40,17 +41,19 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Request $request): JsonResponse
     {
+        $campos = ['nome', 'senha', 'cpf', 'telefone',  'email', 'nascimento', 'idPlano']; // campos nascimento e idPlano devem ser inseridos
+        $campos = Helper::validarRequest($request, $campos);
 
-        $request->validate([
-            'nome' => 'required|string|max:255', // Nome não pode ser vazio, deve ser uma string e ter no máximo 255 caracteres
-            'senha' => 'required', 'string',  'max:255', // Senha deve ter no mínimo 8 caracteres
-            'cpf' => 'required|string|unique:usuarios,cpf', // CPF é obrigatório, válido e único na tabela de usuários
-            'telefone' => 'required|string|size:11', // Telefone deve ser uma string e ter exatamente 11 caracteres (pode ser alterado conforme o formato do seu telefone)
-            //'idPlano' => 'required|exists:planos,id', // O idPlano deve existir na tabela planos
-            'email' => 'required|email|unique:usuarios,email', // Email obrigatório, deve ser válido e único na tabela de usuários
-            //'nascimento' => 'required|date|before:today', // Nascimento obrigatório e deve ser uma data antes de hoje
-            //'cardToken' => 'required|string', // cardToken é obrigatório e deve ser uma string
-        ]);
+        if ($campos !== true) {
+            $this->messages = HttpCodesEnum::MissingRequiredFields;
+
+            $response = [
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => $this->messages->description(),
+                'campos' => $campos,
+            ];
+            return response()->json($response);
+        }
 
         if (!Helper::validaCPF($request->cpf)) {
             $this->messages = HttpCodesEnum::InvalidCPF;
@@ -70,8 +73,8 @@ class UsuarioController extends Controller
             return response()->json($response);
         }
 
-        //$dataNascimento = Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d');
-        $limite = Planos::where('id', 1)->first()->tempoGratuidade;
+        $dataNascimento = Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d');
+        $limite = Planos::where('id', $request->idPlano)->first()->tempoGratuidade;
 
         $usuario = Usuarios::create([
             'nome' => $request->nome,
@@ -79,22 +82,25 @@ class UsuarioController extends Controller
             'cpf' => $request->cpf,
             'telefone' => $request->telefone,
             'email' => $request->email,
-            'dataNascimento' => '2024-01-01',
-            'idPlano' => 1,
+            'dataNascimento' => $dataNascimento,
+            'idPlano' => $request->idPlano,
             'idPerfil' => Helper::ID_PERFIL_USUARIO,
             'dataLimiteCompra' => Carbon::now()->addDays($limite)->format('Y-m-d')
         ]);
 
         if (isset($usuario->id)) {
 
-            $convite = Convite::where('email', $request->email)->firstOrFail();
-            if($convite){
+            $convite = Convite::where('email', $request->email)->first();
+
+            if ($convite) {
                 $this->associarPastasUsuario($convite, $usuario);
             }
 
+
             $response = [
                 'codRetorno' => HttpCodesEnum::OK->value,
-                'message' => HttpCodesEnum::OK->description()
+                'message' => HttpCodesEnum::OK->description(),
+                'idUser' => $usuario->id
             ];
         } else {
             $response = [
@@ -242,7 +248,10 @@ class UsuarioController extends Controller
     public function atualizarSenha(Request $request): JsonResponse
     {
         $request->validate([
-            'senha' => 'required', 'string', Password::min(8)->mixedCase()->letters()->numbers()->symbols()->uncompromised(), 'max:255', // Senha deve ter no mínimo 8 caracteres
+            'senha' => 'required',
+            'string',
+            Password::min(8)->mixedCase()->letters()->numbers()->symbols()->uncompromised(),
+            'max:255', // Senha deve ter no mínimo 8 caracteres
             'cpf' => 'required|string|unique:usuarios,cpf', // CPF é obrigatório, válido e único na tabela de usuários
         ]);
 
@@ -303,6 +312,7 @@ class UsuarioController extends Controller
                 $token = JWTAuth::fromUser($user);
                 $pastas = $user->pastas->map(function ($pasta) {
                     return [
+                        'id' => $pasta->id,
                         'nome' => $pasta->nome,
                         'caminho' => $pasta->caminho
                     ];
@@ -323,14 +333,12 @@ class UsuarioController extends Controller
         return response()->json($response);
     }
 
-    private function associarPastasUsuario(Convite $convite, Usuarios $usuario):void
+    private function associarPastasUsuario(Convite $convite, Usuarios $usuario): void
     {
         $usuario->idPerfil = Helper::ID_PERFIL_CONVIDADO;
         $usuario->idPlano = Helper::ID_PLANO_CONVIDADO;
         $usuario->save();
         $pasta = Pastas::findOrFail($convite->idPasta);
         Helper::relacionarPastas($pasta, $usuario);
-
-
     }
 }

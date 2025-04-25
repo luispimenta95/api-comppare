@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\VendasController;
 use App\Http\Controllers\ConviteController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\RankingController;
+use App\Http\Controllers\Api\PastasController;
 
 Route::middleware('api')->group(function () {
     Route::get('/api/test', function () {
@@ -27,7 +28,7 @@ Route::middleware('api')->group(function () {
     //Rotas planos
     Route::post('/api/planos/cadastrar', [PlanoController::class, 'createPlan']);
     Route::get('/api/planos/listar', [PlanoController::class, 'index']);
-    Route::post('/api/planos/recuperar', [PlanoController::class, 'getPlano']);
+    Route::get('/api/planos/recuperar/{id}', [PlanoController::class, 'getPlano']);
     Route::post('/api/planos/atualizar-status', [PlanoController::class, 'atualizarStatus']);
     Route::post('/api/planos/atualizar-dados', [PlanoController::class, 'atualizarDados']);
     Route::post('/api/planos/atualizar-funcionalidades', [PlanoController::class, 'adicionarFuncionalidades']);
@@ -49,13 +50,16 @@ Route::middleware('api')->group(function () {
     Route::post('/api/tags/recuperar-tags-usuario', [TagController::class, 'getTagsByUsuario']);
 
     Route::post('/api/vendas/criar-assinatura', [VendasController::class, 'createSubscription']);
+    Route::post('/api/vendas/cancelar-assinatura', [VendasController::class, 'cancelarAssinatura']);
     Route::post('/api/ranking/atualizar', [RankingController::class, 'updatePoints']);
     Route::get('/api/ranking/classificacao', [RankingController::class, 'index']);
 
     Route::post('/api/notification', [VendasController::class, 'updatePayment']);
+    Route::post('/api/token/salvar', [VendasController::class, 'receberDadosAssinatura']);
 
+    //update branch
     //Convites
 
     Route::post('api/convites/enviar', [ConviteController::class, 'create']);
-
+    Route::post('/api/pasta/create', [PastasController::class, 'create']);
 });

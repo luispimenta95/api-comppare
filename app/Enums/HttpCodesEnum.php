@@ -84,7 +84,7 @@ enum HttpCodesEnum: int
     case InvitesLimit = -16;
     case UserNotFound = -17;
     case PlanNotFoundForUser = -18;
-
+    case SubscriptionCanceled = -19;
 
 
     public function description(): string
@@ -167,7 +167,8 @@ enum HttpCodesEnum: int
             self::SendInviteError => 'Error: Erro ao enviar o convite.',
             self::InvitesLimit => 'Error: Numero de convites permitidos atingido.',
             self::UserNotFound => 'Error : Usuário não encontrado',
-            self::PlanNotFoundForUser => 'Error: Usuário sem plano associado'
+            self::PlanNotFoundForUser => 'Error: Usuário sem plano associado',
+            self::SubscriptionCanceled => 'Assinatura cancelada com sucesso!'
         };
     }
 }

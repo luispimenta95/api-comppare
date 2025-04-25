@@ -14,3 +14,6 @@ INSERT INTO `perfil` (`id`, `nome_perfil`, `created_at`, `updated_at`) VALUES
 (1, 'Administrativo', NULL, NULL),
 (2, 'Usuário', NULL, NULL),
 (3, 'Convidados', NULL, NULL);
+
+
+update  planos set planos.exibicao = 0 where planos.id in (2,7);

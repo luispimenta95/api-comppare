@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\TransacaoFinanceira;
 use App\Http\Util\Payments\ApiMercadoPago;
 use Illuminate\Http\Request;
+use App\Enums\HttpCodesEnum;
 
 class VendasController extends Controller
 {
@@ -21,73 +22,100 @@ class VendasController extends Controller
     private array $codes = [];
     private ApiEfi $apiEfi;
     private const CARTAO = 'Cartão de crédito';
+    private HttpCodesEnum $messages;
+
+
 
 
     public function __construct()
     {
         $this->codes = Helper::getHttpCodes();
         $this->apiEfi = new ApiEfi();
+        $this->messages = HttpCodesEnum::OK;  // Usando a enum para um valor inicial
     }
 
 
     public function createSubscription(Request $request): JsonResponse
     {
-        $campos = ['usuario', 'plano', 'token', 'valor'];
+        Log::info("Usuario:" .$request->usuario);
+        Log::info("token:" .$request->token);
+        Log::info("Plano:" .$request->plano);
 
+        $campos = ['usuario', 'plano', 'token'];
         $campos = Helper::validarRequest($request, $campos);
 
+
         if ($campos !== true) {
+            $this->messages = HttpCodesEnum::MissingRequiredFields;
+
             $response = [
-                'codRetorno' => 400,
-                'message' => $this->codes[-9],
-                'campos' => $campos
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => $this->messages->description(),
+                'campos' => $campos,
             ];
             return response()->json($response);
         }
+
         $usuario = Usuarios::find($request->usuario);
         $plano = Planos::find($request->plano);
 
-        $data = [
-            "cardToken" => $request->token,
-            "idPlano" => $plano->idHost,
-            "usuario" => [
-                "name" => $usuario->nome,
-                "cpf" => $usuario->cpf,
-                "phone_number" => $usuario->telefone,
-                "email" => $usuario->email,
-                "birth" => Carbon::parse($usuario->dataNascimento)->format('Y-m-d')
-            ],
-
-            "produto" => [
-                "name" => $plano->nome,
-                "amount" => Helper::QUANTIDADE,
-                "value" => $request->valor * 100 // Valor = Valor plano * 100
-            ]
-
+        $dadosEmail = [
+            'nome' => $usuario->nome,
         ];
 
-        $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
-        if ($responseApi['code'] == 200) {
-            $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
-            $usuario->dataLimiteCompra = Carbon::parse($responseApi['data']['first_execution'])->format('Y-m-d');
-            $usuario->save();
-            $response = [
-                'codRetorno' => 200,
-                'message' => $this->codes[200]
-            ];
-            $dadosEmail = [
-                'nome' => $usuario->nome,
-            ];
+        // Verifica se o idHost está definido no plano
+        if ($plano && $plano->idHost !== null) {
+            Log::info("valor plano:" .$plano->valor);
+            $valor = $plano->valor * 100;
+            Log::info("valor plano:" .$valor);
 
-            MailHelper::confirmacaoAssinatura($dadosEmail, $usuario->email);
-        } else {
-            $response = [
-                'codRetorno' => 400,
-                'message' => $responseApi['description']
+            $data = [
+                "cardToken" => $request->token,
+                "idPlano" => $plano->idHost,
+                "usuario" => [
+                    "name" => $usuario->nome,
+                    "cpf" => $usuario->cpf,
+                    "phone_number" =>  $usuario->telefone,
+                    "email" => $usuario->email,
+                    "birth" => Carbon::parse($usuario->dataNascimento)->format('Y-m-d')
+                ],
+                "produto" => [
+                    "name" => $plano->nome,
+                    "amount" => Helper::QUANTIDADE,
+                    "value" => $valor
+                ]
             ];
+            Log::info("Valor:" .$data['produto']['value']);
+            $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
+
+
+            if ($responseApi['code'] == 200) {
+                Log::info("Sucesso:");
+
+                $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
+                $usuario->dataLimiteCompra = Carbon::createFromFormat('d/m/Y', $responseApi['data']['first_execution'])->format('Y-m-d');                $usuario->idAssinatura = $responseApi['data']['subscription_id'];
+                $response = [
+                    'codRetorno' => 200,
+                    'message' => $this->codes[200]
+                ];
+            } else {
+                Log::info("Valor:" .$responseApi['description']);
+
+                $response = [
+                    'codRetorno' => 400,
+                    'message' => $responseApi['description']
+                ];
+            }
+        } else {
+            // Caso idHost esteja nulo, salva dataLimiteCompra para amanhã
+            $usuario->dataLimiteCompra = Carbon::tomorrow()->format('Y-m-d');
         }
+        $usuario->save();
+        MailHelper::confirmacaoAssinatura($dadosEmail, $usuario->email);
+
         return response()->json($response);
     }
+
 
     public function updatePayment(Request $request)
     {
@@ -115,6 +143,68 @@ class VendasController extends Controller
                     ]);
                 }
             }
+        }
+    }
+
+    public function cancelarAssinatura(Request $request)
+    {
+        $campos = ['usuario'];
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $this->messages = HttpCodesEnum::MissingRequiredFields;
+
+            $response = [
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => $this->messages->description(),
+                'campos' => $campos,
+            ];
+            return response()->json($response);
+        }
+
+        $usuario = Usuarios::where('id', $request->usuario)->first();
+
+        $response = [];
+
+        if ($usuario) {
+
+            $responseApi = json_decode($this->apiEfi->cancelSubscription($usuario->idAssinatura), true);
+
+
+            if ($responseApi['code'] == 200) {
+                $usuario->status = 0;
+
+                $response = [
+                    'codRetorno' => HttpCodesEnum::OK->value,
+                    'message' => HttpCodesEnum::SubscriptionCanceled->description()
+                ];
+            } else {
+                $response =   [
+                    'codRetorno' => HttpCodesEnum::BadRequest->value,
+                    'message' => $responseApi['description']
+                ];
+            }
+        } else {
+            $response =   [
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' =>  HttpCodesEnum::NotFound->description()
+            ];
+        }
+
+        return response()->json($response);
+    }
+
+
+    public function receberDadosAssinatura(Request $request)
+    {
+
+        if($request->token !=null){
+            $response =   [
+                'codRetorno' => HttpCodesEnum::OK->value,
+            ];
+
+        return response()->json($response);
+
         }
     }
 }

@@ -46,39 +46,46 @@ class PastasController extends Controller
         $currentMonth = now()->month;
         $currentYear = now()->year;
         $idPlano = $user->idPlano;
-        $monthLimit = Planos::find($idPlano)->limitePastas;
+        //dd($currentMonth, $currentYear, $idPlano);
+
+        $monthLimit = Planos::find($idPlano)->quantidadePastas;
+
 
         // Contagem de pastas e subpastas criadas pelo usuário no mês atual
         $pastasCriadasNoMes = Pastas::where('idUsuario', $user->id)
             ->whereYear('created_at', $currentYear)  // Filtra pelo ano atual
             ->whereMonth('created_at', $currentMonth)  // Filtra pelo mês atual
             ->count();
-
+//dd($pastasCriadasNoMes);
         // Contagem de subpastas associadas a este usuário
-        $subpastasCriadasNoMes = Pastas::whereHas('subpastas', function ($query) use ($user, $currentYear, $currentMonth) {
+      /*  $subpastasCriadasNoMes = Pastas::whereHas('subpastas', function ($query) use ($user, $currentYear, $currentMonth) {
             $query->where('idUsuario', $user->id)
                 ->whereYear('created_at', $currentYear)
                 ->whereMonth('created_at', $currentMonth);
         })->count();
+        dd($subpastasCriadasNoMes);
+      testekk
+*/
+        $totalFolders = $pastasCriadasNoMes;
 
-        $totalFolders = $pastasCriadasNoMes + $subpastasCriadasNoMes;
 
         // Verifica se o número de pastas (incluindo subpastas) criadas é menor que o limite do plano
         if ($totalFolders < $monthLimit) {
             // Prossegue com a criação da pasta ou subpasta
-            $folderName = $user->id . '/' . $request->nomePasta;
-            $folder = json_decode(Helper::createFolder($folderName));
+            $folderName =  $user->nome . '/' . $request->nomePasta;
+            $folder = Helper::createFolder($folderName);
 
-            if ($folder->path !== null) {
+            if ($folder['path'] !== null) {
                 // Criação da pasta principal
                 $novaPasta = Pastas::create([
                     'nome' => $folderName,
                     'idUsuario' => $user->id,
-                    'caminho' => $folder->path
+                    'caminho' => $folder['path']
                 ]);
 
+
                 // Se a pasta for criada com sucesso, associamos o usuário à pasta
-                $novaPasta->usuarios()->attach($user->id);
+                $novaPasta->usuario()->attach($user->id);
 
                 // Se a pasta for uma subpasta, associamos à pasta pai
                 if ($request->idPastaPai) {

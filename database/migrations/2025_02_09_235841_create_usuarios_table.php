@@ -24,6 +24,7 @@ return new class extends Migration
             $table->timestamp('dataLimiteCompra');
             $table->timestamp('dataUltimoPagamento')->nullable();
             $table->integer('idUltimaCobranca')->nullable();
+            $table->integer('idAssinatura')->nullable();
             $table->integer('pastasCriadas')->default(0);
             $table->integer('pontos')->default(0);
             $table->integer('quantidadeConvites')->default(0);

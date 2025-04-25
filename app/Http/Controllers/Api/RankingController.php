@@ -14,29 +14,34 @@ use Illuminate\Http\Request;
 class RankingController extends Controller
 {
     private array $codes = [];
-    protected $pointRules = [
-        'post_created' => 10,
-        'comment_added' => 5,
-        'like_received' => 2,
-    ];
 
-    public function __construct(){
+    public function __construct()
+    {
         $this->codes = Helper::getHttpCodes();
     }
-    public function index()
+    public function index(): JsonResponse
     {
-        return Ponto::selectRaw('idUsuario, SUM(pontos) as total')
+        $pontos = Ponto::selectRaw('idUsuario, SUM(pontos) as total')
             ->groupBy('idUsuario')
             ->orderByDesc('total')
             ->with('usuario')
             ->get();
+
+        $resultado = $pontos->map(function ($item) {
+            return [
+                'nome' => $item->usuario->nome,
+                'pontos' => $item->total
+            ];
+        });
+
+        return response()->json($resultado);
     }
     /**
      * Show the form for creating a new resource.
      */
     public function updatePoints(Request $request): JsonResponse
     {
-        $campos = ['acao', 'usuario'];
+        $campos = ['pontos', 'usuario'];
 
         $campos = Helper::validarRequest($request, $campos);
 
@@ -49,14 +54,21 @@ class RankingController extends Controller
             return response()->json($response);
         }
         $user = Usuarios::find($request->usuario);
+        if(!$user){
+            $response = [
+                'codRetorno' => 404,
+                'message' => $this->codes[404],
+            ];
+
+            return response()->json($response);
+        }
 
         Ponto::create([
             'idUsuario' => $request->usuario,
-            'pontos' => $this->pointRules[$request->acao],
-            'acao' => $request->acao,
+            'pontos' => $request->pontos
         ]);
 
-        $user->pontos = $user->pontos + $this->pointRules[$request->acao];
+        $user->pontos = $user->pontos + $request->pontos;
         $response = [
             'codRetorno' => 200,
             'message' => $this->codes[200]
@@ -100,5 +112,4 @@ class RankingController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-
 }

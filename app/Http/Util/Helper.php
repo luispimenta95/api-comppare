@@ -21,7 +21,7 @@ class Helper
 
     const int ATIVO = 1;
 
-    const int TEMPO_GRATUIDADE = 15;
+    const int TEMPO_GRATUIDADE = 7;
     const int LIMITE_FOTOS = 2;
 
     const int LIMITE_TAGS = 5;
@@ -46,7 +46,7 @@ class Helper
 
     const int QUANTIDADE = 1;
     const int INTERVALO_MENSAL = 1;
-    const int INTERVALO_ANUAL= 12;
+    const int INTERVALO_ANUAL = 12;
 
     /**
      * Retorna todos os códigos HTTP e suas descrições.
@@ -127,7 +127,7 @@ class Helper
             -8 => 'Error: Assinatura exiprada. Por favor, atualize sua assinatura adquirindo um novo plano.',
             -9 => 'Error: A request possui campos obrigatórios não preenchidos ou inválidos.',
             -10 => 'Error: O pagamento ainda não foi realizado.',
-            -11 => 'Error: Limite de criação de pastas mensal atingido.' ,
+            -11 => 'Error: Limite de criação de pastas mensal atingido.',
             -12 => 'Error: Erro ao realizar venda do plano de assinatura.',
             -13 => 'Error: Usuário bloqueado por inatividade superior a 180 dias.'
 
@@ -178,22 +178,21 @@ class Helper
 
 
 
-    public static function createFolder(string $folderName): JsonResponse
+    public static function createFolder(string $folderName): array
     {
+        $folderName = str_replace(" ", "_", $folderName);
 
+        // Usa o disk "public" para criar dentro de storage/app/public
+        if (Storage::disk('public')->makeDirectory($folderName)) {
+            $fullPath = Storage::disk('public')->path($folderName);
 
-        // Cria a pasta no caminho storage/app/
-        if (Storage::makeDirectory($folderName)) {
-            // Gera o caminho completo da pasta criada
-            $fullPath = Storage::path($folderName);
-
-            return response()->json([
+            return [
                 'message' => 'Pasta criada com sucesso!',
-                'path' => $fullPath, // Retorna o path no response
-            ]);
+                'path' => $fullPath,
+            ];
         }
 
-        return response()->json(['message' => 'Erro ao criar a pasta.'], 500);
+        return ['message' => 'Erro ao criar a pasta.'];
     }
 
     public static function deleteFolder(string $folderName): JsonResponse
@@ -217,23 +216,24 @@ class Helper
         if ($response->successful()) {
             // A requisição foi bem-sucedida
             return response()->json(
-                ['message' => 'Processo finalizado com sucesso',
-                'code'  => 200
-                ]);
+                [
+                    'message' => 'Processo finalizado com sucesso',
+                    'code'  => 200
+                ]
+            );
         } else {
             // Em caso de erro na requisição
-            return response()->json(['message' => 'Erro ao realizar request', 'code'  => 500],500);
+            return response()->json(['message' => 'Erro ao realizar request', 'code'  => 500], 500);
         }
     }
-// Checa se uma data informada já passou. Caso positivo, return true | return false
+    // Checa se uma data informada já passou. Caso positivo, return true | return false
     public static function checkDateIsPassed($date): bool
     {
         $dataAtual = Carbon::now();
         return $date->lt($dataAtual);
-
     }
 
-    public static function relacionarPastas(Pastas $pasta, Usuarios $usuario):void
+    public static function relacionarPastas(Pastas $pasta, Usuarios $usuario): void
     {
 
         $subpastas = $pasta->subpastas;

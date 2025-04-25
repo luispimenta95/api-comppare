@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Ponto extends Model
 {
-    protected $fillable = ['acao', 'idUsuario', 'pontos'];
+    protected $fillable = ['idUsuario', 'pontos'];
 
     public function usuario()
     {
