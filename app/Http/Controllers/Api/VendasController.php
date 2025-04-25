@@ -87,6 +87,13 @@ class VendasController extends Controller
             ];
 
             $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
+            Log::info("CodRetorno:" .$responseApi['code']);
+            Log::info("Description:" .$responseApi['description']);
+            $response = [
+                'codRetorno' => 200,
+                'message' => $this->codes[200]
+            ];
+            return response()->json($response);
 
             if ($responseApi['code'] == 200) {
                 $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
