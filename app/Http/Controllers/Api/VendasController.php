@@ -37,8 +37,17 @@ class VendasController extends Controller
 
     public function createSubscription(Request $request): JsonResponse
     {
+        Log::info("Usuario:" .$request->usuario);
+        Log::info("token:" .$request->token);
+        Log::info("Plano:" .$request->plano);
+
         $campos = ['usuario', 'plano', 'token'];
         $campos = Helper::validarRequest($request, $campos);
+        $response = [
+            'codRetorno' => 200,
+            'message' => $this->codes[200]
+        ];
+        return response()->json($response);
 
         if ($campos !== true) {
             $this->messages = HttpCodesEnum::MissingRequiredFields;
