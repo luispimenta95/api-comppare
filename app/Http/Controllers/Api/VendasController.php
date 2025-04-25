@@ -93,8 +93,7 @@ class VendasController extends Controller
                 Log::info("Sucesso:");
 
                 $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
-                $usuario->dataLimiteCompra = Carbon::parse($responseApi['data']['first_execution'])->format('Y-m-d');
-                $usuario->idAssinatura = $responseApi['data']['subscription_id'];
+                $usuario->dataLimiteCompra = Carbon::createFromFormat('d/m/Y', $responseApi['data']['first_execution'])->format('Y-m-d');                $usuario->idAssinatura = $responseApi['data']['subscription_id'];
                 $response = [
                     'codRetorno' => 200,
                     'message' => $this->codes[200]
