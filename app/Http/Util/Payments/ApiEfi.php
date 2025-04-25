@@ -63,7 +63,7 @@ class ApiEfi
             "id" => $dados["idPlano"],
         ];
         //dd($dados['cardToken']);
-
+          $dados['produto']['value'] = (int) $dados["produto"]['value'];
         $body = [
             "items" =>  [$dados['produto']],
             "metadata" =>  ["notification_url" =>  $this->url],
@@ -75,7 +75,7 @@ class ApiEfi
                 ]
             ]
         ];
-        //Log::info("Value:" .$body['items']['value']);//
+        Log::info("Value:" .$body['items'][0]['value']);//
         try {
             return json_encode($this->efiPay->createOneStepSubscription($params, $body));
         } catch (EfiException $e) {
