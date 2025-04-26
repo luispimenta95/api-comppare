@@ -88,7 +88,7 @@ class VendasController extends Controller
             Log::info("Valor:" .$data['produto']['value']);
             $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
 
-
+            $response = [];
             if ($responseApi['code'] == 200) {
                 Log::info("Sucesso:");
 
