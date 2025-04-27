@@ -29,7 +29,7 @@ class RankingController extends Controller
 
         $resultado = $pontos->map(function ($item) {
             return [
-                'nome' => $item->usuario->nome,
+                'nome' => $item->usuario->apelido != null ? $item->usuario->apelido :  $item->usuario->primeiroNome,
                 'pontos' => $item->total
             ];
         });

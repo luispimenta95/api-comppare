@@ -67,15 +67,13 @@ class VendasController extends Controller
 
         // Verifica se o idHost está definido no plano
         if ($plano && $plano->idHost !== null) {
-            Log::info("valor plano:" .$plano->valor);
             $valor = $plano->valor * 100;
-            Log::info("valor plano:" .$valor);
 
             $data = [
                 "cardToken" => $request->token,
                 "idPlano" => $plano->idHost,
                 "usuario" => [
-                    "name" => $usuario->nome,
+                    "name" => $usuario->primeiroNome . " " . $usuario->sobrenome,
                     "cpf" => $usuario->cpf,
                     "phone_number" =>  $usuario->telefone,
                     "email" => $usuario->email,
@@ -91,7 +89,7 @@ class VendasController extends Controller
             $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
 
             if ($responseApi['code'] == 200) {
-                Log::info("Sucesso:");
+                Log::info("Venda gerada com sucesso para" . $data['usuario']['usuario']);
 
                 $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
                 $usuario->dataLimiteCompra = Carbon::createFromFormat('d/m/Y', $responseApi['data']['first_execution'])->format('Y-m-d');                $usuario->idAssinatura = $responseApi['data']['subscription_id'];
