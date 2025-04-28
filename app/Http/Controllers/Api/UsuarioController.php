@@ -41,7 +41,7 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Request $request): JsonResponse
     {
-        $campos = ['primeiroNome', 'sobremome','apelido', 'senha', 'cpf', 'telefone',  'email', 'nascimento', 'idPlano']; // campos nascimento e idPlano devem ser inseridos
+        $campos = ['primeiroNome', 'sobrenome','apelido', 'senha', 'cpf', 'telefone',  'email', 'nascimento', 'idPlano']; // campos nascimento e idPlano devem ser inseridos
         $campos = Helper::validarRequest($request, $campos);
 
         if ($campos !== true) {
