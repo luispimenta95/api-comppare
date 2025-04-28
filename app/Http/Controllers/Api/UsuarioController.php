@@ -75,7 +75,7 @@ class UsuarioController extends Controller
 
         $dataNascimento = Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d');
         $limite = Planos::where('id', $request->idPlano)->first()->tempoGratuidade;
-
+dd($request);
         $usuario = Usuarios::create([
             'primeiroNome' => $request->primeiroNome,
             'sobrenome' => $request->sobrenome,
