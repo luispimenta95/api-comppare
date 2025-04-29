@@ -8,7 +8,7 @@ class Photos extends Model
 {
 
     protected $fillable = [
-        'folder_id',
+        'pasta_id',
         'path',
         'taken_at'
     ];
