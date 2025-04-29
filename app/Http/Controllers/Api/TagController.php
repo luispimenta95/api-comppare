@@ -40,21 +40,14 @@ class TagController extends Controller
      */
     public function cadastrarTag(Request $request): JsonResponse
     {
-        $campos = ['nome', 'descricao', 'usuario'];
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
-            $response = [
-                'codRetorno' => HttpCodesEnum::BadRequest->value,
-                'message' => HttpCodesEnum::MissingRequiredFields->description(),
-                'campos' => $campos,
-            ];
-            return response()->json($response);
-        }
+        $request->validate([
+            'valor' => 'required|string|max:255',
+            'label' => 'required|string|max:255',
+        ]);
 
         Tag::create([
-            'nome' => $request->nome,
-            'descricao' => $request->descricao,
+            'label' => $request->label,
+            'valor' => $request->valor,
             'idUsuarioCriador' => $request->usuario,
         ]);
 
@@ -158,13 +151,14 @@ class TagController extends Controller
             return response()->json($response);
         }
 
-        $tags = Tag::where('idUsuarioCriador', $request->usuario)
-            ->where('status', Helper::ATIVO)
-            ->orWhereHas('usuario', function ($query) {
-                $query->where('idPerfil', Helper::ID_PERFIL_ADMIN);
-            })
-            ->where('status', Helper::ATIVO)
-            ->get();
+        $tags = Tag::where(function ($query) use ($request) {
+            $query->where('idUsuarioCriador', $request->usuario)
+                ->where('status', Helper::ATIVO);
+        })->orWhere(function ($query) {
+            $query->whereHas('usuario', function ($q) {
+                $q->where('idPerfil', Helper::ID_PERFIL_ADMIN);
+            })->where('status', Helper::ATIVO);
+        })->get();
 
         $response = [
             'codRetorno' => HttpCodesEnum::OK->value,

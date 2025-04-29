@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('tags', function (Blueprint $table) {
             $table->id();
-            $table->string('nome')->unique();
-            $table->string('descricao');
+            $table->string('label'); // Descrição da tag, ex: "Peso Atual", "Status da Meta"
+            $table->string('valor'); // Valor em texto (ex: "72.5kg", "Aprovado", "Em progresso")
             $table->boolean('status')->default(true);
             $table->unsignedBigInteger('idUsuarioCriador'); //
             $table->foreign('idUsuarioCriador')->references('id')->on('usuarios');

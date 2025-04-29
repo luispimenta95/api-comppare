@@ -17,14 +17,18 @@ class Pastas extends Model
     {
         return $this->hasOne(Convite::class);
     }
-    public function subpastas()
+    public function photos()
     {
-        return $this->hasMany(Pastas::class, 'pasta_pai_id');
+        return $this->hasMany(Photos::class);
     }
 
-    // Relacionamento inverso com a pasta pai
-    public function pastaPai()
+    /**
+     * Relacionamento: uma pasta tem muitas tags com valores associados.
+     */
+    public function tags()
     {
-        return $this->belongsTo(Pastas::class, 'pasta_pai_id');
+        return $this->belongsToMany(Tag::class, 'folder_tag_values')
+            ->withPivot('value')
+            ->withTimestamps();
     }
 }

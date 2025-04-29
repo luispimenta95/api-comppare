@@ -16,9 +16,6 @@ return new class extends Migration
             $table->id();
             $table->string('nome');
             $table->string('caminho');
-            $table->unsignedBigInteger('idUsuario');
-            $table->foreignId('pasta_pai_id')->nullable()->constrained('pastas')->onDelete('cascade');
-            $table->foreign('idUsuario')->references('id')->on('usuarios');
 
             $table->timestamps();
         });

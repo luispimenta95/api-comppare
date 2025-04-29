@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class Tag extends Model
 {
     protected $fillable = [
-        'nome',              // Nome
-        'descricao',         // Campo adicional: Descrição
+        'label',              // Nome
+        'valor',         // Campo adicional: Descrição
         'idUsuarioCriador',  // ID do usuário criador,
         'status'
     ];
