@@ -9,6 +9,7 @@ use App\Http\Controllers\ConviteController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\RankingController;
 use App\Http\Controllers\Api\PastasController;
+use App\Http\Controllers\Api\QuestoesController;
 
 Route::middleware('api')->group(function () {
     Route::get('/api/test', function () {
@@ -62,4 +63,7 @@ Route::middleware('api')->group(function () {
 
     Route::post('api/convites/enviar', [ConviteController::class, 'create']);
     Route::post('/api/pasta/create', [PastasController::class, 'create']);
+
+    Route::post('/api/questoes/salvar', [QuestoesController::class, 'saveQuestion']);
+    Route::get('/api/questoes/listar', [QuestoesController::class, 'listar']);
 });
