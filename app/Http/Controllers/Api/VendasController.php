@@ -74,7 +74,7 @@ class VendasController extends Controller
                 "cardToken" => $request->token,
                 "idPlano" => $plano->idHost,
                 "usuario" => [
-                    "name" => $usuario->primeiroNome . " " . $usuario->sobrenome,
+                    "name" => "Hoao da Silva teste",
                     "cpf" => $usuario->cpf,
                     "phone_number" =>  $usuario->telefone,
                     "email" => $usuario->email,
