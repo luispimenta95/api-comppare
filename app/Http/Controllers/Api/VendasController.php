@@ -62,7 +62,8 @@ class VendasController extends Controller
         $plano = Planos::find($request->plano);
 
         $dadosEmail = [
-            'nome' => $usuario->primeiroNome . " " . $usuario->sobrenome
+            //'nome' => $usuario->primeiroNome . " " . $usuario->sobrenome
+            "nome" => "teste"
         ];
 
         // Verifica se o idHost está definido no plano
