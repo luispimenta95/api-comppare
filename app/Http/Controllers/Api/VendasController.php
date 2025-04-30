@@ -98,12 +98,13 @@ class VendasController extends Controller
                     'message' => $this->codes[200]
                 ];
             } else {
-                Log::info("Valor:" .$responseApi['description']);
+                Log::info("Erro:" .$responseApi['description']);
 
                 $response = [
                     'codRetorno' => 400,
                     'message' => $responseApi['description']
                 ];
+                return response()->json($response);
             }
         } else {
             // Caso idHost esteja nulo, salva dataLimiteCompra para amanhã
@@ -112,7 +113,7 @@ class VendasController extends Controller
         $usuario->save();
         MailHelper::confirmacaoAssinatura($dadosEmail, $usuario->email);
 
-        return response()->json($response);
+
     }
 
 
