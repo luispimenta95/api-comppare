@@ -63,7 +63,7 @@ class VendasController extends Controller
 
         $dadosEmail = [
             //'nome' => $usuario->primeiroNome . " " . $usuario->sobrenome
-            "nome" => $usuario->primeiroNome,
+            "nome" => 'teste da silva joao',
         ];
 
         // Verifica se o idHost está definido no plano
@@ -74,7 +74,7 @@ class VendasController extends Controller
                 "cardToken" => $request->token,
                 "idPlano" => $plano->idHost,
                 "usuario" => [
-                    "name" => $usuario->primeiroNome . " " . $usuario->sobrenome,
+                    "name" => 'Teste da silva joao',
                     "cpf" => $usuario->cpf,
                     "phone_number" =>  $usuario->telefone,
                     "email" => $usuario->email,
