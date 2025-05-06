@@ -35,7 +35,7 @@ class Usuarios extends Authenticatable implements JWTSubject
         'idAssinatura'
     ];
 
-    protected $hidden = ['senha'];
+    protected $hidden = ['senha', 'created_at', 'updated_at'];
 
     public function plano(): BelongsTo
     {
