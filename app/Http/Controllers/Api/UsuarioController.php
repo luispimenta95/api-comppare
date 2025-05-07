@@ -370,7 +370,7 @@ class UsuarioController extends Controller
             $planoNovo = Planos::where('id', $request->plano)->first()->nome;
 
             Movimentacoes::create([
-             'nome_usuario' => $usuario->nome,
+             'nome_usuario' => $usuario->primeiroNome. ' ' . $usuario->sobrenome,
              'plano_antigo' => $plano,
              'plano_novo' => $planoNovo,
             ]);
