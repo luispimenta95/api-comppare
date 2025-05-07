@@ -156,3 +156,13 @@ Content-Type: application/json
 "pontos": 10,
  "usuario": 1
 }
+
+
+###atualizar plano
+POST {{baseUrl}}/usuarios/atualizar-plano
+Content-Type: application/json
+
+{
+    "cpf": "81581828012",
+    "plano": 5
+}

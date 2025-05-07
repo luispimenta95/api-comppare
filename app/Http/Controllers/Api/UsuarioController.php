@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Convite;
-use App\Models\Movimentacao;
+use App\Models\Movimentacoes;
 use App\Models\Pastas;
 use App\Models\Planos;
 use Illuminate\Http\JsonResponse;
@@ -369,7 +369,7 @@ class UsuarioController extends Controller
             $usuario->save();
             $planoNovo = Planos::where('id', $request->plano)->first()->nome;
 
-            Movimentacao::create([
+            Movimentacoes::create([
              'nome_usuario' => $usuario->nome,
              'plano_antigo' => $plano,
              'plano_novo' => $planoNovo,
