@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Convite;
+use App\Models\Movimentacao;
 use App\Models\Pastas;
 use App\Models\Planos;
 use Illuminate\Http\JsonResponse;
@@ -341,5 +342,50 @@ class UsuarioController extends Controller
         $usuario->save();
         $pasta = Pastas::findOrFail($convite->idPasta);
         Helper::relacionarPastas($pasta, $usuario);
+    }
+
+    public function atualizarPlanoUsuario(Request $request): JsonResponse
+    {
+        $campos = ['cpf', 'plano']; // campos nascimento e idPlano devem ser inseridos
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $this->messages = HttpCodesEnum::MissingRequiredFields;
+
+            $response = [
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => $this->messages->description(),
+                'campos' => $campos,
+            ];
+            return response()->json($response);
+        }
+
+        $existe = $this->confirmaUser($request);
+
+        if($existe){
+            $usuario = Usuarios::where('cpf', $request->cpf)->first();
+            $plano = Planos::where('id', $usuario->idPlano)->first()->nome;
+            $usuario->idPlano = $request->plano;
+            $usuario->save();
+            $planoNovo = Planos::where('id', $request->plano)->first()->nome;
+
+            Movimentacao::create([
+             'nome_usuario' => $usuario->nome,
+             'plano_antigo' => $plano,
+             'plano_novo' => $planoNovo,
+            ]);
+
+            $response = [
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => HttpCodesEnum::OK->description(),
+            ];
+        }else{
+            $response = [
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => HttpCodesEnum::NotFound->description(),
+            ];
+        }
+
+        return response()->json($response);
     }
 }

@@ -30,7 +30,7 @@ POST {{baseUrl}}/usuarios/autenticar
 Content-Type: application/json
 
 {
-    "cpf": "02342288140",
+    "cpf": "81581828012",
     "senha": "13151319"
 }
 
