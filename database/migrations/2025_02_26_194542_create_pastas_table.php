@@ -16,6 +16,8 @@ return new class extends Migration
             $table->id();
             $table->string('nome');
             $table->string('caminho');
+            $table->unsignedBigInteger('idUsuario');
+            $table->foreign('idUsuario')->references('id')->on('usuarios');
 
             $table->timestamps();
         });
