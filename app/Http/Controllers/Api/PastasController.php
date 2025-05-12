@@ -57,15 +57,7 @@ class PastasController extends Controller
             ->whereMonth('created_at', $currentMonth)  // Filtra pelo mês atual
             ->count();
 //dd($pastasCriadasNoMes);
-        // Contagem de subpastas associadas a este usuário
-      /*  $subpastasCriadasNoMes = Pastas::whereHas('subpastas', function ($query) use ($user, $currentYear, $currentMonth) {
-            $query->where('idUsuario', $user->id)
-                ->whereYear('created_at', $currentYear)
-                ->whereMonth('created_at', $currentMonth);
-        })->count();
-        dd($subpastasCriadasNoMes);
-      testekk
-*/
+
         $totalFolders = $pastasCriadasNoMes;
 
 
@@ -100,6 +92,7 @@ class PastasController extends Controller
                 $user->increment('pastasCriadas');
                 // Retorna a resposta de sucesso
                 $response = [
+                    'idPasta' => $novaPasta->id,
                     'codRetorno' => HttpCodesEnum::OK->value,
                     'message' => HttpCodesEnum::OK->description()
                 ];
