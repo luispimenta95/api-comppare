@@ -374,11 +374,22 @@ class UsuarioController extends Controller
              'plano_antigo' => $plano,
              'plano_novo' => $planoNovo,
             ]);
-
+//To do : Verificar permissões de troca de plano
             $response = [
                 'codRetorno' => HttpCodesEnum::OK->value,
                 'message' => HttpCodesEnum::OK->description(),
+                'changePlan' => true,
+
             ];
+            if(false) {
+
+                $response = [
+                    'codRetorno' => HttpCodesEnum::BadRequest->value,
+                    'message' => 'Operação não permitida.',
+                    'changePlan' => false,
+
+                ];
+            }
         }else{
             $response = [
                 'codRetorno' => HttpCodesEnum::NotFound->value,
