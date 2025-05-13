@@ -28,6 +28,7 @@ class PastasController extends Controller
      */
     public function create(Request $request): JsonResponse
     {
+        dd( $request->nomePasta);
         $request->validate([
             'idUsuario' => 'required|exists:usuarios,id', // Validar se o idUsuario existe
             'nomePasta' => 'required|string|max:255', // Validar se o nomePasta é uma string e tem no máximo 255 caracteres
