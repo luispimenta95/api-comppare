@@ -142,8 +142,8 @@ POST {{baseUrl}}/pasta/create
 Content-Type: application/json
 
 {
-    "idUsuario": 1,
-    "nomePasta": "teste"
+    "idUsuario": 2,
+    "nomePasta": "pimenta/photos"
   }
 
 
