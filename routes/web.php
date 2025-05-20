@@ -65,6 +65,7 @@ Route::middleware('api')->group(function () {
 
     Route::post('api/convites/enviar', [ConviteController::class, 'create']);
     Route::post('/api/pasta/create', [PastasController::class, 'create']);
+    Route::post('/api/imagens/salvar', [PastasController::class, 'saveImageInFolder']);
 
     Route::post('/api/questoes/salvar', [QuestoesController::class, 'saveQuestion']);
     Route::get('/api/questoes/listar', [QuestoesController::class, 'listar']);
