@@ -163,7 +163,7 @@ class PastasController extends Controller
 
     public function saveImageInFolder(Request $request)
     {
-        dd($request);
+        dd($request->image);
         try {
             // Validação dos dados
             $request->validate([
