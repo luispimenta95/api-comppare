@@ -171,15 +171,21 @@ class PastasController extends Controller
 
             $pasta = Pastas::find($request->idPasta);
 
-            // Garantir que o caminho é apenas o diretório dentro de "public", como: "Luis_Pimenta"
-            $relativePath = str_replace('storage/app/public/', '', $pasta->caminho);
-            $relativePath = trim($relativePath, '/'); // remove barras extras
+            // Exemplo: queremos salvar em "Luis_Pimenta/pimenta/photos"
+            // Remove tudo antes de "storage/app/public/"
+            $relativePath = str_replace(
+                '/home/u757410616/domains/comppare.com.br/public_html/api-comppare/storage/app/public/',
+                '',
+                $pasta->caminho
+            );
+
+            $relativePath = trim($relativePath, '/'); // remove barras desnecessárias
 
             if ($request->hasFile('image')) {
                 $image = $request->file('image');
                 $imageName = time() . '.' . $image->getClientOriginalExtension();
 
-                // Armazenar no disco 'public' dentro do caminho relativo
+                // Salva no disco 'public' no caminho desejado
                 $path = $image->storeAs($relativePath, $imageName, 'public');
 
                 return response()->json([
