@@ -172,10 +172,9 @@ class PastasController extends Controller
 
             // Recuperar a pasta com base no idPasta
             $pasta = Pastas::find($request->idPasta);
-            dd($pasta);
 
             // Verificar se a pasta foi encontrada
-            if (!$pasta || !Storage::exists($pasta->path)) {
+            if (!$pasta || !Storage::exists($pasta->caminho)) {
                 return response()->json([
                     'codRetorno' => HttpCodesEnum::NotFound->value,
                     'message' => 'Pasta não encontrada.',
@@ -190,7 +189,7 @@ class PastasController extends Controller
                 $imageName = time() . '.' . $image->getClientOriginalExtension();
 
                 // Armazenar a imagem na pasta recuperada (path)
-                $path = $image->storeAs($pasta->path, $imageName, 'public'); // 'public' indica o disco público
+                $path = $image->storeAs($pasta->caminho, $imageName, 'public'); // 'public' indica o disco público
 
                 // Retornar o caminho da imagem armazenada
                 return response()->json([
