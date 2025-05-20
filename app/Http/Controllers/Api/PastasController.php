@@ -172,13 +172,7 @@ class PastasController extends Controller
 
             // Recuperar a pasta com base no idPasta
             $pasta = Pastas::find($request->idPasta);
-            // Verificar se a pasta foi encontrada
-            if (!Storage::exists($pasta->caminho)) {
-                return response()->json([
-                    'codRetorno' => HttpCodesEnum::NotFound->value,
-                    'message' => 'Pasta não encontrada.',
-                ]);
-            }
+
 
             // Verificar se existe o arquivo de imagem no request
             if ($request->hasFile('image')) {
