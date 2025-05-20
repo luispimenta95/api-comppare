@@ -172,7 +172,7 @@ class PastasController extends Controller
 
             // Recuperar a pasta com base no idPasta
             $pasta = Pastas::find($request->idPasta);
-
+dd($pasta->caminho);
             // Verificar se a pasta foi encontrada
             if (!$pasta || !Storage::exists($pasta->caminho)) {
                 return response()->json([
