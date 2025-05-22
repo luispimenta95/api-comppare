@@ -62,8 +62,7 @@ class VendasController extends Controller
         $plano = Planos::find($request->plano);
 
         $dadosEmail = [
-            //'nome' => $usuario->primeiroNome . " " . $usuario->sobrenome
-            "nome" => 'teste da silva joao',
+            'nome' => $usuario->primeiroNome . " " . $usuario->sobrenome
         ];
 
         // Verifica se o idHost está definido no plano
@@ -74,7 +73,7 @@ class VendasController extends Controller
                 "cardToken" => $request->token,
                 "idPlano" => $plano->idHost,
                 "usuario" => [
-                    "name" => 'Teste da silva joao',
+                    "name" =>  $usuario->primeiroNome . " " . $usuario->sobrenome,
                     "cpf" => $usuario->cpf,
                     "phone_number" =>  $usuario->telefone,
                     "email" => $usuario->email,
@@ -90,6 +89,8 @@ class VendasController extends Controller
             $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
 
             if ($responseApi['code'] == 200) {
+                $usuario->plano = $request->plano;
+                $usuario->save();
                 Log::info("Venda gerada com sucesso para" . $data['usuario']['usuario']);
 
                 $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
