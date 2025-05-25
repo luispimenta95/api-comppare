@@ -31,7 +31,6 @@ Route::prefix('admin')->group(
         Route::post('/vendas/cancelar-assinatura', [VendasController::class, 'cancelarAssinatura']);
 
         Route::post('/ranking/atualizar', [RankingController::class, 'updatePoints']);
-        Route::get('/ranking/classificacao', [RankingController::class, 'index']);
 
         Route::post('/api/notification', [VendasController::class, 'updatePayment']);
         Route::post('/api/token/salvar', [VendasController::class, 'receberDadosAssinatura']);

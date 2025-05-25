@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\UsuarioController;
+use App\Http\Controllers\Api\RankingController;
+
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('usuarios')->group(
@@ -17,6 +19,7 @@ Route::prefix('usuarios')->group(
         Route::middleware(['jwt.auth'])->group(function () {
             Route::post('/atualizar-plano', [UsuarioController::class, 'atualizarPlanoUsuario']);
             Route::post('/atualizar-dados', [UsuarioController::class, 'atualizarDados']);
+            Route::get('/ranking/classificacao', [RankingController::class, 'index']);
         });
     }
 );
