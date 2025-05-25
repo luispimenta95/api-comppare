@@ -295,18 +295,7 @@ class UsuarioController extends Controller
                     'message' => HttpCodesEnum::UserBlockedDueToInactivity->description()
                 ]);
             }
-            $plano = Planos::where('id', $user->idPlano)->first();
-            $diasRenovacao = $plano->tempoGratuidade;
-            if ($plano->idHost == null) {
-                $dataLimiteCompra = Carbon::parse($user->created_at)->addDays($diasRenovacao);
-            } else {
-                $dataLimiteCompra = $user->dataUltimoPagamento != null ?
-                    Carbon::parse($user->dataUltimoPagamento)->addDays($diasRenovacao) :
-                    Carbon::parse($user->created_at)->addDays(Helper::TEMPO_GRATUIDADE);
-            }
-            dd($dataLimiteCompra);
-
-            if (Helper::checkDateIsPassed($dataLimiteCompra)) {
+            if (Helper::checkDateIsPassed($user->dataLimiteCompra)) {
                 return response()->json([
                     'codRetorno' => HttpCodesEnum::BadRequest->value,
                     'message' => HttpCodesEnum::ExpiredSubscription->description()
