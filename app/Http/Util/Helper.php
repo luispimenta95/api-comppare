@@ -230,9 +230,8 @@ class Helper
     public static function checkDateIsPassed($date): bool
     {
         //Call to a member function lt() on string
-        dd($date);
         $dataAtual = Carbon::now();
-        return $date->lt($dataAtual);
+        return  Carbon::parse($date)->lt($dataAtual);
     }
 
     public static function relacionarPastas(Pastas $pasta, Usuarios $usuario): void
