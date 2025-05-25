@@ -304,6 +304,7 @@ class UsuarioController extends Controller
                     Carbon::parse($user->dataUltimoPagamento)->addDays($diasRenovacao) :
                     Carbon::parse($user->created_at)->addDays(Helper::TEMPO_GRATUIDADE);
             }
+            dd($dataLimiteCompra);
 
             if (Helper::checkDateIsPassed($dataLimiteCompra)) {
                 return response()->json([
