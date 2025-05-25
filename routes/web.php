@@ -22,11 +22,8 @@ Route::middleware('api')->group(function () {
     Route::middleware(['jwt.auth'])->group(function () {
 
         Route::post('api/convites/enviar', [ConviteController::class, 'create']);
-        Route::post('/api/pasta/create', [PastasController::class, 'create']);
         Route::post('/api/imagens/salvar', [PastasController::class, 'saveImageInFolder']);
         Route::post('/api/tags/cadastrar', [TagController::class, 'cadastrarTag']);
-        Route::post('/api/tags/recuperar-tags-usuario', [TagController::class, 'getTagsByUsuario']);
-        Route::post('/api/usuarios/atualizar-dados', [UsuarioController::class, 'atualizarDados']);
     });
     //Fim rotas autenticadas
 
