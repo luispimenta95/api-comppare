@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\CupomController;
 use App\Http\Controllers\Api\VendasController;
 use App\Http\Controllers\Api\RankingController;
 use App\Http\Controllers\Api\QuestoesController;
+use App\Http\Controllers\Api\UsuarioController;
 
 
 
@@ -14,7 +15,8 @@ Route::prefix('admin')->group(
     function () {
 
         Route::post('/planos/cadastrar', [PlanoController::class, 'createPlan']);
-        Route::get('/planos/listar', [PlanoController::class, 'index']);
+        Route::get('/usuarios/listar', [UsuarioController::class, 'index']);
+
         Route::get('/planos/recuperar/{id}', [PlanoController::class, 'getPlano']);
         Route::post('/planos/atualizar-status', [PlanoController::class, 'atualizarStatus']);
         Route::post('/planos/atualizar-dados', [PlanoController::class, 'atualizarDados']);

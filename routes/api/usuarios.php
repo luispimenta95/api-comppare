@@ -12,7 +12,6 @@ Route::prefix('usuarios')->group(
         Route::post('/cadastrar', [UsuarioController::class, 'cadastrarUsuario']);
         Route::post('/recuperar', [UsuarioController::class, 'getUser']);
         Route::post('/atualizar-status', [UsuarioController::class, 'atualizarStatus']);
-        Route::get('/listar', [UsuarioController::class, 'index']);
         Route::post('/valida-existencia-usuario', [UsuarioController::class, 'validaExistenciaUsuario']);
         Route::post('/atualizar-senha', [UsuarioController::class, 'atualizarSenha']);
 
