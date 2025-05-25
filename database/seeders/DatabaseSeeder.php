@@ -13,34 +13,12 @@ class DatabaseSeeder extends Seeder
     /**
      * Seed the application's database.
      */
-    public function run(): void
+    public function run()
     {
-        Perfil::create([
-            'nome_perfil' => 'Administrador', // Primeiro tipo de perfil
-
+        $this->call([
+            PlanosSeeder::class,
+            PerfilSeeder::class,
+            QuestionsSeeder::class,
         ]);
-
-        Perfil::create([
-            'nome_perfil' => 'Usuário', // Segundo tipo de perfil
-
-        ]);
-
-        Planos::create([
-            'nome' => 'Plano Premium',
-            'descricao' => 'Plano Premium',
-            'valor' => 100,
-            'quantidadeTags' => 10,
-        ]);
-
-        Usuarios::create([
-            'nome' => 'Administrador',
-            'email' => 'teste@gmail.com',
-            'senha' => bcrypt('13151319'),
-            'idPerfil' => 1,
-            'cpf' => '12345678909',
-            'telefone' => '11999999999',
-            'idPlano' => 1,
-        ]);
-
     }
 }

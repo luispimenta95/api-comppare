@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api;
+
 use App\Enums\HttpCodesEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Util\Helper;
@@ -29,7 +30,6 @@ class PastasController extends Controller
     public function create(Request $request): JsonResponse
     {
         //debug req
-        dd($request);
         $request->validate([
             'idUsuario' => 'required|exists:usuarios,id', // Validar se o idUsuario existe
             'nomePasta' => 'required|string|max:255', // Validar se o nomePasta é uma string e tem no máximo 255 caracteres
@@ -58,7 +58,7 @@ class PastasController extends Controller
             ->whereYear('created_at', $currentYear)  // Filtra pelo ano atual
             ->whereMonth('created_at', $currentMonth)  // Filtra pelo mês atual
             ->count();
-//dd($pastasCriadasNoMes);
+        //dd($pastasCriadasNoMes);
 
         $totalFolders = $pastasCriadasNoMes;
 
@@ -66,7 +66,7 @@ class PastasController extends Controller
         // Verifica se o número de pastas (incluindo subpastas) criadas é menor que o limite do plano
         if ($totalFolders < $monthLimit) {
             // Prossegue com a criação da pasta ou subpasta
-            $folderName =  $user->primeiroNome . '_'. $user->sobrenome . '/' . $request->nomePasta;
+            $folderName =  $user->primeiroNome . '_' . $user->sobrenome . '/' . $request->nomePasta;
             $folder = Helper::createFolder($folderName);
 
             if ($folder['path'] !== null) {
@@ -167,41 +167,47 @@ class PastasController extends Controller
     {
         try {
             $request->validate([
-                'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'image' => 'required',
+                'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg',
                 'idPasta' => 'required|exists:pastas,id',
             ]);
 
             $pasta = Pastas::find($request->idPasta);
 
-            // Exemplo: queremos salvar em "Luis_Pimenta/pimenta/photos"
             // Remove tudo antes de "storage/app/public/"
             $relativePath = str_replace(
                 '/home/u757410616/domains/comppare.com.br/public_html/api-comppare/storage/app/public/',
                 '',
                 $pasta->caminho
             );
+            $relativePath = trim($relativePath, '/');
 
-            $relativePath = trim($relativePath, '/'); // remove barras desnecessárias
+            $uploadedImages = [];
 
-            if ($request->hasFile('image')) {
-                $image = $request->file('image');
-                $imageName = time() . '.' . $image->getClientOriginalExtension();
+            $images = is_array($request->file('image'))
+                ? $request->file('image')
+                : [$request->file('image')];
 
-                // Salva no disco 'public' no caminho desejado
-                $path = $image->storeAs($relativePath, $imageName, 'public');
+            foreach ($images as $image) {
+                if ($image && $image->isValid()) {
+                    $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                    $path = $image->storeAs($relativePath, $imageName, 'public');
+                    $uploadedImages[] = Storage::url($path);
+                }
+            }
 
+            if (empty($uploadedImages)) {
                 return response()->json([
-                    'codRetorno' => HttpCodesEnum::OK->value,
-                    'message' => 'Imagem carregada com sucesso!',
-                    'image_path' => Storage::url($path),
+                    'codRetorno' => HttpCodesEnum::BadRequest->value,
+                    'message' => 'Nenhuma imagem válida foi enviada.',
                 ]);
             }
 
             return response()->json([
-                'codRetorno' => HttpCodesEnum::BadRequest->value,
-                'message' => 'Nenhuma imagem foi enviada.',
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => 'Imagem(ns) carregada(s) com sucesso!',
+                'image_paths' => $uploadedImages,
             ]);
-
         } catch (ValidationException $e) {
             return response()->json([
                 'codRetorno' => HttpCodesEnum::BadRequest->value,
@@ -211,7 +217,7 @@ class PastasController extends Controller
     }
 
     //Rodar commando abaixo:
-//php artisan storage:link
+    //php artisan storage:link
 
 
 }
