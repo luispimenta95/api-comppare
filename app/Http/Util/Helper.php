@@ -229,6 +229,8 @@ class Helper
     // Checa se uma data informada já passou. Caso positivo, return true | return false
     public static function checkDateIsPassed($date): bool
     {
+        //Call to a member function lt() on string
+        dd($date);
         $dataAtual = Carbon::now();
         return $date->lt($dataAtual);
     }
