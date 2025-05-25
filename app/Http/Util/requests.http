@@ -140,7 +140,7 @@ Content-Type: application/json
 ###cadastrar
 POST {{baseUrl}}/pasta/create
 Content-Type: application/json
-
+Authorization: Bearer
 {
     "idUsuario": 2,
     "nomePasta": "pimenta/upload"
