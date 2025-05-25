@@ -10,10 +10,10 @@ Route::prefix('usuarios')->group(
         Route::post('/cadastrar', [UsuarioController::class, 'cadastrarUsuario']);
         Route::post('/recuperar', [UsuarioController::class, 'getUser']);
         Route::post('/atualizar-status', [UsuarioController::class, 'atualizarStatus']);
-        Route::post('/valida-existencia-usuario', [UsuarioController::class, 'validaExistenciaUsuario']);
+        Route::get('/listar', [UsuarioController::class, 'index']);
 
         Route::middleware(['jwt.auth'])->group(function () {
-            Route::get('/listar', [UsuarioController::class, 'index']);
+            Route::post('/valida-existencia-usuario', [UsuarioController::class, 'validaExistenciaUsuario']);
             Route::post('/atualizar-senha', [UsuarioController::class, 'atualizarSenha']);
             Route::post('/atualizar-plano', [UsuarioController::class, 'atualizarPlanoUsuario']);
             Route::post('/atualizar-dados', [UsuarioController::class, 'atualizarDados']);
