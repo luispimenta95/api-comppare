@@ -3,11 +3,10 @@
 use App\Http\Controllers\Api\PastasController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('pasta')->group(
+Route::prefix('imagens')->group(
     function () {
         Route::middleware(['jwt.auth'])->group(function () {
-            Route::post('/create', [PastasController::class, 'create']);
-
+            Route::post('/salvar', [PastasController::class, 'saveImageInFolder']);
         });
     }
 );

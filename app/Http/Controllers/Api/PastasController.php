@@ -216,8 +216,6 @@ class PastasController extends Controller
         }
     }
 
-    //Rodar commando abaixo:
-    //php artisan storage:link
 
 
 }
