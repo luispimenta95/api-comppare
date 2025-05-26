@@ -9,7 +9,7 @@ Route::get('/test', function () {
 });
 
 Route::get('/planos/listar', [PlanoController::class, 'index']);
-Route::get('/api/questoes/listar', [QuestoesController::class, 'listar']);
+Route::get('/questoes/listar', [QuestoesController::class, 'listar']);
 
 foreach (glob(__DIR__ . '/api/*.php') as $routeFile) {
     require $routeFile;
