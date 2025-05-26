@@ -38,7 +38,5 @@ Route::prefix('admin')->group(
         Route::post('/api/token/salvar', [VendasController::class, 'receberDadosAssinatura']);
 
         Route::post('/api/questoes/salvar', [QuestoesController::class, 'saveQuestion']);
-        Route::get('/api/questoes/listar', [QuestoesController::class, 'listar']);
-
     }
 );

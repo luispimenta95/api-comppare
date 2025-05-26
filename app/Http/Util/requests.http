@@ -140,12 +140,12 @@ Content-Type: application/json
 ###cadastrar
 POST {{baseUrl}}/pasta/create
 Content-Type: application/json
-Authorization: Bearer
+#Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5jb21wcGFyZS5jb20uYnIvYXBpL3VzdWFyaW9zL2F1dGVudGljYXIiLCJpYXQiOjE3NDgyMTc3MzEsImV4cCI6MTc0ODIyMTMzMSwibmJmIjoxNzQ4MjE3NzMxLCJqdGkiOiJncHhlN2NsRUxNaXRYdVdvIiwic3ViIjoiMiIsInBydiI6IjU1NGM1YWVhNGNiMjU0MDE5ZTEyMDY3YTdjYTU0N2Y2NzVkNTQ0Y2EifQ.m6rWAD_GHVs-GDWIvlH_yBMCI4QO3VSH0BYF09fiZTE
+
 {
     "idUsuario": 2,
-    "nomePasta": "pimenta/upload"
-  }
-
+    "nomePasta": "pimenta/upload0"
+}
 
 ###ranking
 ###cadastrar
