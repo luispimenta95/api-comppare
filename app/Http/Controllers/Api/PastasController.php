@@ -48,7 +48,7 @@ class PastasController extends Controller
         $currentMonth = now()->month;
         $currentYear = now()->year;
         $idPlano = $user->idPlano;
-        //dd($currentMonth, $currentYear, $idPlano);
+        dd($currentMonth, $currentYear, $idPlano);
 
         $monthLimit = Planos::find($idPlano)->quantidadePastas;
 
