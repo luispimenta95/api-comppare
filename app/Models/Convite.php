@@ -2,9 +2,7 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-
-class Convite extends Model
+class Convite extends BaseModel
 {
 
     protected $fillable = ['email' , 'idUsuario', 'idPasta'];

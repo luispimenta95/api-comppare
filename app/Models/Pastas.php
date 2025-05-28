@@ -2,9 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 
-class Pastas extends Model
+class Pastas extends BaseModel
 {
     protected $fillable = ['nome', 'idUsuario', 'caminho'];
 
