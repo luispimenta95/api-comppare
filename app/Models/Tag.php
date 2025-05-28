@@ -3,7 +3,9 @@
 namespace App\Models;
 
 
-class Tag extends BaseModel
+use Illuminate\Database\Eloquent\Model;
+
+class Tag extends Model
 {
     protected $fillable = [
         'label',              // Nome

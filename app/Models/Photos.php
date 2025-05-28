@@ -4,7 +4,9 @@ namespace App\Models;
 
 
 
-class Photos extends BaseModel
+use Illuminate\Database\Eloquent\Model;
+
+class Photos extends Model
 {
 
     protected $fillable = [

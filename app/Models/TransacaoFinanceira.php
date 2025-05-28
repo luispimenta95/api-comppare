@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class TransacaoFinanceira extends BaseModel
+class TransacaoFinanceira extends Model
 {
     use HasFactory;
 

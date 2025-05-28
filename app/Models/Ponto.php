@@ -3,7 +3,9 @@
 namespace App\Models;
 
 
-class Ponto extends BaseModel
+use Illuminate\Database\Eloquent\Model;
+
+class Ponto extends Model
 {
     protected $fillable = ['idUsuario', 'pontos'];
 
