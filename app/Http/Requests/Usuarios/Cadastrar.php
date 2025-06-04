@@ -3,7 +3,10 @@
 namespace App\Http\Requests\Usuarios;
 
 use Illuminate\Foundation\Http\FormRequest;
-use App\Enums\HttpCodesEnum; // Certifique-se de que o enum está importado corretamente
+use App\Enums\HttpCodesEnum;
+use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Http\Exceptions\HttpResponseException;
+ // Certifique-se de que o enum está importado corretamente
 
 class Cadastrar extends FormRequest
 {
@@ -37,6 +40,38 @@ class Cadastrar extends FormRequest
         return [
             'senha.regex' =>  HttpCodesEnum::InvalidPassword->description()
             
+        ];
+    }
+
+    protected function failedValidation(Validator $validator)
+{
+    $errors = $validator->errors()->toArray();
+
+    throw new HttpResponseException(response()->json([
+        'codRetorno' => HttpCodesEnum::InvalidPassword->value, // ou -9 (MissingRequiredFields)
+        'message' => $this->formatErrorMessage($errors),
+        'erros' => $errors
+    ], HttpCodesEnum::BadRequest->value));
+}
+
+private function formatErrorMessage(array $errors): string
+{
+    // Se quiser customizar, pode extrair só a primeira mensagem:
+    $firstError = reset($errors)[0] ?? 'Erro de validação.';
+    return $firstError;
+}
+    public function attributes(): array
+    {
+        return [
+            'primeiroNome' => 'Primeiro Nome',
+            'sobrenome' => 'Sobrenome',
+            'apelido' => 'Apelido',
+            'cpf' => 'CPF',
+            'senha' => 'Senha',
+            'telefone' => 'Telefone',
+            'email' => 'Email',
+            'idPlano' => 'Plano',
+            'nascimento' => 'Data de Nascimento'
         ];
     }
 }

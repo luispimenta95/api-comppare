@@ -360,7 +360,6 @@ class UsuarioController extends Controller
 
        private function respostaErro(HttpCodesEnum $codigo, array $extras = []): JsonResponse
     {
-        dd($codigo);
         $resposta = array_merge([
             'codRetorno' => $codigo->value,
             'message' => $codigo->description()
