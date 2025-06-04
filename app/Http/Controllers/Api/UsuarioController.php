@@ -365,6 +365,7 @@ class UsuarioController extends Controller
             'message' => $codigo->description()
         ], $extras);
 
-        return response()->json($resposta, $codigo->value);
+        $statusHttp = $codigo->value > 0 ? $codigo->value : 400;
+        return response()->json($resposta, $statusHttp);
     }
 }
