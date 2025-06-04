@@ -16,8 +16,7 @@ use Carbon\Carbon;
 use Illuminate\Validation\Rules\Password;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Enums\HttpCodesEnum;
-use Tymon\JWTAuth\Facades\JWTFactory;
-
+use App\Http\Requests\Usuarios\Cadastrar;
 class UsuarioController extends Controller
 {
     private HttpCodesEnum $messages;
@@ -40,85 +39,47 @@ class UsuarioController extends Controller
         return response()->json($response);
     }
 
-    public function cadastrarUsuario(Request $request): JsonResponse
-    {
-        $campos = ['primeiroNome', 'sobrenome', 'senha', 'cpf', 'telefone',  'email', 'nascimento', 'idPlano']; // campos nascimento e idPlano devem ser inseridos
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
-            $this->messages = HttpCodesEnum::MissingRequiredFields;
-
-            $response = [
-                'codRetorno' => HttpCodesEnum::BadRequest->value,
-                'message' => $this->messages->description(),
-                'campos' => $campos,
-            ];
-            return response()->json($response);
-        }
-
-        if (!Helper::validaCPF($request->cpf)) {
-            $this->messages = HttpCodesEnum::InvalidCPF;
-            $response = [
-                'codRetorno' => HttpCodesEnum::BadRequest->value,
-                'message' => $this->messages->description()
-            ];
-            return response()->json($response);
-        }
-
-        if ($this->confirmaUser($request)) {
-            $this->messages = HttpCodesEnum::CPFAlreadyRegistered;
-            $response = [
-                'codRetorno' => HttpCodesEnum::BadRequest->value,
-                'message' => $this->messages->description()
-            ];
-            return response()->json($response);
-        }
-
-           if (!$this->validaSenha($request->senha)) {
-            return $this->respostaErro(HttpCodesEnum::BadRequest, [
-                'message' => HttpCodesEnum::InvalidPassword->description()
-            ]);
-        }
-
-        $dataNascimento = Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d');
-        $limite = Planos::where('id', $request->idPlano)->first()->tempoGratuidade;
-        $usuario = Usuarios::create([
-            'primeiroNome' => $request->primeiroNome,
-            'sobrenome' => $request->sobrenome,
-            'apelido' => $request->apelido,
-            'senha' => bcrypt($request->senha),
-            'cpf' => $request->cpf,
-            'telefone' => $request->telefone,
-            'email' => $request->email,
-            'dataNascimento' => $dataNascimento,
-            'idPlano' => $request->idPlano,
-            'idPerfil' => Helper::ID_PERFIL_USUARIO,
-            'dataLimiteCompra' => Carbon::now()->addDays($limite)->format('Y-m-d')
-        ]);
-
-        if (isset($usuario->id)) {
-
-            $convite = Convite::where('email', $request->email)->first();
-
-            if ($convite) {
-                $this->associarPastasUsuario($convite, $usuario);
-            }
-
-
-            $response = [
-                'codRetorno' => HttpCodesEnum::OK->value,
-                'message' => HttpCodesEnum::OK->description(),
-                'idUser' => $usuario->id
-            ];
-        } else {
-            $response = [
-                'codRetorno' => HttpCodesEnum::InternalServerError->value,
-                'message' => HttpCodesEnum::InternalServerError->description()
-            ];
-        }
-
-        return response()->json($response);
+   public function cadastrarUsuario(Cadastrar $request): JsonResponse
+{
+    if (!Helper::validaCPF($request->cpf)) {
+        return $this->respostaErro(HttpCodesEnum::InvalidCPF);
     }
+
+    if ($this->confirmaUser($request)) {
+        return $this->respostaErro(HttpCodesEnum::CPFAlreadyRegistered);
+    }
+
+    $dataNascimento = Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d');
+    $plano = Planos::find($request->idPlano);
+
+    $usuario = Usuarios::create([
+        'primeiroNome' => $request->primeiroNome,
+        'sobrenome' => $request->sobrenome,
+        'apelido' => $request->apelido,
+        'senha' => bcrypt($request->senha),
+        'cpf' => $request->cpf,
+        'telefone' => $request->telefone,
+        'email' => $request->email,
+        'dataNascimento' => $dataNascimento,
+        'idPlano' => $request->idPlano,
+        'idPerfil' => Helper::ID_PERFIL_USUARIO,
+        'dataLimiteCompra' => now()->addDays($plano->tempoGratuidade)->format('Y-m-d'),
+    ]);
+
+    if (!$usuario || !$usuario->id) {
+        return $this->respostaErro(HttpCodesEnum::InternalServerError);
+    }
+
+    if ($convite = Convite::where('email', $request->email)->first()) {
+        $this->associarPastasUsuario($convite, $usuario);
+    }
+
+    return response()->json([
+        'codRetorno' => HttpCodesEnum::OK->value,
+        'message' => HttpCodesEnum::OK->description(),
+        'idUser' => $usuario->id
+    ]);
+}
 
     public function getUser(Request $request): JsonResponse
     {
