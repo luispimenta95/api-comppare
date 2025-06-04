@@ -74,6 +74,12 @@ class UsuarioController extends Controller
             return response()->json($response);
         }
 
+           if (!$this->validaSenha($request->senha)) {
+            return $this->respostaErro(HttpCodesEnum::BadRequest, [
+                'message' => HttpCodesEnum::InvalidPassword->description()
+            ]);
+        }
+
         $dataNascimento = Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d');
         $limite = Planos::where('id', $request->idPlano)->first()->tempoGratuidade;
         $usuario = Usuarios::create([
