@@ -85,6 +85,7 @@ enum HttpCodesEnum: int
     case UserNotFound = -17;
     case PlanNotFoundForUser = -18;
     case SubscriptionCanceled = -19;
+    case InvalidPassword = -20;
 
 
     public function description(): string
@@ -168,7 +169,9 @@ enum HttpCodesEnum: int
             self::InvitesLimit => 'Error: Numero de convites permitidos atingido.',
             self::UserNotFound => 'Error : Usuário não encontrado',
             self::PlanNotFoundForUser => 'Error: Usuário sem plano associado',
-            self::SubscriptionCanceled => 'Assinatura cancelada com sucesso!'
+            self::SubscriptionCanceled => 'Assinatura cancelada com sucesso!',
+            self::InvalidPassword => 'Error: Senha fora do padrão. A senha deve conter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.',
+            default => 'Unknown HTTP Status Code'
         };
     }
 }

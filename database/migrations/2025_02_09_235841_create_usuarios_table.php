@@ -19,8 +19,8 @@ return new class extends Migration
             $table->string('apelido')->nullable();
             $table->string('cpf')->unique();
             $table->string('senha');
-            $table->string('email');
-            $table->string('telefone');
+            $table->string('email')->unique();
+            $table->string('telefone')->unique();
             $table->date('dataNascimento');
             $table->boolean('status')->default(true);
             $table->timestamp('dataLimiteCompra');

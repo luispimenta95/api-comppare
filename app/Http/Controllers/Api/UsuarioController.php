@@ -227,9 +227,10 @@ class UsuarioController extends Controller
             'cpf' => 'required|string', // CPF obrigatório, deve ser uma string e validado como CPF (você pode precisar de um pacote para a validação de CPF)
         ]);
 
-        $usuario = Usuarios::where('cpf', $request->cpf)->first();
-
-        return isset($usuario->id) ? true : false;
+        return Usuarios::where('cpf', $request->cpf)
+            ->orWhere('telefone', $request->telefone)
+            ->orWhere('email', $request->email)
+            ->exists();
     }
 
     public function validaExistenciaUsuario(Request $request): JsonResponse
@@ -243,36 +244,6 @@ class UsuarioController extends Controller
             'codRetorno' => HttpCodesEnum::NotFound->value,
             'message' => HttpCodesEnum::NotFound->description(),
         ];
-
-        return response()->json($response);
-    }
-
-    public function atualizarSenha(Request $request): JsonResponse
-    {
-        $request->validate([
-            'senha' => 'required',
-            'string',
-            Password::min(8)->mixedCase()->letters()->numbers()->symbols()->uncompromised(),
-            'max:255', // Senha deve ter no mínimo 8 caracteres
-            'cpf' => 'required|string|unique:usuarios,cpf', // CPF é obrigatório, válido e único na tabela de usuários
-        ]);
-
-        $usuario = Usuarios::findOrFail($request->cpf);
-
-        if (isset($usuario->cpf)) {
-            $usuario->senha = bcrypt($request->senha);
-            $usuario->save();
-
-            $response = [
-                'codRetorno' => HttpCodesEnum::OK->value,
-                'message' => HttpCodesEnum::OK->description(),
-            ];
-        } else {
-            $response = [
-                'codRetorno' => HttpCodesEnum::InternalServerError->value,
-                'message' => HttpCodesEnum::InternalServerError->description(),
-            ];
-        }
 
         return response()->json($response);
     }
@@ -352,7 +323,7 @@ class UsuarioController extends Controller
 
         $existe = $this->confirmaUser($request);
 
-        if($existe){
+        if ($existe) {
             $usuario = Usuarios::where('cpf', $request->cpf)->first();
             $plano = Planos::where('id', $usuario->idPlano)->first()->nome;
             $usuario->idPlano = $request->plano;
@@ -360,18 +331,18 @@ class UsuarioController extends Controller
             $planoNovo = Planos::where('id', $request->plano)->first()->nome;
 
             Movimentacoes::create([
-             'nome_usuario' => $usuario->primeiroNome. ' ' . $usuario->sobrenome,
-             'plano_antigo' => $plano,
-             'plano_novo' => $planoNovo,
+                'nome_usuario' => $usuario->primeiroNome . ' ' . $usuario->sobrenome,
+                'plano_antigo' => $plano,
+                'plano_novo' => $planoNovo,
             ]);
-//To do : Verificar permissões de troca de plano
+            //To do : Verificar permissões de troca de plano
             $response = [
                 'codRetorno' => HttpCodesEnum::OK->value,
                 'message' => HttpCodesEnum::OK->description(),
                 'changePlan' => true,
 
             ];
-            if(false) {
+            if (false) {
 
                 $response = [
                     'codRetorno' => HttpCodesEnum::BadRequest->value,
@@ -380,7 +351,7 @@ class UsuarioController extends Controller
 
                 ];
             }
-        }else{
+        } else {
             $response = [
                 'codRetorno' => HttpCodesEnum::NotFound->value,
                 'message' => HttpCodesEnum::NotFound->description(),
@@ -388,5 +359,46 @@ class UsuarioController extends Controller
         }
 
         return response()->json($response);
+    }
+
+
+    private function validaSenha(string $senha): bool
+    {
+        return preg_match('/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/', $senha);
+    }
+
+    public function atualizarSenha(Request $request): JsonResponse
+    {
+        $request->validate([
+            'senha' => 'required|string|min:8',
+            'cpf' => 'required|string|exists:usuarios,cpf'
+        ]);
+
+        if (!$this->validaSenha($request->senha)) {
+            return $this->respostaErro(HttpCodesEnum::BadRequest, [
+                'message' => HttpCodesEnum::InvalidPassword->description()
+            ]);
+        }
+
+        $usuario = Usuarios::where('cpf', $request->cpf)->first();
+
+        if (!$usuario) {
+            return $this->respostaErro(HttpCodesEnum::NotFound);
+        }
+
+        $usuario->senha = bcrypt($request->senha);
+        $usuario->save();
+
+        return $this->respostaErro(HttpCodesEnum::OK);
+    }
+
+       private function respostaErro(HttpCodesEnum $codigo, array $extras = []): JsonResponse
+    {
+        $resposta = array_merge([
+            'codRetorno' => $codigo->value,
+            'message' => $codigo->description()
+        ], $extras);
+
+        return response()->json($resposta, $codigo->value);
     }
 }
