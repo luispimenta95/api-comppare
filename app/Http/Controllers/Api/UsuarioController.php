@@ -364,8 +364,7 @@ class UsuarioController extends Controller
 
     private function validaSenha(string $senha): bool
     {
-        return preg_match('/^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/', $senha);
-    }
+    return preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/', $senha) === 1;    }
 
     public function atualizarSenha(Request $request): JsonResponse
     {

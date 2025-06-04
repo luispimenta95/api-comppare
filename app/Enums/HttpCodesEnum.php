@@ -156,7 +156,7 @@ enum HttpCodesEnum: int
             self::InvalidCNPJ => 'Error: Erro ao validar CNPJ',
             self::InvalidEmail => 'Error: Erro ao validar Email',
             self::InvalidPhone => 'Error: Erro ao validar Telefone',
-            self::CPFAlreadyRegistered => 'Error: CPF já cadastrado no banco de dados',
+            self::CPFAlreadyRegistered => 'Error: Dados sensíveis do usuário cadastrado no banco de dados',
             self::ExpiredFreePeriod => 'Error: Período de gratuidade expirado. Por favor, atualize sua assinatura adquirindo um novo plano.',
             self::ExpiredSubscription => 'Error: Assinatura expirada. Por favor, atualize sua assinatura adquirindo um novo plano.',
             self::MissingRequiredFields => 'Error: A request possui campos obrigatórios não preenchidos ou inválidos.',
