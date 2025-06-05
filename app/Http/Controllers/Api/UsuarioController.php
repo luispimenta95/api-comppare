@@ -10,6 +10,7 @@ use App\Http\Requests\Usuarios\AtualizarSenhaRequest;
 use App\Http\Requests\Usuarios\AtualizarStatusRequest;
 use App\Http\Requests\Usuarios\AutenticarUsuarioRequest;
 use App\Http\Requests\Usuarios\Cadastrar;
+use App\Http\Requests\Usuarios\IndexUsuarioRequest;
 use App\Http\Requests\Usuarios\GetUserRequest;
 use App\Http\Requests\Usuarios\ValidaExistenciaUsuarioRequest;
 use App\Http\Util\Helper;
@@ -208,6 +209,31 @@ class UsuarioController extends Controller
         ] : [
             'codRetorno' => HttpCodesEnum::NotFound->value,
             'message' => HttpCodesEnum::NotFound->description()
+        ];
+
+        return response()->json($response);
+    }
+
+    public function index(IndexUsuarioRequest $request): JsonResponse
+    {
+        $query = Usuarios::query();
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->input('status'));
+        }
+
+        if ($request->filled('nome')) {
+            $query->where('nome', 'like', '%' . $request->input('nome') . '%');
+        }
+
+        $usuarios = $query->get();
+
+        $response = [
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => HttpCodesEnum::OK->description(),
+            'totalUsuarios' => Usuarios::count(),
+            'usuariosAtivos' => Usuarios::where('status', 1)->count(),
+            'data' => $usuarios
         ];
 
         return response()->json($response);
