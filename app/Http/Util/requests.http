@@ -13,7 +13,7 @@ Content-Type: application/json
     "sobrenome": "Pimenta",
     "apelido": "luispimenta95",
     "cpf": "02049035055",
-    "senha": "13151319",
+    "senha": "Mp13151319!",
     "telefone": "61998690313",
     "email": "luispimenta.contato@gmail.com",
     "idPlano": 1,
@@ -22,7 +22,7 @@ Content-Type: application/json
 
 
 ###listar
-GET {{baseUrl}}/usuarios/listar
+GET {{baseUrl}}/admin/usuarios/listar
 
 
 ###Autenticar
