@@ -223,7 +223,7 @@ class UsuarioController extends Controller
         }
 
         if ($request->filled('nome')) {
-            $query->where('nome', 'like', '%' . $request->input('nome') . '%');
+            $query->where('primeiroNome', 'like', '%' . $request->input('nome') . '%');
         }
 
         $usuarios = $query->get();
