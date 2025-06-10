@@ -116,6 +116,11 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Cadastrar $request): JsonResponse
     {
+        if ($this->confirmaUser($request)) {
+            return $this->respostaErro(HttpCodesEnum::Conflict, [
+                'message' => 'Usuário já cadastrado com os dados informados.',
+            ]);
+        }
         $limite = Planos::where('id', $request->idPlano)->first()->tempoGratuidade;
         
         $usuario = Usuarios::create([
@@ -194,7 +199,7 @@ class UsuarioController extends Controller
         ]);
     }
 
-    private function confirmaUser(ValidaExistenciaUsuarioRequest $request): bool
+    private function confirmaUser(object $request): bool
     {
         return Usuarios::where('cpf', $request->cpf)
             ->orWhere('telefone', $request->telefone)
