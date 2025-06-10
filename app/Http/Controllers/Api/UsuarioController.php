@@ -116,6 +116,8 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Cadastrar $request): JsonResponse
     {
+        $limite = Planos::where('id', $request->idPlano)->first()->tempoGratuidade;
+        
         $usuario = Usuarios::create([
             'primeiroNome'     => $request->primeiroNome,
             'sobrenome'        => $request->sobrenome,
@@ -126,6 +128,8 @@ class UsuarioController extends Controller
             'email'            => $request->email,
             'idPlano'          => $request->idPlano,
             'dataNascimento'   => Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d'),
+            'idPerfil' => Helper::ID_PERFIL_USUARIO,
+            'dataLimiteCompra' => Carbon::now()->addDays($limite)->format('Y-m-d')
         ]);
 
         if (isset($usuario->id)) {
