@@ -159,6 +159,8 @@ class PastasController extends Controller
         $user = Usuarios::find($request->idUsuario);
         $folderName = 'public/' . $user->id . '/' . $request->nomePasta;
         $response = json_decode(Helper::deleteFolder($folderName));
+        $user->decrement('pastasCriadas');
+        
         return $response->message;
     }
 
@@ -175,7 +177,7 @@ class PastasController extends Controller
 
             // Remove tudo antes de "storage/app/public/"
             $relativePath = str_replace(
-                '/home/u757410616/domains/comppare.com.br/public_html/api-comppare/storage/app/public/',
+                config('app.publicPath'),
                 '',
                 $pasta->caminho
             );
@@ -215,6 +217,70 @@ class PastasController extends Controller
         }
     }
 
+    public function syncTagsToFolder(Request $request)
+    {
+        $request->validate([
+            'folder' => 'required|exists:folders,id',
+            'tags' => 'required|array',
+            'tags.*' => 'required|integer|exists:tags,id',
+        ]);
+
+        $folder = Pastas::findOrFail($request->folder);
+
+        // Atualiza as tags da pasta, removendo as antigas
+        $folder->tags()->sync($request->tags);
+
+        return response()->json([
+            'message' => 'Tags associadas com sucesso!',
+            'folder_id' => $folder->id,
+            'tags' => $request->tags,
+        ]);
+    }
+
+    public function detachTagFromFolder(Request $request)
+    {
+        $request->validate([
+            'folder_id' => 'required|exists:folders,id',
+            'tag_id' => 'required|exists:tags,id',
+        ]);
+
+        $folder = Pastas::findOrFail($request->folder_id);
+
+        // Remove a tag da pasta
+        $folder->tags()->detach($request->tag_id);
+
+        return response()->json([
+            'message' => 'Tag removida da pasta com sucesso!',
+            'folder_id' => $folder->id,
+            'tag_id' => $request->tag_id,
+        ]);
+    }
+    public function getFoldersByUser(Request $request)
+    {
+        $request->validate([
+            'idUsuario' => 'required|exists:usuarios,id', // Validar se o idUsuario existe
+        ]);
+
+        $user = Usuarios::find($request->idUsuario);
+
+        // Verifica se o usuário foi encontrado
+        if (!$user) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => HttpCodesEnum::UserNotFound->description(),
+            ]);
+        }
+
+        // Busca as pastas do usuário
+        $pastas = Pastas::where('idUsuario', $user->id)->get();
+
+        return response()->json([
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => HttpCodesEnum::OK->description(),
+            'pastas' => $pastas,
+        ]);
+    }
+   
 
 
 }

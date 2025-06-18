@@ -169,4 +169,35 @@ class TagController extends Controller
 
         return response()->json($response);
     }
+
+    /**
+     * Recuperar uma tag específica.
+     */
+    public function getTag(Request $request): JsonResponse
+    {
+        $campos = ['idTag'];
+        $campos = Helper::validarRequest($request, $campos);
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::MissingRequiredFields->description(),
+                'campos' => $campos,
+            ];
+            return response()->json($response);
+        }
+        $tag = Tag::find($request->idTag);
+        if ($tag) {
+            $response = [
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => HttpCodesEnum::OK->description(),
+                'data' => $tag,
+            ];
+        } else {
+            $response = [
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => HttpCodesEnum::NotFound->description(),
+            ];
+}
+        return response()->json($response);
+    }
 }
