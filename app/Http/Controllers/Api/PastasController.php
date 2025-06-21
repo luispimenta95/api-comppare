@@ -160,7 +160,6 @@ class PastasController extends Controller
         $folderName = 'public/' . $user->id . '/' . $request->nomePasta;
         $response = json_decode(Helper::deleteFolder($folderName));
         $user->decrement('pastasCriadas');
-        
         return $response->message;
     }
 
