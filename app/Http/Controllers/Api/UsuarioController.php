@@ -116,6 +116,7 @@ class UsuarioController extends Controller
 
     public function cadastrarUsuario(Cadastrar $request): JsonResponse
     {
+        dd($request->all());
         if ($this->confirmaUser($request)) {
             return $this->respostaErro(HttpCodesEnum::Conflict, [
                 'message' => 'Usuário já cadastrado com os dados informados.',
