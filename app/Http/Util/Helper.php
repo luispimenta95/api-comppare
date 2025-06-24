@@ -14,39 +14,39 @@ class Helper
 
 
 {
-    const int ID_PERFIL_ADMIN = 1;
-    const int ID_PERFIL_USUARIO = 2;
-    const int ID_PERFIL_CONVIDADO = 3;
-    const int ID_PLANO_CONVIDADO = 7;
+    const ID_PERFIL_ADMIN = 1;
+    const ID_PERFIL_USUARIO = 2;
+    const ID_PERFIL_CONVIDADO = 3;
+    const ID_PLANO_CONVIDADO = 7;
 
-    const int ATIVO = 1;
+    const ATIVO = 1;
 
-    const int TEMPO_GRATUIDADE = 7;
-    const int LIMITE_FOTOS = 2;
+    const TEMPO_GRATUIDADE = 7;
+    const LIMITE_FOTOS = 2;
 
-    const int LIMITE_TAGS = 5;
+    const LIMITE_TAGS = 5;
 
-    const int LIMITE_PASTAS = 10;
+    const LIMITE_PASTAS = 10;
 
 
-    const int TEMPO_RENOVACAO_MENSAL = 30;
-    const int TEMPO_RENOVACAO_ANUAL = 360;
+    const TEMPO_RENOVACAO_MENSAL = 30;
+    const TEMPO_RENOVACAO_ANUAL = 360;
 
-    const int TEMPO_RENOVACAO_SEMESTRAL = 180;
+    const TEMPO_RENOVACAO_SEMESTRAL = 180;
 
-    const string STATUS_APROVADO = 'paid';
-    const string STATUS_AGUARDANDO_APROVACAO = 'waiting';
-    const string STATUS_CANCELADO = 'CANCELLED';
-    const string MOEDA = "BRL";
+    const STATUS_APROVADO = 'paid';
+    const STATUS_AGUARDANDO_APROVACAO = 'waiting';
+    const STATUS_CANCELADO = 'CANCELLED';
+    const MOEDA = "BRL";
     const TIPO_RENOVACAO_MENSAL = 'months';
-    const string TIPO_RENOVACAO_DIARIA = 'days';
-    const int DIA_COBRANCA = 05;
-    const string STATUS_ATIVO = 'active';
-    const string STATUS_AUTORIZADO = 'authorized';
+    const TIPO_RENOVACAO_DIARIA = 'days';
+    const DIA_COBRANCA = 05;
+    const STATUS_ATIVO = 'active';
+    const STATUS_AUTORIZADO = 'authorized';
 
-    const int QUANTIDADE = 1;
-    const int INTERVALO_MENSAL = 1;
-    const int INTERVALO_ANUAL = 12;
+    const QUANTIDADE = 1;
+    const INTERVALO_MENSAL = 1;
+    const INTERVALO_ANUAL = 12;
 
     /**
      * Retorna todos os códigos HTTP e suas descrições.
