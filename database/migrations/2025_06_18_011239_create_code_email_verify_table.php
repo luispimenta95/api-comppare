@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('code', 6);
             $table->string('token');
             $table->timestamp('sent_at');
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete()->cascadeOnUpdate();
+            $table->foreignId('user_id')->constrained('usuarios')->cascadeOnDelete()->cascadeOnUpdate();
             $table->timestamp('expires_at')->nullable();
             $table->timestamp('resend_available_at')->nullable();
             $table->timestamps();
