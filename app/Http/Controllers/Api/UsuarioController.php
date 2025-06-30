@@ -14,6 +14,7 @@ use App\Http\Requests\Usuarios\IndexUsuarioRequest;
 use App\Http\Requests\Usuarios\GetUserRequest;
 use App\Http\Requests\Usuarios\ValidaExistenciaUsuarioRequest;
 use App\Http\Util\Helper;
+use App\Models\CodeEmailVerify;
 use App\Models\Convite;
 use App\Models\Movimentacoes;
 use App\Models\Pastas;
@@ -23,6 +24,9 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\EmailForgot;
+use Illuminate\Support\Facades\DB;
 
 class UsuarioController extends Controller
 {
@@ -76,22 +80,49 @@ class UsuarioController extends Controller
 
     public function atualizarSenha(AtualizarSenhaRequest $request): JsonResponse
     {
+        $usuario = Usuarios::where('email', $request->email)->first();
+
+        if (!$usuario) {
+            return $this->respostaErro(HttpCodesEnum::NotFound);
+        }
+
+        // Busca o último token
+        $registro = DB::table('password_reset_tokens')
+            ->where('email', $usuario->email)
+            ->latest('created_at')
+            ->first();
+
+        // Verifica se existe token válido e se o código enviado bate
+        if (
+            !$registro ||
+            Carbon::parse($registro->created_at)->diffInMinutes(now()) > 60 ||
+            !Hash::check($request->codigo, $registro->token)
+        ) {
+            return $this->respostaErro(
+                HttpCodesEnum::Unauthorized,
+                [
+                    'message' => 'Código inválido ou expirado. Por favor, solicite um novo código.'
+                ]
+            );
+        }
+
         if (!$this->validaSenha($request->senha)) {
             return $this->respostaErro(HttpCodesEnum::BadRequest, [
                 'message' => HttpCodesEnum::InvalidPassword->description()
             ]);
         }
 
-        $usuario = Usuarios::where('cpf', $request->cpf)->first();
-
-        if (!$usuario) {
-            return $this->respostaErro(HttpCodesEnum::NotFound);
-        }
-
+        // Atualiza a senha
         $usuario->senha = bcrypt($request->senha);
         $usuario->save();
 
-        return $this->respostaErro(HttpCodesEnum::OK);
+        // Remove o token usado (opcional, mas recomendado)
+        DB::table('password_reset_tokens')->where('email', $usuario->email)->delete();
+
+        return response()->json([
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => 'Senha atualizada com sucesso.'
+        ]);
     }
 
     public function atualizarStatus(AtualizarStatusRequest $request): JsonResponse
@@ -273,4 +304,60 @@ class UsuarioController extends Controller
             'message' => $existe ? HttpCodesEnum::OK->description() : HttpCodesEnum::NotFound->description(),
         ]);
     }
+
+    public function forgotPassword(ValidaExistenciaUsuarioRequest $request): JsonResponse
+{
+    $usuario = Usuarios::where('email', $request->email)->first();
+
+    if (!$usuario) {
+        // Resposta genérica para não vazar info
+        return response()->json([
+            'codRetorno' => HttpCodesEnum::NotFound->value,
+            'message' => 'Usuário não encontrado.',
+        ]);
+    }
+
+    // Busca o último token
+    $ultimoToken = DB::table('password_reset_tokens')
+        ->where('email', $usuario->email)
+        ->latest('created_at')
+        ->first();
+
+    // Se foi gerado há menos de 5 minutos, não faz nada
+    if ($ultimoToken && Carbon::parse($ultimoToken->created_at)->diffInMinutes(now()) < 5) {
+        return response()->json([
+            'codRetorno' => HttpCodesEnum::TooManyRequests->value,
+            'message' => 'Por favor, aguarde 5 minutos antes de solicitar um novo código.',
+        ]);
+    }
+
+    $codigo = CodeEmailVerify::generateCode();
+
+    // Remove tokens anteriores
+    DB::table('password_reset_tokens')->where('email', $usuario->email)->delete();
+
+    // Salva novo token com hash
+    DB::table('password_reset_tokens')->insert([
+        'email' => $usuario->email,
+        'token' => Hash::make($codigo),
+        'created_at' => now(),
+    ]);
+
+    // Envia e-mail
+    $dadosEmail = [
+        'to' => $usuario->email,
+        'body' => [
+            'nome' => $usuario->primeiroNome,
+            'code' => $codigo
+        ]
+    ];
+
+    Mail::to($usuario->email)->send(new EmailForgot($dadosEmail));
+
+    return response()->json([
+        'codRetorno' => HttpCodesEnum::OK->value,
+        'message' => 'Código de verificação enviado com sucesso. Verifique seu e-mail.',
+    ]);
+}
+
 }

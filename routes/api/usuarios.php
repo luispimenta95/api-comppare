@@ -14,6 +14,7 @@ Route::prefix('usuarios')->group(
         Route::post('/atualizar-status', [UsuarioController::class, 'atualizarStatus']);
         Route::post('/valida-existencia-usuario', [UsuarioController::class, 'validaExistenciaUsuario']);
         Route::post('/atualizar-senha', [UsuarioController::class, 'atualizarSenha']);
+        Route::post('/esqueceu-senha', [UsuarioController::class, 'forgotPassword']);
 
         Route::middleware(['jwt.auth'])->group(function () {
             Route::post('/atualizar-plano', [UsuarioController::class, 'atualizarPlanoUsuario']);
