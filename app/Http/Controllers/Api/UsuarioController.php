@@ -213,20 +213,27 @@ class UsuarioController extends Controller
         }
 
         $token = JWTAuth::fromUser($user);
+
+        // Extrai apenas os dados relevantes das pastas
         $pastas = $user->pastas->map(fn($pasta) => [
             'id' => $pasta->id,
             'nome' => $pasta->nome,
             'caminho' => $pasta->caminho
-        ]);
+        ])->values(); // garante índice limpo (0,1,2...)
 
-        $user->ultimoAcesso = Carbon::now();
+        // Atualiza último acesso
+        $user->ultimoAcesso = now();
         $user->save();
+
+        // Converte o usuário para array e remove a relação 'pastas'
+        $dadosUsuario = $user->toArray();
+        unset($dadosUsuario['pastas']);
 
         return response()->json([
             'codRetorno' => HttpCodesEnum::OK->value,
             'message' => HttpCodesEnum::OK->description(),
             'token' => $token,
-            'dados' => $user,
+            'dados' => $dadosUsuario,
             'pastas' => $pastas
         ]);
     }
