@@ -63,6 +63,7 @@
         <p>Olá, {{ $dados['nome'] }}!</p>
         <p>Você solicitou a redefinição de sua senha. Para continuar, informe o código abaixo:</p>
         <p> <strong>{{ $dados['code'] }}</strong></p>
+        <p> Seu código de verificação é válido por 1 hora. Após esse período, você precisará solicitar um novo código.</p>
     </div>
     <div class="footer">
         <p>Se você não solicitou essa alteração, por favor, ignore este e-mail
