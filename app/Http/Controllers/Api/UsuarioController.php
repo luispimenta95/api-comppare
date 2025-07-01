@@ -79,7 +79,7 @@ class UsuarioController extends Controller
         ]);
     }
 
-    public function atualizarSenha(AtualizarSenhaRequest $request): JsonResponse
+    public function atualizarSenha(Request $request): JsonResponse
     {
         $usuario = Usuarios::where('email', $request->email)->first();
 
