@@ -29,7 +29,6 @@ class PastasController extends Controller
      */
     public function create(Request $request): JsonResponse
     {
-        dd($request->all());
 
         $request->validate([
             'idUsuario' => 'required|exists:usuarios,id', // Validar se o idUsuario existe
@@ -37,7 +36,6 @@ class PastasController extends Controller
         ]);
 
         $user = Usuarios::find($request->idUsuario);
-        dd($user);
 
         // Verifica se o usuário foi encontrado
         if (!$user) {
