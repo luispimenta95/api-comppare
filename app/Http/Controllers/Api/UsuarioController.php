@@ -325,7 +325,7 @@ class UsuarioController extends Controller
         ->first();
 
     // Se foi gerado há menos de 5 minutos, não faz nada
-    if ($ultimoToken && Carbon::parse($ultimoToken->created_at)->diffInMinutes(now()) < 5) {
+    if ($ultimoToken && Carbon::parse($ultimoToken->created_at)->diffInMinutes(now()) < 1) {
         return response()->json([
             'codRetorno' => HttpCodesEnum::TooManyRequests->value,
             'message' => 'Por favor, aguarde 5 minutos antes de solicitar um novo código.',
@@ -352,6 +352,7 @@ class UsuarioController extends Controller
             'code' => $codigo
         ]
     ];
+    dd($dadosEmail);
 
     Mail::to($usuario->email)->send(new EmailForgot($dadosEmail));
 
