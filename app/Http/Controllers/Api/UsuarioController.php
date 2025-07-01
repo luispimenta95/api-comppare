@@ -27,6 +27,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\EmailForgot;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 
 class UsuarioController extends Controller
 {
@@ -305,7 +306,7 @@ class UsuarioController extends Controller
         ]);
     }
 
-    public function forgotPassword(ValidaExistenciaUsuarioRequest $request): JsonResponse
+    public function forgotPassword(Request $request): JsonResponse
 {
     $usuario = Usuarios::where('email', $request->email)->first();
 
