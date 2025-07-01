@@ -352,7 +352,6 @@ class UsuarioController extends Controller
             'code' => $codigo
         ]
     ];
-    dd($dadosEmail);
 
     Mail::to($usuario->email)->send(new EmailForgot($dadosEmail));
 
