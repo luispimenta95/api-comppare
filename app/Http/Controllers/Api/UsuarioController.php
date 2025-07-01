@@ -82,7 +82,6 @@ class UsuarioController extends Controller
     public function atualizarSenha(Request $request): JsonResponse
     {
         $usuario = Usuarios::where('email', $request->email)->first();
-        dd($usuario);
 
         if (!$usuario) {
             return $this->respostaErro(HttpCodesEnum::NotFound);
