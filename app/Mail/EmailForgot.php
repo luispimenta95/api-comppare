@@ -4,7 +4,7 @@ namespace App\Mail;
 
 class EmailForgot extends BaseEmail
 {
-    public $subject = 'Socilitação de recuperação de senha'; // Assunto específico
+    public $subject = 'Solicitação de recuperação de senha'; // Assunto específico
 
     /**
      * Retorna o template markdown específico para o e-mail de boas-vindas.
