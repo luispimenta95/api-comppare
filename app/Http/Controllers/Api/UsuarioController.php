@@ -364,7 +364,7 @@ class UsuarioController extends Controller
 
     return response()->json([
         'codRetorno' => HttpCodesEnum::OK->value,
-        'message' => 'Código de verificação enviado com sucesso. Verifique seu e-mail.',
+        'message' => 'Se o e-mail estiver cadastrado, você receberá um código de recuperação de senha no seu e-mail.',
     ]);
 }
 
