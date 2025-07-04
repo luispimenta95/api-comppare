@@ -93,7 +93,7 @@ class UsuarioController extends Controller
             ->latest('created_at')
             ->first();
 
-            dd($registro);
+            dd(Hash::check($request->codigo, $registro->token));
 
         // Verifica se existe token válido e se o código enviado bate
         if (
