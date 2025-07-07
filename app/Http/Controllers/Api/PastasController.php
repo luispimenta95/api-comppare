@@ -176,7 +176,7 @@ class PastasController extends Controller
 
             // Remove tudo antes de "storage/app/public/"
             $relativePath =  str_replace(
-                '/home/u757410616/domains/comppare.com.br/public_html/api-comppare/storage/app/public/',
+                env('PUBLIC_PATH', '/home/u757410616/domains/comppare.com.br/public_html/api-comppare/storage/app/public/'),
 
                 '',
                 $pasta->caminho
@@ -193,7 +193,7 @@ class PastasController extends Controller
                 if ($image && $image->isValid()) {
                     $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
                     $path = $image->storeAs($relativePath, $imageName, 'public');
-                    $uploadedImages[] = Storage::url($path);
+                    $uploadedImages[] =  env('APP_URL') . Storage::url($path);
                 }
             }
 
