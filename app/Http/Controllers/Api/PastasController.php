@@ -6,6 +6,7 @@ use App\Enums\HttpCodesEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Util\Helper;
 use App\Models\Pastas;
+use App\Models\Photos;
 use App\Models\Planos;
 use App\Models\Usuarios;
 use Illuminate\Http\JsonResponse;
@@ -193,7 +194,17 @@ class PastasController extends Controller
                 if ($image && $image->isValid()) {
                     $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
                     $path = $image->storeAs($relativePath, $imageName, 'public');
-                    $uploadedImages[] =  env('APP_URL') . Storage::url($path);
+                    $imageUrl = env('APP_URL') . Storage::url($path);
+                    $uploadedImages[] = $imageUrl;
+
+                    // Criar registro na tabela Photos
+                    Photos::create([
+                        'pasta_id' => $pasta->id,
+                        'path' => $imageUrl,
+                        'taken_at' => now(),
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
                 }
             }
 
