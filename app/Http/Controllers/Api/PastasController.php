@@ -175,8 +175,9 @@ class PastasController extends Controller
             $pasta = Pastas::find($request->idPasta);
 
             // Remove tudo antes de "storage/app/public/"
-            $relativePath = str_replace(
-                config('app.publicPath'),
+            $relativePath =   env("APP_URL") . str_replace(
+                '/home/u757410616/domains/comppare.com.br/public_html/api-comppare/storage/app/public/',
+
                 '',
                 $pasta->caminho
             );
