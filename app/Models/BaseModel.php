@@ -7,6 +7,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
+/**
+ * Modelo base para todos os outros models do sistema
+ * 
+ * Fornece funcionalidades comuns como soft deletes, UUID automático,
+ * e métodos utilitários para busca por UUID.
+ */
 class BaseModel extends Model
 {
     use SoftDeletes, HasFactory;
@@ -16,6 +22,12 @@ class BaseModel extends Model
         'updated_at'
     ];
 
+    /**
+     * Configurações de inicialização do modelo
+     * 
+     * Automaticamente gera um UUID para cada novo registro criado.
+     * Executado quando um novo modelo é instanciado.
+     */
     public static function boot()
     {
         parent::boot();
@@ -27,6 +39,13 @@ class BaseModel extends Model
         );
     }
 
+    /**
+     * Busca um registro pelo UUID
+     * 
+     * @param string $uuid - UUID único do registro
+     * @return self - Instância do modelo encontrado
+     * @throws ModelNotFoundException - Se o registro não for encontrado
+     */
     public static function findByUuid(string $uuid): self
     {
         return static::where('uuid', $uuid)->firstOrFail();

@@ -10,26 +10,39 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Job para resetar contador de pastas criadas pelos usuários
+ * 
+ * Executa mensalmente para zerar o contador de pastas criadas
+ * de todos os usuários, permitindo que criem novas pastas
+ * conforme o limite do seu plano no novo período.
+ */
 class ResetPastasCounter implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
-     * The name and signature of the console command.
+     * Nome e assinatura do comando de console
      *
      * @var string
      */
     protected $signature = 'resetPastasCounter';
 
     /**
-     * The console command description.
+     * Descrição do comando de console
      *
      * @var string
      */
     protected $description = 'Command description';
 
     /**
-     * Execute the console command.
+     * Executa o reset do contador de pastas para todos os usuários
+     * 
+     * Percorre todos os usuários do sistema e zera o campo
+     * 'pastasCriadas', permitindo que criem novas pastas
+     * no novo período mensal conforme limite do plano.
+     * 
+     * @return void
      */
     public function handle()
     {
@@ -51,7 +64,6 @@ class ResetPastasCounter implements ShouldQueue
             Log::info('Contador de pastas resetado com sucesso para todos os usuários.');
 
             Log::info('Processo finalizado.');
-
         } catch (\Exception $e) {
             Log::error('Erro ao resetar contador de pastas: ' . $e->getMessage());
         }
