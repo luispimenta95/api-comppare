@@ -181,7 +181,6 @@ class PastasController extends Controller
                 '',
                 $pasta->caminho
             );
-            dd($relativePath);
             $relativePath = trim($relativePath, '/');
 
             $uploadedImages = [];
