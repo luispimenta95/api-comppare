@@ -20,7 +20,7 @@ class Pastas extends Model
     }
     public function photos()
     {
-        return $this->hasMany(Photos::class);
+        return $this->hasMany(Photos::class, 'pasta_id');
     }
 
     /**
@@ -31,5 +31,16 @@ class Pastas extends Model
         return $this->belongsToMany(Tag::class, 'folder_tag_values')
             ->withPivot('value')
             ->withTimestamps();
+    }
+
+    public function subpastas()
+    {
+        return $this->hasMany(Pastas::class, 'pasta_pai_id');
+    }
+
+    // Relacionamento inverso com a pasta pai
+    public function pastaPai()
+    {
+        return $this->belongsTo(Pastas::class, 'pasta_pai_id');
     }
 }

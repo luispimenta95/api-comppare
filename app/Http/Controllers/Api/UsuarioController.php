@@ -138,7 +138,7 @@ class UsuarioController extends Controller
 
     public function autenticar(AutenticarUsuarioRequest $request): JsonResponse
     {
-        $user = Usuarios::where('cpf', $request->cpf)->first();
+        $user = Usuarios::with(['pastas.photos'])->where('cpf', $request->cpf)->first();
 
         if (!$user) {
             return $this->respostaErro(HttpCodesEnum::NotFound);
@@ -215,11 +215,16 @@ class UsuarioController extends Controller
 
         $token = JWTAuth::fromUser($user);
 
-        // Extrai apenas os dados relevantes das pastas
+        // Extrai apenas os dados relevantes das pastas com suas imagens
         $pastas = $user->pastas->map(fn($pasta) => [
             'id' => $pasta->id,
             'nome' => $pasta->nome,
-            'caminho' => $pasta->caminho
+            'caminho' => $pasta->caminho,
+            'imagens' => $pasta->photos->map(fn($photo) => [
+                'id' => $photo->id,
+                'path' => $photo->path,
+                'taken_at' => $photo->taken_at
+            ])->values()
         ])->values(); // garante índice limpo (0,1,2...)
 
         // Atualiza último acesso

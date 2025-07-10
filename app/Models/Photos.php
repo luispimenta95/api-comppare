@@ -18,12 +18,8 @@ class Photos extends Model
     /**
      * Relacionamento: uma foto pertence a uma pasta.
      */
-    public function pastas()
+    public function pasta()
     {
-        return $this->belongsTo(Pastas::class);
+        return $this->belongsTo(Pastas::class, 'pasta_id');
     }
-
-    /**
- */
-
 }
