@@ -10,6 +10,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
 
+/**
+ * Classe utilitária com funções auxiliares do sistema
+ * 
+ * Contém constantes importantes, validações, operações de arquivo
+ * e métodos auxiliares utilizados em toda a aplicação.
+ */
 class Helper
 
 
@@ -134,6 +140,14 @@ class Helper
         ];
     }
 
+    /**
+     * Valida se um CPF é válido
+     * 
+     * Verifica se o CPF possui formato correto e dígitos verificadores válidos.
+     * 
+     * @param string $cpf - CPF a ser validado
+     * @return bool - True se válido, false caso contrário
+     */
     public static function validaCPF(string $cpf): bool
     {
 
@@ -163,6 +177,15 @@ class Helper
         return true;
     }
 
+    /**
+     * Valida se todos os campos obrigatórios estão presentes no request
+     * 
+     * Verifica se todos os campos requeridos foram fornecidos na requisição.
+     * 
+     * @param Request $request - Requisição HTTP
+     * @param array $requiredFields - Array com nomes dos campos obrigatórios
+     * @return mixed - Retorna erro se algum campo obrigatório estiver ausente
+     */
     public static function validarRequest(Request $request, array $requiredFields): mixed
     {
         $camposNulos = [];
@@ -176,8 +199,15 @@ class Helper
         return empty($camposNulos) ? true : $camposNulos; // Return true if valid, otherwise return all null fields
     }
 
-
-
+    /**
+     * Cria uma nova pasta no sistema de arquivos
+     * 
+     * Cria estrutura de diretórios no storage público para organizar
+     * arquivos de usuários.
+     * 
+     * @param string $folderName - Nome da pasta a ser criada
+     * @return array - Array com 'path' da pasta criada ou null se erro
+     */
     public static function createFolder(string $folderName): array
     {
         $folderName = str_replace(" ", "_", $folderName);
@@ -195,6 +225,15 @@ class Helper
         return ['message' => 'Erro ao criar a pasta.'];
     }
 
+    /**
+     * Remove uma pasta do sistema de arquivos
+     * 
+     * Deleta permanentemente uma pasta e todo seu conteúdo
+     * do storage do sistema.
+     * 
+     * @param string $folderName - Nome da pasta a ser removida
+     * @return JsonResponse - Resposta JSON com status da operação
+     */
     public static function deleteFolder(string $folderName): JsonResponse
     {
         $delete = true;
@@ -226,6 +265,16 @@ class Helper
             return response()->json(['message' => 'Erro ao realizar request', 'code'  => 500], 500);
         }
     }
+
+    /**
+     * Verifica se uma data já passou (está no passado)
+     * 
+     * Compara uma data específica com a data atual para determinar
+     * se já expirou.
+     * 
+     * @param mixed $date - Data a ser verificada
+     * @return bool - True se a data já passou, false caso contrário
+     */
     // Checa se uma data informada já passou. Caso positivo, return true | return false
     public static function checkDateIsPassed($date): bool
     {
@@ -234,6 +283,16 @@ class Helper
         return  Carbon::parse($date)->lt($dataAtual);
     }
 
+    /**
+     * Relaciona pastas e subpastas a um usuário
+     * 
+     * Estabelece a relação entre um usuário e suas pastas,
+     * incluindo subpastas recursivamente.
+     * 
+     * @param Pastas $pasta - Pasta a ser relacionada
+     * @param Usuarios $usuario - Usuário para relacionar a pasta
+     * @return void
+     */
     public static function relacionarPastas(Pastas $pasta, Usuarios $usuario): void
     {
 

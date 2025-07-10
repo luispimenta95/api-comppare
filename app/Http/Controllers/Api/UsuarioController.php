@@ -29,8 +29,24 @@ use App\Mail\EmailForgot;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
+/**
+ * Controller para gerenciamento de usuários
+ * 
+ * Responsável por todas as operações relacionadas aos usuários do sistema,
+ * incluindo cadastro, autenticação, atualização de dados, gerenciamento de planos,
+ * alteração de senhas e funcionalidades de recuperação de senha.
+ */
 class UsuarioController extends Controller
 {
+    /**
+     * Atualiza os dados pessoais de um usuário
+     * 
+     * Valida CPF, formata data de nascimento e atualiza informações
+     * pessoais do usuário incluindo nome, senha, telefone e email.
+     * 
+     * @param AtualizarDadosRequest $request - Dados validados do usuário
+     * @return JsonResponse - Confirmação da atualização ou erro
+     */
     public function atualizarDados(AtualizarDadosRequest $request): JsonResponse
     {
         if (!Helper::validaCPF($request->cpf)) {
@@ -53,6 +69,15 @@ class UsuarioController extends Controller
         return $this->respostaErro(HttpCodesEnum::OK);
     }
 
+    /**
+     * Atualiza o plano de assinatura de um usuário
+     * 
+     * Altera o plano do usuário e registra a movimentação financeira
+     * associada à mudança de plano.
+     * 
+     * @param AtualizarPlanoUsuarioRequest $request - ID do usuário e novo plano
+     * @return JsonResponse - Confirmação da alteração ou erro
+     */
     public function atualizarPlanoUsuario(AtualizarPlanoUsuarioRequest $request): JsonResponse
     {
         $usuario = Usuarios::where('cpf', $request->cpf)->first();
@@ -79,6 +104,15 @@ class UsuarioController extends Controller
         ]);
     }
 
+    /**
+     * Atualiza a senha de um usuário
+     * 
+     * Verifica se a senha atual está correta antes de definir
+     * a nova senha criptografada.
+     * 
+     * @param Request $request - ID do usuário, senha atual e nova senha
+     * @return JsonResponse - Confirmação da alteração ou erro de validação
+     */
     public function atualizarSenha(Request $request): JsonResponse
     {
         $usuario = Usuarios::where('email', $request->email)->first();
@@ -127,6 +161,14 @@ class UsuarioController extends Controller
         ]);
     }
 
+    /**
+     * Atualiza o status de um usuário
+     * 
+     * Permite ativar ou desativar um usuário no sistema.
+     * 
+     * @param AtualizarStatusRequest $request - ID do usuário e novo status
+     * @return JsonResponse - Confirmação da alteração
+     */
     public function atualizarStatus(AtualizarStatusRequest $request): JsonResponse
     {
         $usuario = Usuarios::findOrFail($request->idUsuario);
@@ -136,6 +178,15 @@ class UsuarioController extends Controller
         return $this->respostaErro(HttpCodesEnum::OK);
     }
 
+    /**
+     * Autentica um usuário no sistema
+     * 
+     * Valida as credenciais e retorna um token JWT para autenticação
+     * nas próximas requisições à API.
+     * 
+     * @param AutenticarUsuarioRequest $request - Email e senha do usuário
+     * @return JsonResponse - Token JWT e dados do usuário ou erro de autenticação
+     */
     public function autenticar(AutenticarUsuarioRequest $request): JsonResponse
     {
         $user = Usuarios::with(['pastas.photos'])->where('cpf', $request->cpf)->first();
@@ -147,6 +198,15 @@ class UsuarioController extends Controller
         return $this->checaPermissoes($user, $request);
     }
 
+    /**
+     * Cadastra um novo usuário no sistema
+     * 
+     * Valida dados pessoais, cria conta do usuário, envia email de boas-vindas
+     * e processa convites pendentes se existirem.
+     * 
+     * @param Cadastrar $request - Dados completos do novo usuário
+     * @return JsonResponse - Dados do usuário criado e token JWT ou erro
+     */
     public function cadastrarUsuario(Cadastrar $request): JsonResponse
     {
         if ($this->confirmaUser($request)) {
@@ -155,7 +215,7 @@ class UsuarioController extends Controller
             ]);
         }
         $limite = Planos::where('id', $request->idPlano)->first()->tempoGratuidade;
-        
+
         $usuario = Usuarios::create([
             'primeiroNome'     => $request->primeiroNome,
             'sobrenome'        => $request->sobrenome,
@@ -252,6 +312,14 @@ class UsuarioController extends Controller
             ->exists();
     }
 
+    /**
+     * Recupera informações de um usuário específico
+     * 
+     * Busca e retorna os dados completos de um usuário pelo ID.
+     * 
+     * @param GetUserRequest $request - ID do usuário
+     * @return JsonResponse - Dados completos do usuário ou erro se não encontrado
+     */
     public function getUser(GetUserRequest $request): JsonResponse
     {
         $usuario = Usuarios::find($request->idUsuario);
@@ -268,6 +336,15 @@ class UsuarioController extends Controller
         return response()->json($response);
     }
 
+    /**
+     * Lista usuários com paginação e filtros
+     * 
+     * Retorna lista paginada de usuários com possibilidade de filtrar
+     * por diferentes critérios conforme parâmetros fornecidos.
+     * 
+     * @param IndexUsuarioRequest $request - Parâmetros de paginação e filtros
+     * @return JsonResponse - Lista paginada de usuários
+     */
     public function index(IndexUsuarioRequest $request): JsonResponse
     {
         $query = Usuarios::query();
@@ -309,6 +386,14 @@ class UsuarioController extends Controller
         return preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/', $senha) === 1;
     }
 
+    /**
+     * Valida se um usuário existe no sistema
+     * 
+     * Verifica a existência de um usuário por email ou outros critérios.
+     * 
+     * @param ValidaExistenciaUsuarioRequest $request - Dados para validação
+     * @return JsonResponse - Confirmação da existência ou não do usuário
+     */
     public function validaExistenciaUsuario(ValidaExistenciaUsuarioRequest $request): JsonResponse
     {
         $existe = $this->confirmaUser($request);
@@ -319,59 +404,67 @@ class UsuarioController extends Controller
         ]);
     }
 
+    /**
+     * Processa solicitação de recuperação de senha
+     * 
+     * Gera código de verificação e envia email com instruções
+     * para redefinição de senha do usuário.
+     * 
+     * @param Request $request - Email do usuário para recuperação
+     * @return JsonResponse - Confirmação do envio do email ou erro
+     */
     public function forgotPassword(Request $request): JsonResponse
-{
-    $usuario = Usuarios::where('email', $request->email)->first();
+    {
+        $usuario = Usuarios::where('email', $request->email)->first();
 
-    if (!$usuario) {
-        // Resposta genérica para não vazar info
+        if (!$usuario) {
+            // Resposta genérica para não vazar info
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => 'Usuário não encontrado.',
+            ]);
+        }
+
+        // Busca o último token
+        $ultimoToken = DB::table('password_reset_tokens')
+            ->where('email', $usuario->email)
+            ->latest('created_at')
+            ->first();
+
+        // Se foi gerado há menos de 5 minutos, não faz nada
+        if ($ultimoToken && Carbon::parse($ultimoToken->created_at)->diffInMinutes(now()) < 1) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::TooManyRequests->value,
+                'message' => 'Por favor, aguarde 5 minutos antes de solicitar um novo código.',
+            ]);
+        }
+
+        $codigo = CodeEmailVerify::generateCode();
+
+        // Remove tokens anteriores
+        DB::table('password_reset_tokens')->where('email', $usuario->email)->delete();
+
+        // Salva novo token com hash
+        DB::table('password_reset_tokens')->insert([
+            'email' => $usuario->email,
+            'token' => Hash::make($codigo),
+            'created_at' => now(),
+        ]);
+
+        // Envia e-mail
+        $dadosEmail = [
+            'to' => $usuario->email,
+            'body' => [
+                'nome' => $usuario->primeiroNome,
+                'code' => $codigo
+            ]
+        ];
+
+        Mail::to($usuario->email)->send(new EmailForgot($dadosEmail));
+
         return response()->json([
-            'codRetorno' => HttpCodesEnum::NotFound->value,
-            'message' => 'Usuário não encontrado.',
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => 'Se o e-mail estiver cadastrado, você receberá um código de recuperação de senha no seu e-mail.',
         ]);
     }
-
-    // Busca o último token
-    $ultimoToken = DB::table('password_reset_tokens')
-        ->where('email', $usuario->email)
-        ->latest('created_at')
-        ->first();
-
-    // Se foi gerado há menos de 5 minutos, não faz nada
-    if ($ultimoToken && Carbon::parse($ultimoToken->created_at)->diffInMinutes(now()) < 1) {
-        return response()->json([
-            'codRetorno' => HttpCodesEnum::TooManyRequests->value,
-            'message' => 'Por favor, aguarde 5 minutos antes de solicitar um novo código.',
-        ]);
-    }
-
-    $codigo = CodeEmailVerify::generateCode();
-
-    // Remove tokens anteriores
-    DB::table('password_reset_tokens')->where('email', $usuario->email)->delete();
-
-    // Salva novo token com hash
-    DB::table('password_reset_tokens')->insert([
-        'email' => $usuario->email,
-        'token' => Hash::make($codigo),
-        'created_at' => now(),
-    ]);
-
-    // Envia e-mail
-    $dadosEmail = [
-        'to' => $usuario->email,
-        'body' => [
-            'nome' => $usuario->primeiroNome,
-            'code' => $codigo
-        ]
-    ];
-
-    Mail::to($usuario->email)->send(new EmailForgot($dadosEmail));
-
-    return response()->json([
-        'codRetorno' => HttpCodesEnum::OK->value,
-        'message' => 'Se o e-mail estiver cadastrado, você receberá um código de recuperação de senha no seu e-mail.',
-    ]);
-}
-
 }

@@ -18,7 +18,9 @@ class PastasController extends Controller
 {
 
     /**
-     * Display a listing of the resource.
+     * Lista todas as pastas (não implementado)
+     * 
+     * @return void
      */
     public function index()
     {
@@ -26,7 +28,13 @@ class PastasController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Cria uma nova pasta para o usuário
+     * 
+     * Valida se o usuário existe e se não excedeu o limite mensal de pastas do seu plano.
+     * Cria a pasta física no storage e registra no banco de dados.
+     * 
+     * @param Request $request - Deve conter: idUsuario, nomePasta, idPastaPai (opcional)
+     * @return JsonResponse - Retorna o ID da pasta criada ou erro
      */
     public function create(Request $request): JsonResponse
     {
@@ -117,7 +125,10 @@ class PastasController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Armazena um novo recurso (não implementado)
+     * 
+     * @param Request $request
+     * @return void
      */
     public function store(Request $request)
     {
@@ -125,7 +136,10 @@ class PastasController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Exibe uma pasta específica (não implementado)
+     * 
+     * @param Pastas $pastas
+     * @return void
      */
     public function show(Pastas $pastas)
     {
@@ -133,7 +147,10 @@ class PastasController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Exibe formulário para editar uma pasta (não implementado)
+     * 
+     * @param Pastas $pastas
+     * @return void
      */
     public function edit(Pastas $pastas)
     {
@@ -141,7 +158,11 @@ class PastasController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Atualiza uma pasta específica (não implementado)
+     * 
+     * @param Request $request
+     * @param Pastas $pastas
+     * @return void
      */
     public function update(Request $request, Pastas $pastas)
     {
@@ -149,7 +170,13 @@ class PastasController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove uma pasta do storage e banco de dados
+     * 
+     * Valida os dados de entrada, localiza o usuário, deleta a pasta física 
+     * do storage e decrementa o contador de pastas criadas pelo usuário.
+     * 
+     * @param Request $request - Deve conter: idUsuario, nomePasta
+     * @return string - Mensagem de resposta da operação
      */
     public function destroy(Request $request)
     {
@@ -164,6 +191,30 @@ class PastasController extends Controller
         return $response->message;
     }
 
+    /**
+     * Salva imagem(ns) em uma pasta específica
+     * 
+     * Valida e processa upload de uma ou múltiplas imagens para uma pasta específica.
+     * Cria registros na tabela photos para cada imagem carregada com sucesso.
+     * Suporta data personalizada para quando a foto foi tirada (formato brasileiro).
+     * 
+     * Exemplo de request com todos os campos preenchidos:
+     * POST /api/pastas/save-image
+     * Content-Type: multipart/form-data
+     * 
+     * Body:
+     * - image: [arquivo de imagem] (obrigatório) - pode ser um arquivo único ou array de arquivos
+     * - image[]: [arquivo de imagem adicional] (opcional) - para múltiplas imagens
+     * - idPasta: 15 (obrigatório) - ID da pasta onde salvar as imagens
+     * - dataFoto: "25/12/2024" (opcional) - data em que a foto foi tirada no formato brasileiro
+     * 
+     * Formatos de imagem aceitos: jpeg, png, jpg, gif, svg
+     * Se dataFoto não for fornecida, será usada a data/hora atual
+     * Formato de data aceito: d/m/Y (exemplo: 25/12/2024)
+     * 
+     * @param Request $request - Dados da requisição
+     * @return JsonResponse - URLs das imagens carregadas ou erro
+     */
     public function saveImageInFolder(Request $request)
     {
         try {
@@ -171,13 +222,26 @@ class PastasController extends Controller
                 'image' => 'required',
                 'image.*' => 'image|mimes:jpeg,png,jpg,gif,svg',
                 'idPasta' => 'required|exists:pastas,id',
+                'dataFoto' => 'nullable|string',
             ]);
 
-            $pasta = Pastas::find($request->idPasta);
+            $pasta = Pastas::find($request->idPasta);            // Define a data para o campo taken_at - aceita formato brasileiro
+            $takenAt = now(); // valor padrão
+
+            if ($request->has('dataFoto') && $request->dataFoto) {
+                try {
+                    // Converte data no formato brasileiro (d/m/Y) para Carbon
+                    $takenAt = \Carbon\Carbon::createFromFormat('d/m/Y', $request->dataFoto);
+                } catch (\Exception $e) {
+                    // Se falhar, mantém a data atual
+                    $takenAt = now();
+                }
+            }
 
             // Remove tudo antes de "storage/app/public/"
-            $relativePath = str_replace(
-                config('app.publicPath'),
+            $relativePath =  str_replace(
+                env('PUBLIC_PATH', '/home/u757410616/domains/comppare.com.br/public_html/api-comppare/storage/app/public/'),
+
                 '',
                 $pasta->caminho
             );
@@ -226,6 +290,15 @@ class PastasController extends Controller
         }
     }
 
+    /**
+     * Sincroniza tags de uma pasta
+     * 
+     * Remove todas as tags atuais da pasta e associa as novas tags fornecidas.
+     * Operação de substituição completa das tags existentes.
+     * 
+     * @param Request $request - Deve conter: folder (ID da pasta), tags (array de IDs das tags)
+     * @return JsonResponse - Confirmação da operação e lista das tags associadas
+     */
     public function syncTagsToFolder(Request $request)
     {
         $request->validate([
@@ -246,6 +319,15 @@ class PastasController extends Controller
         ]);
     }
 
+    /**
+     * Remove uma tag específica de uma pasta
+     * 
+     * Desassocia uma tag específica de uma pasta sem afetar as outras tags.
+     * Operação de remoção individual de tag.
+     * 
+     * @param Request $request - Deve conter: folder_id (ID da pasta), tag_id (ID da tag)
+     * @return JsonResponse - Confirmação da remoção da tag
+     */
     public function detachTagFromFolder(Request $request)
     {
         $request->validate([
@@ -264,6 +346,15 @@ class PastasController extends Controller
             'tag_id' => $request->tag_id,
         ]);
     }
+    /**
+     * Busca todas as pastas de um usuário específico
+     * 
+     * Valida se o usuário existe e retorna todas as pastas associadas a ele.
+     * Útil para listar o conteúdo disponível para um usuário.
+     * 
+     * @param Request $request - Deve conter: idUsuario (ID do usuário)
+     * @return JsonResponse - Lista de pastas do usuário ou erro se usuário não encontrado
+     */
     public function getFoldersByUser(Request $request)
     {
         $request->validate([
@@ -289,7 +380,4 @@ class PastasController extends Controller
             'pastas' => $pastas,
         ]);
     }
-   
-
-
 }
