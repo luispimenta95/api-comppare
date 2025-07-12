@@ -147,6 +147,15 @@ Content-Type: application/json
     "nomePasta": "pimenta/upload0"
 }
 
+###excluir pasta
+DELETE {{baseUrl}}/pasta/delete
+Content-Type: application/json
+
+{
+    "idUsuario": 2,
+    "idPasta": 40
+}
+
 ###ranking
 ###cadastrar
 POST {{baseUrl}}/ranking/atualizar
@@ -175,4 +184,14 @@ Content-Type: application/json
 
 {
     "email": "teste@gmail.com"
+}
+
+###imagens
+###excluir imagem
+DELETE {{baseUrl}}/imagens/excluir
+Content-Type: application/json
+
+{
+    "idUsuario": 2,
+    "idPhoto": 15
 }

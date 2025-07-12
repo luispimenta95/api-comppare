@@ -222,9 +222,7 @@ class PastasController extends Controller
                     'codRetorno' => HttpCodesEnum::Forbidden->value,
                     'message' => 'Você não tem permissão para excluir esta pasta.',
                 ]);
-            }
-
-            // Remove todas as fotos associadas à pasta da tabela photos
+            }            // Remove todas as fotos associadas à pasta da tabela photos
             $photosCount = Photos::where('pasta_id', $pasta->id)->count();
             Photos::where('pasta_id', $pasta->id)->delete();
 
@@ -241,13 +239,8 @@ class PastasController extends Controller
                 Storage::disk('public')->deleteDirectory($relativePath);
             }
 
-            // Remove associações da pasta (pivot tables)
+            // Remove associações da pasta com usuários (pivot table pasta_usuario)
             $pasta->usuario()->detach();
-
-            // Se existir relacionamento com tags, remove também
-            if (method_exists($pasta, 'tags')) {
-                $pasta->tags()->detach();
-            }
 
             // Remove o registro da pasta do banco de dados
             $nomePasta = $pasta->nome;
