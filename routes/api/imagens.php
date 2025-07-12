@@ -7,6 +7,7 @@ Route::prefix('imagens')->group(
     function () {
         Route::middleware(['jwt.auth'])->group(function () {
             Route::post('/salvar', [PastasController::class, 'saveImageInFolder']);
+            Route::delete('/excluir', [PastasController::class, 'deleteImageFromFolder']);
         });
     }
 );
