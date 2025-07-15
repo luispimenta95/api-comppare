@@ -45,6 +45,7 @@ class PastasController extends Controller
         ]);
 
         $user = Usuarios::find($request->idUsuario);
+        dd($user);
 
         // Verifica se o usuário foi encontrado
         if (!$user) {
