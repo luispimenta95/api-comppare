@@ -173,23 +173,105 @@ class PastasController extends Controller
     /**
      * Remove uma pasta do storage e banco de dados
      * 
-     * Valida os dados de entrada, localiza o usuário, deleta a pasta física 
-     * do storage e decrementa o contador de pastas criadas pelo usuário.
+     * Valida os dados de entrada, verifica se a pasta existe e pertence ao usuário,
+     * deleta todas as fotos associadas, remove a pasta física do storage,
+     * exclui o registro do banco de dados e decrementa o contador de pastas do usuário.
      * 
-     * @param Request $request - Deve conter: idUsuario, nomePasta
-     * @return string - Mensagem de resposta da operação
+     * Exemplo de request:
+     * DELETE /api/pasta/delete
+     * Content-Type: application/json
+     * 
+     * Body:
+     * {
+     *   "idUsuario": 1,
+     *   "idPasta": 15
+     * }
+     * 
+     * @param Request $request - Deve conter: idUsuario, idPasta
+     * @return JsonResponse - Confirmação da exclusão ou erro
      */
-    public function destroy(Request $request)
+    public function destroy(Request $request): JsonResponse
     {
-        $request->validate([
-            'idUsuario' => 'required|exists:usuarios,id', // Validar se o idUsuario existe
-            'nomePasta' => 'required|string|max:255', // Validar se o nomePasta é uma string e tem no máximo 255 caracteres
-        ]);
-        $user = Usuarios::find($request->idUsuario);
-        $folderName = 'public/' . $user->id . '/' . $request->nomePasta;
-        $response = json_decode(Helper::deleteFolder($folderName));
-        $user->decrement('pastasCriadas');
-        return $response->message;
+        try {
+            $request->validate([
+                'idUsuario' => 'required|exists:usuarios,id',
+                'idPasta' => 'required|exists:pastas,id',
+            ]);
+
+            $user = Usuarios::find($request->idUsuario);
+            $pasta = Pastas::find($request->idPasta);
+
+            // Verifica se o usuário foi encontrado
+            if (!$user) {
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::NotFound->value,
+                    'message' => HttpCodesEnum::UserNotFound->description(),
+                ]);
+            }
+
+            // Verifica se a pasta foi encontrada
+            if (!$pasta) {
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::NotFound->value,
+                    'message' => 'Pasta não encontrada.',
+                ]);
+            }
+
+            // Verifica se a pasta pertence ao usuário
+            if ($pasta->idUsuario !== $user->id) {
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::Forbidden->value,
+                    'message' => 'Você não tem permissão para excluir esta pasta.',
+                ]);
+            }            // Remove todas as fotos associadas à pasta da tabela photos
+            $photosCount = Photos::where('pasta_id', $pasta->id)->count();
+            Photos::where('pasta_id', $pasta->id)->delete();
+
+            // Remove a pasta física do storage
+            $relativePath = str_replace(
+                env('PUBLIC_PATH', '/home/u757410616/domains/comppare.com.br/public_html/api-comppare/storage/app/public/'),
+                '',
+                $pasta->caminho
+            );
+            $relativePath = trim($relativePath, '/');
+
+            // Deleta a pasta física e todo seu conteúdo
+            if (Storage::disk('public')->exists($relativePath)) {
+                Storage::disk('public')->deleteDirectory($relativePath);
+            }
+
+            // Remove associações da pasta com usuários (pivot table pasta_usuario)
+            $pasta->usuario()->detach();
+
+            // Remove o registro da pasta do banco de dados
+            $nomePasta = $pasta->nome;
+            $pasta->delete();
+
+            // Decrementa o contador de pastas criadas pelo usuário
+            $user->decrement('pastasCriadas');
+
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => 'Pasta excluída com sucesso!',
+                'detalhes' => [
+                    'pasta_excluida' => $nomePasta,
+                    'fotos_removidas' => $photosCount,
+                    'pastas_restantes' => $user->fresh()->pastasCriadas
+                ]
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => 'Dados de validação inválidos.',
+                'errors' => $e->errors()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                'message' => 'Erro interno do servidor ao excluir a pasta.',
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /**
@@ -259,14 +341,14 @@ class PastasController extends Controller
                     $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
                     $path = $image->storeAs($relativePath, $imageName, 'public');
                     $imageUrl = Storage::url($path);
-                    
+
                     // Salva a imagem na tabela photos
                     Photos::create([
                         'pasta_id' => $pasta->id,
                         'path' => $imageUrl,
                         'taken_at' => now()
                     ]);
-                    
+
                     $uploadedImages[] = $imageUrl;
                 }
             }
@@ -380,5 +462,108 @@ class PastasController extends Controller
             'message' => HttpCodesEnum::OK->description(),
             'pastas' => $pastas,
         ]);
+    }
+
+    /**
+     * Exclui uma imagem específica de uma pasta
+     * 
+     * Remove uma imagem individual do storage e da tabela photos.
+     * Verifica se a imagem pertence ao usuário antes de excluir.
+     * 
+     * Exemplo de request:
+     * DELETE /api/imagens/excluir
+     * Content-Type: application/json
+     * 
+     * Body:
+     * {
+     *   "idUsuario": 1,
+     *   "idImagem": 25
+     * }
+     * 
+     * @param Request $request - Deve conter: idUsuario, idImagem
+     * @return JsonResponse - Confirmação da exclusão ou erro
+     */
+    public function deleteImageFromFolder(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'idUsuario' => 'required|exists:usuarios,id',
+                'idImagem' => 'required|exists:photos,id',
+            ]);
+
+            $user = Usuarios::find($request->idUsuario);
+            $photo = Photos::find($request->idImagem);
+
+            // Verifica se o usuário foi encontrado
+            if (!$user) {
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::NotFound->value,
+                    'message' => HttpCodesEnum::UserNotFound->description(),
+                ]);
+            }
+
+            // Verifica se a foto foi encontrada
+            if (!$photo) {
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::NotFound->value,
+                    'message' => 'Foto não encontrada.',
+                ]);
+            }
+
+            // Busca a pasta à qual a foto pertence
+            $pasta = Pastas::find($photo->pasta_id);
+
+            if (!$pasta) {
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::NotFound->value,
+                    'message' => 'Pasta da foto não encontrada.',
+                ]);
+            }
+
+            // Verifica se a pasta pertence ao usuário
+            if ($pasta->idUsuario !== $user->id) {
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::Forbidden->value,
+                    'message' => 'Você não tem permissão para excluir esta imagem.',
+                ]);
+            }
+
+            // Extrai o caminho relativo da imagem
+            $imagePath = str_replace('/storage/', '', $photo->path);
+
+            // Remove a imagem física do storage
+            if (Storage::disk('public')->exists($imagePath)) {
+                Storage::disk('public')->delete($imagePath);
+            }
+
+            // Salva informações antes de deletar
+            $imageName = basename($photo->path);
+            $pastaName = $pasta->nome;
+
+            // Remove o registro da foto do banco de dados
+            $photo->delete();
+
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => 'Imagem excluída com sucesso!',
+                'detalhes' => [
+                    'imagem_excluida' => $imageName,
+                    'pasta' => $pastaName,
+                    'total_fotos_restantes' => Photos::where('pasta_id', $pasta->id)->count()
+                ]
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => 'Dados de validação inválidos.',
+                'errors' => $e->errors()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                'message' => 'Erro interno do servidor ao excluir a imagem.',
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 }

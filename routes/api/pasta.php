@@ -9,7 +9,7 @@ Route::prefix('pasta')->group(
             Route::post('/create', [PastasController::class, 'create']);
             Route::post('/recuperar', [PastasController::class, 'getPastaByUser']);
             Route::post('/associar-tags', [PastasController::class, 'syncTagsToFolder']);
-
+            Route::delete('/excluir', [PastasController::class, 'destroy']);
         });
     }
 );
