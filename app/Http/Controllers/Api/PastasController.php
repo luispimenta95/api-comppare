@@ -593,9 +593,16 @@ class PastasController extends Controller
                     // Converte o caminho para URL amigável se necessário
                     $imagePath = $photo->path;
                     
-                    // Se o path não começa com http ou /storage, converte para URL amigável
-                    if (!str_starts_with($imagePath, 'http') && !str_starts_with($imagePath, '/storage')) {
-                        $imagePath = Storage::url($imagePath);
+                    // Se o path não começa com http, formata como URL completa
+                    if (!str_starts_with($imagePath, 'http')) {
+                        // Se começa com /storage, remove e reconstrói
+                        if (str_starts_with($imagePath, '/storage/')) {
+                            $relativePath = str_replace('/storage/', '', $imagePath);
+                        } else {
+                            $relativePath = trim($imagePath, '/');
+                        }
+                        $appUrl = config('app.url');
+                        $imagePath = $appUrl . '/storage/' . $relativePath;
                     }
                     
                     return [
@@ -633,7 +640,8 @@ class PastasController extends Controller
         );
         $relativePath = trim($relativePath, '/');
 
-        // Converte para URL amigável usando Storage::url()
-        return Storage::url($relativePath);
+        // Formata como: $appUrl . /storage/ . $path
+        $appUrl = config('app.url');
+        return $appUrl . '/storage/' . $relativePath;
     }
 }
