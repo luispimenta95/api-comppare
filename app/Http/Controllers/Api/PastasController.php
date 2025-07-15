@@ -38,15 +38,13 @@ class PastasController extends Controller
      */
     public function create(Request $request): JsonResponse
     {
-        dd($request->all());
-
+        
         $request->validate([
             'idUsuario' => 'required|exists:usuarios,id', // Validar se o idUsuario existe
             'nomePasta' => 'required|string|max:255', // Validar se o nomePasta é uma string e tem no máximo 255 caracteres
         ]);
 
         $user = Usuarios::find($request->idUsuario);
-        dd($user);
 
         // Verifica se o usuário foi encontrado
         if (!$user) {
@@ -590,11 +588,19 @@ class PastasController extends Controller
             'data' => [
                 'id' => $pasta->id,
                 'nome' => $pasta->nome,
-                'caminho' => $pasta->caminho,
+                'caminho' => $this->formatFriendlyPath($pasta->caminho),
                 'imagens' => $pasta->photos->map(function($photo) {
+                    // Converte o caminho para URL amigável se necessário
+                    $imagePath = $photo->path;
+                    
+                    // Se o path não começa com http ou /storage, converte para URL amigável
+                    if (!str_starts_with($imagePath, 'http') && !str_starts_with($imagePath, '/storage')) {
+                        $imagePath = Storage::url($imagePath);
+                    }
+                    
                     return [
                         'id' => $photo->id,
-                        'path' => $photo->path
+                        'path' => $imagePath
                     ];
                 })->values()
             ]
@@ -604,5 +610,30 @@ class PastasController extends Controller
         ];
 
         return response()->json($response);
+    }
+
+    /**
+     * Formata um caminho de pasta para URL amigável
+     * 
+     * @param string $path - Caminho absoluto da pasta
+     * @return string - URL amigável para a pasta
+     */
+    private function formatFriendlyPath(string $path): string
+    {
+        // Se já é uma URL amigável, retorna como está
+        if (str_starts_with($path, 'http') || str_starts_with($path, '/storage')) {
+            return $path;
+        }
+
+        // Remove o caminho absoluto até storage/app/public/
+        $relativePath = str_replace(
+            env('PUBLIC_PATH', '/home/u757410616/domains/comppare.com.br/public_html/api-comppare/storage/app/public/'),
+            '',
+            $path
+        );
+        $relativePath = trim($relativePath, '/');
+
+        // Converte para URL amigável usando Storage::url()
+        return Storage::url($relativePath);
     }
 }
