@@ -566,4 +566,42 @@ class PastasController extends Controller
             ]);
         }
     }
+
+    /**
+     * Recupera informações de uma pasta específica
+     * 
+     * Busca e retorna os dados completos de uma pasta pelo ID, incluindo suas imagens.
+     * 
+     * @param Request $request - Deve conter: idPasta (ID da pasta)
+     * @return JsonResponse - Dados completos da pasta com suas imagens ou erro se não encontrada
+     */
+    public function getFolder(Request $request): JsonResponse
+    {
+        $request->validate([
+            'idPasta' => 'required|integer|exists:pastas,id',
+        ]);
+
+        $pasta = Pastas::with('photos')->find($request->idPasta);
+
+        $response = isset($pasta->id) ? [
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => HttpCodesEnum::OK->description(),
+            'data' => [
+                'id' => $pasta->id,
+                'nome' => $pasta->nome,
+                'caminho' => $pasta->caminho,
+                'imagens' => $pasta->photos->map(function($photo) {
+                    return [
+                        'id' => $photo->id,
+                        'path' => $photo->path
+                    ];
+                })->values()
+            ]
+        ] : [
+            'codRetorno' => HttpCodesEnum::NotFound->value,
+            'message' => HttpCodesEnum::NotFound->description()
+        ];
+
+        return response()->json($response);
+    }
 }

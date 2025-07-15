@@ -7,7 +7,7 @@ Route::prefix('pasta')->group(
     function () {
         Route::middleware(['jwt.auth'])->group(function () {
             Route::post('/create', [PastasController::class, 'create']);
-            Route::post('/recuperar', [PastasController::class, 'getPastaByUser']);
+            Route::get('/recuperar', [PastasController::class, 'getFolder']);
             Route::post('/associar-tags', [PastasController::class, 'syncTagsToFolder']);
             Route::delete('/excluir', [PastasController::class, 'destroy']);
         });
