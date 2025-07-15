@@ -38,6 +38,7 @@ class PastasController extends Controller
      */
     public function create(Request $request): JsonResponse
     {
+        dd($request->all());
 
         $request->validate([
             'idUsuario' => 'required|exists:usuarios,id', // Validar se o idUsuario existe
