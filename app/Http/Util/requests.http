@@ -1,5 +1,5 @@
-#@baseUrl = https://api.comppare.com.br/api
-@baseUrl = http://127.0.0.1:8000/api
+@baseUrl = https://api.comppare.com.br/api
+#@baseUrl = http://127.0.0.1:8000/api
 ### GET request para testar a api
 GET {{baseUrl}}/test
 
@@ -30,7 +30,7 @@ POST {{baseUrl}}/usuarios/autenticar
 Content-Type: application/json
 
 {
-    "cpf": "81581828012",
+    "cpf": "02049035055",
     "senha": "13151319"
 }
 
@@ -207,5 +207,5 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL
 }
 
 ###recuperar pasta individual
-GET {{baseUrl}}/pasta/recuperar?idPasta=15
-Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5jb21wcGFyZS5jb20uYnIvYXBpL3VzdWFyaW9zL2F1dGVudGljYXIiLCJpYXQiOjE3NDgyMTc3MzEsImV4cCI6MTc0ODIyMTMzMSwibmJmIjoxNzQ4MjE3NzMxLCJqdGkiOiJncHhlN2NsRUxNaXRYdVdvIiwic3ViIjoiMiIsInBydiI6IjU1NGM1YWVhNGNiMjU0MDE5ZTEyMDY3YTdjYTU0N2Y2NzVkNTQ0Y2EifQ.m6rWAD_GHVs-GDWIvlH_yBMCI4QO3VSH0BYF09fiZTE
+GET {{baseUrl}}/pasta/recuperar?idPasta=26
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5jb21wcGFyZS5jb20uYnIvYXBpL3VzdWFyaW9zL2F1dGVudGljYXIiLCJpYXQiOjE3NTI2MTkxMDIsImV4cCI6MTc1MjYyMjcwMiwibmJmIjoxNzUyNjE5MTAyLCJqdGkiOiJqQmdSV0poS2pncE43S29TIiwic3ViIjoiMSIsInBydiI6IjU1NGM1YWVhNGNiMjU0MDE5ZTEyMDY3YTdjYTU0N2Y2NzVkNTQ0Y2EifQ.X36IgXm8avWayQytb4Z2u94NoElPP-s8xbDb8VOccQI

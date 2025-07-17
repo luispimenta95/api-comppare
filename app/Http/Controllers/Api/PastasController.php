@@ -339,16 +339,17 @@ class PastasController extends Controller
                 if ($image && $image->isValid()) {
                     $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
                     $path = $image->storeAs($relativePath, $imageName, 'public');
-                    $imageUrl = Storage::url($path);
+                    $imageUrl = env('APP_URL') . Storage::url($path);
+                    $uploadedImages[] = $imageUrl;
 
-                    // Salva a imagem na tabela photos
+                    // Criar registro na tabela Photos
                     Photos::create([
                         'pasta_id' => $pasta->id,
                         'path' => $imageUrl,
-                        'taken_at' => now()
+                        'taken_at' => $takenAt,
+                        'created_at' => now(),
+                        'updated_at' => now()
                     ]);
-
-                    $uploadedImages[] = $imageUrl;
                 }
             }
 
@@ -371,6 +372,7 @@ class PastasController extends Controller
             ]);
         }
     }
+
 
     /**
      * Sincroniza tags de uma pasta
