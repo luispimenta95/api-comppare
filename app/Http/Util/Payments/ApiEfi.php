@@ -62,7 +62,6 @@ class ApiEfi
         $params = [
             "id" => $dados["idPlano"],
         ];
-        //dd($dados['cardToken']);
         $dados['produto']['value'] = (int) round($dados["produto"]['value']);
         $body = [
             "items" =>  [$dados['produto']],

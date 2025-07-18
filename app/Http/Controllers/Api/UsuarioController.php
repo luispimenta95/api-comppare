@@ -237,11 +237,14 @@ class UsuarioController extends Controller
                 $this->associarPastasUsuario($convite, $usuario);
             }
         }
-
+        // Gera o token JWT para o usuário recém-criado
+        $token = JWTAuth::fromUser($usuario);
+        
         return response()->json([
             'codRetorno' => HttpCodesEnum::Created->value,
             'message'    => HttpCodesEnum::Created->description(),
-            'data'       => $usuario
+            'usuario'       => $usuario,
+            'token'         => $token
         ], HttpCodesEnum::Created->value);
     }
 
