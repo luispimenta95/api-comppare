@@ -8,11 +8,9 @@ use App\Models\Planos;
 use App\Models\Usuarios;
 use App\Http\Util\Helper;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\JsonResponse;
 use App\Http\Util\MailHelper;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Http\JsonResponse;
 use App\Models\TransacaoFinanceira;
-use App\Http\Util\Payments\ApiMercadoPago;
 use Illuminate\Http\Request;
 use App\Enums\HttpCodesEnum;
 
@@ -39,9 +37,6 @@ class VendasController extends Controller
     {
         $response = [];
 
-        Log::info("Usuario:" .$request->usuario);
-        Log::info("token:" .$request->token);
-        Log::info("Plano:" .$request->plano);
 
         $campos = ['usuario', 'plano', 'token'];
         $campos = Helper::validarRequest($request, $campos);
@@ -85,13 +80,11 @@ class VendasController extends Controller
                     "value" => $valor
                 ]
             ];
-            Log::info("Valor:" .$data['produto']['value']);
             $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
 
             if ($responseApi['code'] == 200) {
                 $usuario->plano = $request->plano;
                 $usuario->save();
-                Log::info("Venda gerada com sucesso para" . $data['usuario']['usuario']);
 
                 $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
                 $usuario->dataLimiteCompra = Carbon::createFromFormat('d/m/Y', $responseApi['data']['first_execution'])->format('Y-m-d');                $usuario->idAssinatura = $responseApi['data']['subscription_id'];
@@ -100,7 +93,6 @@ class VendasController extends Controller
                     'message' => $this->codes[200]
                 ];
             } else {
-                Log::info("Erro:" .$responseApi['description']);
 
                 $response = [
                     'codRetorno' => 400,
@@ -114,6 +106,8 @@ class VendasController extends Controller
         }
         $usuario->save();
         MailHelper::confirmacaoAssinatura($dadosEmail, $usuario->email);
+        
+        return response()->json($response);
 
 
     }

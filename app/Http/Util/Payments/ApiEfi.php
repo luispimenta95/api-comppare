@@ -124,4 +124,149 @@ class ApiEfi
             );
         }
     }
+
+    public function createPixCharge(array $dados): mixed
+    {
+        try {
+            $body = [
+                "items" =>  [$dados['produto']],
+                "metadata" =>  ["notification_url" =>  $this->url],
+                "payment" => [
+                    "pix" => [
+                        "customer" =>  $dados['usuario']
+                    ]
+                ]
+            ];
+            return json_encode($this->efiPay->createPixCharge($this->params, $body));
+        } catch (EfiException $e) {
+            return json_encode(
+                [
+                    "code" => $e->code,
+                    "Erro" => $e->error,
+                    "description" => $e->errorDescription
+                ]
+            );
+        }
+    }
+
+    /**
+     * Cria uma cobrança PIX recorrente baseada no modelo de vínculo
+     * 
+     * @param array $dados - Dados da cobrança recorrente
+     * @return mixed
+     */
+    public function createPixRecurrentCharge(array $dados): mixed
+    {
+        try {
+            $body = [
+                "vinculo" => [
+                    "contrato" => $dados['contrato'],
+                    "devedor" => [
+                        "cpf" => $dados['devedor']['cpf'],
+                        "nome" => $dados['devedor']['nome']
+                    ],
+                    "objeto" => $dados['objeto'] ?? "Serviço de Streamming de Música."
+                ],
+                "calendario" => [
+                    "dataFinal" => $dados['dataFinal'],
+                    "dataInicial" => $dados['dataInicial'],
+                    "periodicidade" => $dados['periodicidade'] ?? "MENSAL"
+                ],
+                "valor" => [
+                    "valorRec" => $dados['valor']
+                ],
+                "politicaRetentativa" => $dados['politicaRetentativa'] ?? "NAO_PERMITE"
+            ];
+
+            // Adiciona loc se fornecido
+            if (isset($dados['loc'])) {
+                $body['loc'] = $dados['loc'];
+            }
+
+            // Adiciona ativação se fornecido
+            if (isset($dados['txid'])) {
+                $body['ativacao'] = [
+                    "dadosJornada" => [
+                        "txid" => $dados['txid']
+                    ]
+                ];
+            }
+
+            return json_encode($this->efiPay->createPixRecurrentCharge($this->params, $body));
+        } catch (EfiException $e) {
+            return json_encode(
+                [
+                    "code" => $e->code,
+                    "Erro" => $e->error,
+                    "description" => $e->errorDescription
+                ]
+            );
+        }
+    }
+
+    /**
+     * Cria uma cobrança PIX com QR Code dinâmico
+     * 
+     * @param array $dados - Dados da cobrança PIX
+     * @return mixed
+     */
+    public function createPixDynamicCharge(array $dados): mixed
+    {
+        try {
+            $body = [
+                "calendario" => [
+                    "expiracao" => $dados['expiracao'] ?? 3600 // 1 hora por padrão
+                ],
+                "devedor" => [
+                    "cpf" => $dados['devedor']['cpf'],
+                    "nome" => $dados['devedor']['nome']
+                ],
+                "valor" => [
+                    "original" => number_format($dados['valor'], 2, '.', '')
+                ],
+                "chave" => $dados['chave_pix'] ?? env('PIX_KEY'), // Chave PIX configurada
+                "solicitacaoPagador" => $dados['descricao'] ?? "Pagamento de serviços"
+            ];
+
+            // Adiciona informações adicionais se fornecidas
+            if (isset($dados['infoAdicionais'])) {
+                $body['infoAdicionais'] = $dados['infoAdicionais'];
+            }
+
+            return json_encode($this->efiPay->pixCreateCharge($this->params, $body));
+        } catch (EfiException $e) {
+            return json_encode(
+                [
+                    "code" => $e->code,
+                    "Erro" => $e->error,
+                    "description" => $e->errorDescription
+                ]
+            );
+        }
+    }
+
+    /**
+     * Gera o QR Code para uma cobrança PIX criada
+     * 
+     * @param string $txid - ID da transação PIX
+     * @return mixed
+     */
+    public function generatePixQRCode(string $txid): mixed
+    {
+        try {
+            $params = [
+                "txid" => $txid
+            ];
+
+            return json_encode($this->efiPay->pixGenerateQRCode($params));
+        } catch (EfiException $e) {
+            return json_encode(
+                [
+                    "code" => $e->code,
+                    "Erro" => $e->error,
+                    "description" => $e->errorDescription
+                ]
+            );
+        }
+    }
 }
