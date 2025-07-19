@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Mail\EmailForgot;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Controller para gerenciamento de usuários
@@ -75,33 +76,228 @@ class UsuarioController extends Controller
      * Altera o plano do usuário e registra a movimentação financeira
      * associada à mudança de plano.
      * 
+     * Implementa validações para upgrade/downgrade:
+     * - Verifica se o plano de destino existe e está ativo
+     * - Valida se o downgrade é possível (uso atual não excede limites do novo plano)
+     * - Permite upgrades sempre
+     * - Trata planos especiais (convidados, filiados)
+     * 
      * @param AtualizarPlanoUsuarioRequest $request - ID do usuário e novo plano
      * @return JsonResponse - Confirmação da alteração ou erro
      */
     public function atualizarPlanoUsuario(AtualizarPlanoUsuarioRequest $request): JsonResponse
     {
-        $usuario = Usuarios::where('cpf', $request->cpf)->first();
+        try {
+            $usuario = Usuarios::with('plano')->where('cpf', $request->cpf)->first();
 
-        if (!$usuario) {
-            return $this->respostaErro(HttpCodesEnum::NotFound);
+            if (!$usuario) {
+                return $this->respostaErro(HttpCodesEnum::NotFound, 'Usuário não encontrado');
+            }
+
+            // Verificar se é o mesmo plano atual
+            if ($usuario->idPlano == $request->plano) {
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::BadRequest->value,
+                    'message' => 'O usuário já possui este plano',
+                    'changePlan' => false,
+                ], 400);
+            }
+
+            // Buscar plano de destino
+            $planoNovo = Planos::find($request->plano);
+            if (!$planoNovo || !$planoNovo->status) {
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::BadRequest->value,
+                    'message' => 'Plano de destino não está disponível',
+                    'changePlan' => false,
+                ], 400);
+            }
+
+            $planoAtual = $usuario->plano;
+            
+            // Validar regras específicas de mudança de plano
+            $validacao = $this->validarMudancaPlano($usuario, $planoAtual, $planoNovo);
+            if (!$validacao['permitido']) {
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::BadRequest->value,
+                    'message' => $validacao['motivo'],
+                    'changePlan' => false,
+                    'detalhes' => $validacao['detalhes'] ?? null,
+                ], 400);
+            }
+
+            // Realizar a mudança de plano
+            $planoAntigoNome = $planoAtual->nome;
+            $usuario->idPlano = $request->plano;
+            $usuario->save();
+
+            // Registrar movimentação
+            Movimentacoes::create([
+                'nome_usuario' => $usuario->primeiroNome . ' ' . $usuario->sobrenome,
+                'plano_antigo' => $planoAntigoNome,
+                'plano_novo' => $planoNovo->nome,
+            ]);
+
+            Log::info("Plano alterado com sucesso", [
+                'usuario_id' => $usuario->id,
+                'cpf' => $usuario->cpf,
+                'plano_antigo' => $planoAntigoNome,
+                'plano_novo' => $planoNovo->nome,
+                'valor_antigo' => $planoAtual->valor,
+                'valor_novo' => $planoNovo->valor,
+            ]);
+
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => 'Plano alterado com sucesso',
+                'changePlan' => true,
+                'plano_anterior' => $planoAntigoNome,
+                'plano_atual' => $planoNovo->nome,
+                'tipo_alteracao' => $validacao['tipo'],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Erro ao alterar plano do usuário", [
+                'cpf' => $request->cpf,
+                'plano_destino' => $request->plano,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                'message' => 'Erro interno do servidor ao alterar plano',
+                'changePlan' => false,
+            ], 500);
+        }
+    }
+
+    /**
+     * Valida se a mudança de plano é permitida
+     * 
+     * @param Usuarios $usuario
+     * @param Planos $planoAtual
+     * @param Planos $planoNovo
+     * @return array
+     */
+    private function validarMudancaPlano(Usuarios $usuario, Planos $planoAtual, Planos $planoNovo): array
+    {
+        // Planos especiais que têm regras específicas
+        $planosEspeciais = [
+            Helper::ID_PLANO_CONVIDADO, // Plano de Convidados
+            2, // Plano de Filiados
+        ];
+
+        // Se o usuário está em um plano de convidado, só pode ir para planos pagos específicos
+        if ($usuario->idPlano == Helper::ID_PLANO_CONVIDADO) {
+            if (in_array($planoNovo->id, $planosEspeciais)) {
+                return [
+                    'permitido' => false,
+                    'motivo' => 'Convidados não podem migrar para planos especiais',
+                    'tipo' => 'restricao_convidado'
+                ];
+            }
         }
 
-        $planoAntigo = Planos::find($usuario->idPlano)->nome;
-        $usuario->idPlano = $request->plano;
-        $usuario->save();
-        $planoNovo = Planos::find($request->plano)->nome;
+        // Se está tentando migrar para plano de convidado ou filiado, verificar restrições
+        if (in_array($planoNovo->id, $planosEspeciais)) {
+            return [
+                'permitido' => false,
+                'motivo' => 'Não é possível migrar para planos especiais através desta operação',
+                'tipo' => 'restricao_plano_especial'
+            ];
+        }
 
-        Movimentacoes::create([
-            'nome_usuario' => $usuario->primeiroNome . ' ' . $usuario->sobrenome,
-            'plano_antigo' => $planoAntigo,
-            'plano_novo' => $planoNovo,
-        ]);
+        // Determinar se é upgrade ou downgrade baseado no valor
+        $isUpgrade = $planoNovo->valor > $planoAtual->valor;
+        $isDowngrade = $planoNovo->valor < $planoAtual->valor;
 
-        return response()->json([
-            'codRetorno' => HttpCodesEnum::OK->value,
-            'message' => HttpCodesEnum::OK->description(),
-            'changePlan' => true,
-        ]);
+        // Upgrades são sempre permitidos
+        if ($isUpgrade) {
+            return [
+                'permitido' => true,
+                'tipo' => 'upgrade',
+                'motivo' => 'Upgrade permitido'
+            ];
+        }
+
+        // Para downgrades, verificar se o uso atual está dentro dos limites do novo plano
+        if ($isDowngrade) {
+            return $this->validarDowngrade($usuario, $planoNovo);
+        }
+
+        // Mudança entre planos de mesmo valor (lateral)
+        return [
+            'permitido' => true,
+            'tipo' => 'lateral',
+            'motivo' => 'Mudança lateral de plano permitida'
+        ];
+    }
+
+    /**
+     * Valida se o downgrade é possível verificando o uso atual do usuário
+     * 
+     * @param Usuarios $usuario
+     * @param Planos $planoNovo
+     * @return array
+     */
+    private function validarDowngrade(Usuarios $usuario, Planos $planoNovo): array
+    {
+        $detalhes = [];
+        $restricoes = [];
+
+        // Verificar uso de pastas criadas no mês atual
+        $pastasCriadasMes = Pastas::where('idUsuario', $usuario->id)
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count();
+
+        if ($pastasCriadasMes > $planoNovo->quantidadePastas) {
+            $restricoes[] = "Pastas criadas este mês: {$pastasCriadasMes} (limite do novo plano: {$planoNovo->quantidadePastas})";
+            $detalhes['pastas_criadas_mes'] = $pastasCriadasMes;
+            $detalhes['limite_pastas_novo'] = $planoNovo->quantidadePastas;
+        }
+
+        // Verificar total de pastas do usuário
+        $totalPastas = $usuario->pastas()->count();
+        if ($totalPastas > $planoNovo->quantidadePastas) {
+            $restricoes[] = "Total de pastas: {$totalPastas} (limite do novo plano: {$planoNovo->quantidadePastas})";
+            $detalhes['total_pastas'] = $totalPastas;
+        }
+
+        // Verificar tags criadas pelo usuário
+        $totalTags = $usuario->tags()->count();
+        if ($totalTags > $planoNovo->quantidadeTags) {
+            $restricoes[] = "Total de tags: {$totalTags} (limite do novo plano: {$planoNovo->quantidadeTags})";
+            $detalhes['total_tags'] = $totalTags;
+            $detalhes['limite_tags_novo'] = $planoNovo->quantidadeTags;
+        }
+
+        // Verificar fotos (se houver uma forma de contar)
+        // Note: Assumindo que há uma relação ou forma de contar fotos por usuário
+        // Isso pode ser implementado conforme a estrutura do banco
+        
+        if (!empty($restricoes)) {
+            return [
+                'permitido' => false,
+                'motivo' => 'Downgrade não permitido: uso atual excede limites do novo plano',
+                'tipo' => 'downgrade_bloqueado',
+                'detalhes' => [
+                    'restricoes' => $restricoes,
+                    'uso_atual' => $detalhes,
+                    'sugestao' => 'Reduza o uso atual ou escolha um plano com limites maiores'
+                ]
+            ];
+        }
+
+        return [
+            'permitido' => true,
+            'tipo' => 'downgrade',
+            'motivo' => 'Downgrade permitido: uso atual está dentro dos limites do novo plano',
+            'detalhes' => [
+                'uso_atual' => $detalhes
+            ]
+        ];
     }
 
     /**
