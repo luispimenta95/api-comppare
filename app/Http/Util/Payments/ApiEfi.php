@@ -18,22 +18,44 @@ class ApiEfi
     private string $url;
     public function __construct()
     {
-        $this->enviroment =   env('APP_ENV');
+        $this->enviroment = env('APP_ENV');
         $this->url = $this->enviroment == "local" ?
             env("APP_URL") . '/api/notification?sandbox=true' :
             env("APP_URL") . "/api/notification";
 
         $this->options = [
-            "clientId" =>  $this->enviroment == "local" ? env('ID_EFI_HML') : env('ID_EFI_PRD'),
+            "clientId" => $this->enviroment == "local" ? env('ID_EFI_HML') : env('ID_EFI_PRD'),
             "clientSecret" => $this->enviroment == "local" ? env('SECRET_EFI_HML') : env('SECRET_EFI_PRD'),
-            "sandbox" => $this->enviroment == "local" ? true : false,  // False = PRD | TRUE = DEV
-            "debug" => false, // Opcional | Padrão = false | Ativa/desativa os logs de requisições do Guzzle
-            "timeout" => 30, // Opcional | Padrão = 30 | Define o tempo máximo de resposta das requisições
-            "responseHeaders" => false,
+            "sandbox" => $this->enviroment == "local" ? true : false,
+            "debug" => false, // Ativar debug para ver requisições
+            "timeout" => 30, // Aumentar timeout
+            "responseHeaders" => true
         ];
 
+        // Validar se as credenciais foram carregadas
+        if (empty($this->options['clientId']) || empty($this->options['clientSecret'])) {
+            $error = 'Credenciais EFI Pay não configuradas para ambiente: ' . $this->enviroment;
+            Log::error($error, $this->options);
+            throw new \Exception($error);
+        }
 
-        $this->efiPay = new EfiPay($this->options);
+        try {
+            Log::info('ApiEfi - Inicializando SDK EFI Pay', [
+                'sandbox' => $this->options['sandbox'],
+                'timeout' => $this->options['timeout']
+            ]);
+            
+            $this->efiPay = new EfiPay($this->options);
+            
+            Log::info('ApiEfi - SDK EFI Pay inicializado com sucesso');
+        } catch (\Exception $e) {
+            Log::error('ApiEfi - Erro ao inicializar SDK EFI Pay', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            throw $e;
+        }
     }
 
     public function createPlan(string $name, int $frequencia): mixed
@@ -191,6 +213,7 @@ class ApiEfi
                     ]
                 ];
             }
+            dd($this->getToken());
 
             return json_encode($this->efiPay->createPixRecurrentCharge($this->params, $body));
         } catch (EfiException $e) {
@@ -267,6 +290,161 @@ class ApiEfi
                     "description" => $e->errorDescription
                 ]
             );
+        }
+    }
+
+    /**
+     * Obtém token de autenticação da API EFI Pay usando cURL direto
+     * Baseado no exemplo oficial da EFI Pay
+     * 
+     * @return mixed
+     */
+    public function getToken(): mixed
+    {
+        try {
+            Log::info('ApiEfi - Solicitando token de autenticação via cURL');
+            
+            // Configurações baseadas no ambiente
+            $clientId = $this->enviroment == "local" ? env('ID_EFI_HML') : env('ID_EFI_PRD');
+            $clientSecret = $this->enviroment == "local" ? env('SECRET_EFI_HML') : env('SECRET_EFI_PRD');
+             $certificadoPath = $this->enviroment == "local" 
+                ?  storage_path('app/certificates/hml.pem')
+                :  storage_path('app/certificates/prd.pem');
+            $baseUrl = $this->enviroment == "local" ? 
+                "https://pix-h.api.efipay.com.br" : 
+                "https://pix.api.efipay.com.br";
+
+                //dd(is_file($certificadoPath), $certificadoPath, file_exists($certificadoPath));
+            
+            // Validar credenciais
+            if (empty($clientId) || empty($clientSecret)) {
+                throw new \Exception('Credenciais EFI Pay não configuradas');
+            }
+            
+            // Codificação da autorização
+            $autorizacao = base64_encode($clientId . ":" . $clientSecret);
+            
+            // Inicializar cURL
+            $curl = curl_init();
+            
+            $curlOptions = [
+                CURLOPT_URL => $baseUrl . "/oauth/token",
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => "",
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 60,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => "POST",
+                CURLOPT_POSTFIELDS => '{"grant_type": "client_credentials"}',
+                CURLOPT_SSLCERT => $certificadoPath,
+                CURLOPT_SSLCERTPASSWD => '',
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false,
+                CURLOPT_HTTPHEADER => [
+                    "Authorization: Basic $autorizacao",
+                    "Content-Type: application/json"
+                ],
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_SSL_VERIFYHOST => 2,
+            ];
+            
+            // Adicionar certificado se fornecido
+            if (!empty($certificado) && file_exists($certificado)) {
+                $curlOptions[CURLOPT_SSLCERT] = $certificado;
+                $curlOptions[CURLOPT_SSLCERTPASSWD] = env('EFI_CERTIFICADO_PASSWORD', '');
+                Log::info('ApiEfi - Usando certificado SSL', ['certificado' => $certificado]);
+            }
+            
+            curl_setopt_array($curl, $curlOptions);
+            
+            Log::info('ApiEfi - Executando requisição para obter token', [
+                'url' => $baseUrl . "/oauth/token",
+                'environment' => $this->enviroment
+            ]);
+            
+            $response = curl_exec($curl);
+            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            $error = curl_error($curl);
+            
+            curl_close($curl);
+            
+            // Verificar erros de cURL
+            if ($error) {
+                Log::error('ApiEfi - Erro cURL ao obter token', [
+                    'error' => $error,
+                    'http_code' => $httpCode
+                ]);
+                
+                return json_encode([
+                    "code" => 500,
+                    "Erro" => "Erro de conectividade",
+                    "description" => $error
+                ]);
+            }
+            
+            // Verificar código HTTP
+            if ($httpCode !== 200) {
+                Log::error('ApiEfi - Código HTTP inválido ao obter token', [
+                    'http_code' => $httpCode,
+                    'response' => $response
+                ]);
+                
+                return json_encode([
+                    "code" => $httpCode,
+                    "Erro" => "Erro HTTP",
+                    "description" => "Código HTTP: $httpCode",
+                    "response" => $response
+                ]);
+            }
+            
+            // Decodificar resposta
+            $responseData = json_decode($response, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::error('ApiEfi - Erro ao decodificar resposta JSON', [
+                    'response' => $response,
+                    'json_error' => json_last_error_msg()
+                ]);
+                
+                return json_encode([
+                    "code" => 500,
+                    "Erro" => "Erro de formato",
+                    "description" => "Resposta não é um JSON válido"
+                ]);
+            }
+            
+            // Verificar se é um erro da API
+            if (isset($responseData['error'])) {
+                Log::error('ApiEfi - Erro retornado pela API EFI', $responseData);
+                
+                return json_encode([
+                    "code" => $responseData['error_code'] ?? 400,
+                    "Erro" => $responseData['error'],
+                    "description" => $responseData['error_description'] ?? 'Erro não especificado'
+                ]);
+            }
+            
+            // Sucesso
+            Log::info('ApiEfi - Token obtido com sucesso', [
+                'token_type' => $responseData['token_type'] ?? 'N/A',
+                'expires_in' => $responseData['expires_in'] ?? 'N/A'
+            ]);
+            
+            return $response;
+            
+        } catch (\Exception $e) {
+            Log::error('ApiEfi - Erro geral ao obter token', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+            
+            return json_encode([
+                "code" => 500,
+                "Erro" => "Erro interno",
+                "description" => $e->getMessage()
+            ]);
         }
     }
 }
