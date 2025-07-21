@@ -13,4 +13,7 @@ Route::prefix('pix')->group(function () {
     
     // Gera QR Code para cobrança existente
     Route::get('/qrcode/{txid}', [PixController::class, 'generateQRCode']);
+    
+    // Cria cobrança PIX usando o método enviarPix
+    Route::post('/enviar', [PixController::class, 'enviarPix']);
 });
