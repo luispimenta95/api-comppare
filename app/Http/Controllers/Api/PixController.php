@@ -24,42 +24,41 @@ class PixController extends Controller
             : storage_path('app/certificates/prd.pem');
     }
 
-  public function criarCobrancaPixSimples(array $payload, bool $homolog = false): array
-{
-    $url = $homolog
-        ? 'https://pix-h.api.efipay.com.br/v2/cob/'
-        : 'https://pix.api.efipay.com.br/v2/cob/';
-
+  public function criarCobrancaPixSimples(): void
+    {
     $curl = curl_init();
 
-    curl_setopt_array($curl, [
-        CURLOPT_URL => $url,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => '',
-        CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 30,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => 'POST',
-        CURLOPT_POSTFIELDS => json_encode($payload),
-        CURLOPT_SSLCERT => $this->certificadoPath,
-        CURLOPT_SSLCERTPASSWD => '',
-        CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . $this->apiEfi->getToken(),
-            'Content-Type: application/json'
-        ],
-    ]);
-
-    $response = curl_exec($curl);
-    $erro = curl_error($curl);
-
-    curl_close($curl);
-
-    if ($erro) {
-        throw new \Exception("Erro ao criar cobrança: $erro");
-    }
-
-    return json_decode($response, true);
+curl_setopt_array($curl, array(
+    CURLOPT_URL => $this->enviroment === 'local' ? 'https://pix-h.api.efipay.com.br/v2/cob/' : 'https://pix.api.efipay.com.br/v2/cob/',
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_ENCODING => '',
+    CURLOPT_MAXREDIRS => 10,
+    CURLOPT_TIMEOUT => 0,
+    CURLOPT_FOLLOWLOCATION => true,
+    CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+    CURLOPT_CUSTOMREQUEST => 'POST',
+    CURLOPT_POSTFIELDS => '{
+        "calendario": {
+        "expiracao": 3600
+        },
+        "devedor": {
+        "cpf": "12345678909",
+        "nome": "Francisco da Silva"
+        },
+        "valor": {
+        "original": "0.45"
+        },
+        "chave": "chave.pix@email.com.br"
+    }',
+    CURLOPT_SSLCERT => $this->certificadoPath, // Caminho do certificado
+    CURLOPT_SSLCERTPASSWD => "",
+    CURLOPT_HTTPHEADER => array(
+        "Authorization: Bearer " . $this->apiEfi->getToken(),
+        "Content-Type: application/json"
+    ),
+));
+$responsePix = json_decode(curl_exec($curl), true);
+dd($responsePix);
 }
 
 public function consultarQrCodePorLocId(int $idLoc, bool $homolog = false): array
