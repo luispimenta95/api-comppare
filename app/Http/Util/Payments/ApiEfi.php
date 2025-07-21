@@ -180,6 +180,7 @@ class ApiEfi
     public function createPixRecurrentCharge(array $dados): mixed
     {
         try {
+              dd($this->getToken());
             $body = [
                 "vinculo" => [
                     "contrato" => $dados['contrato'],
@@ -213,7 +214,6 @@ class ApiEfi
                     ]
                 ];
             }
-            dd($this->getToken());
 
             return json_encode($this->efiPay->createPixRecurrentCharge($this->params, $body));
         } catch (EfiException $e) {
@@ -409,6 +409,7 @@ class ApiEfi
                 ]);
 
                 return json_encode([
+                    'MSG' => "Erro ao obter token",
                     "code" => $httpCode,
                     "Erro" => "Erro HTTP",
                     "description" => "Código HTTP: $httpCode",
@@ -449,7 +450,7 @@ class ApiEfi
                 'expires_in' => $responseData['expires_in'] ?? 'N/A'
             ]);
 
-            return $response;
+            return $responseData['access_token'] ?? null;
         } catch (\Exception $e) {
             Log::error('ApiEfi - Erro geral ao obter token', [
                 'message' => $e->getMessage(),
