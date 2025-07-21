@@ -180,7 +180,8 @@ class ApiEfi
     public function createPixRecurrentCharge(array $dados): mixed
     {
         try {
-              dd($this->getToken());
+              $token = $this->getToken();
+              $this->params['headers']['Authorization'] = "Bearer {$token}";
             $body = [
                 "vinculo" => [
                     "contrato" => $dados['contrato'],
