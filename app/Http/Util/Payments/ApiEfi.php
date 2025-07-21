@@ -17,28 +17,36 @@ class ApiEfi
     private EfiPay $efiPay;
     private string $url;
     private string $certificadoPath;
+    
     public function __construct()
-    {
-        $this->enviroment = env('APP_ENV');
-        $this->url = $this->enviroment == "local" ?
-            env("APP_URL") . '/api/notification?sandbox=true' :
-            env("APP_URL") . "/api/notification";
+{
+    $this->enviroment = env('APP_ENV');
+    $this->url = $this->enviroment == "local" ?
+        env("APP_URL") . '/api/notification?sandbox=true' :
+        env("APP_URL") . "/api/notification";
 
-        $this->options = [
-            "clientId" => $this->enviroment == "local" ? env('ID_EFI_HML') : env('ID_EFI_PRD'),
-            "clientSecret" => $this->enviroment == "local" ? env('SECRET_EFI_HML') : env('SECRET_EFI_PRD'),
-            "sandbox" => $this->enviroment == "local" ? true : false,
-            "debug" => false, // Ativar debug para ver requisições
-            "timeout" => 30, // Aumentar timeout
-            "responseHeaders" => true
-        ];
-        $this->certificadoPath = $this->enviroment == "local"
-            ? storage_path('app/certificates/hml.pem')
-            : storage_path('app/certificates/prd.pem');
+    $this->options = [
+        "clientId" => $this->enviroment == "local" ? env('ID_EFI_HML') : env('ID_EFI_PRD'),
+        "clientSecret" => $this->enviroment == "local" ? env('SECRET_EFI_HML') : env('SECRET_EFI_PRD'),
+        "sandbox" => $this->enviroment == "local" ? true : false,
+        "debug" => false, // Ativar debug para ver requisições
+        "timeout" => 30, // Aumentar timeout
+        "responseHeaders" => true
+    ];
+    
+    $this->certificadoPath = $this->enviroment == "local"
+        ? storage_path('app/certificates/hml.pem')
+        : storage_path('app/certificates/prd.pem');
 
-   
-        
+    // Inicializar o EfiPay
+    try {
+        $this->efiPay = new EfiPay($this->options);
+        Log::info('ApiEfi - EfiPay inicializado com sucesso');
+    } catch (\Exception $e) {
+        throw new \Exception('Falha na inicialização do EfiPay: ' . $e->getMessage());
     }
+}
+
 
     public function createPlan(string $name, int $frequencia): mixed
     {
