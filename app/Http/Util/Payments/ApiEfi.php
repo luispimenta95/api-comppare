@@ -172,7 +172,7 @@ class ApiEfi
         try {
               $token = $this->getToken();
               $this->params['headers']['Authorization'] = "Bearer {$token}";
-              $this->params['certificate'] = $this->certificadoPath;
+              $this->params['headers']['certificate'] = $this->certificadoPath;
             $body = [
                 "vinculo" => [
                     "contrato" => $dados['contrato'],
@@ -206,7 +206,6 @@ class ApiEfi
                     ]
                 ];
             }
-            dd($this->params, $body);
 
             return json_encode($this->efiPay->pixCreateCharge($this->params, $body));
         } catch (EfiException $e) {
