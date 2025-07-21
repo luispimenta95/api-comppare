@@ -98,15 +98,23 @@ public function consultarQrCodePorLocId(int $idLoc, bool $homolog = false): arra
     return json_decode($response, true);
 }
 public function criarCobranca(){
-    $payload = [
-    "calendario" => [ "expiracao" => 3600 ],
-    "devedor" => [
-        "cpf" => "12345678909",
-        "nome" => "Francisco da Silva"
-    ],
-    "valor" => [ "original" => "0.45" ],
-    "chave" => "chave.pix@email.com.br"
-];
+   $payload = [
+        'vinculo' => [
+            'contrato' => '63100862',
+            'devedor' => [
+                'cpf' => '45164632481',
+                'nome' => 'Fulano de Tal'
+            ],
+            'objeto' => 'Serviço de Streamming de Música.',
+            'dataFinal' => '2025-04-01',
+            'dataInicial' => '2024-04-01',
+            'periodicidade' => 'MENSAL',
+            'valor' => 35.00,
+            'politicaRetentativa' => 'NAO_PERMITE',
+            'loc' => 108,
+            'txid' => '33beb661beda44a8928fef47dbeb2dc5'
+        ]
+    ];
 
 try {
     $res = $this->criarCobrancaPixSimples($payload, true);
