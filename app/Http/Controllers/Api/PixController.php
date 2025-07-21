@@ -81,13 +81,76 @@ class PixController extends Controller
             ));
 
             $response = json_decode(curl_exec($curl), true);
-            dd($response);
+        
 
             curl_close($curl);
 
 
             $PixCopiaCola = $response['qrcode'];
             $imagemQrcode = $response['imagemQrcode'];
+            if($response){
+                $this->criarCobrancaRecorrente();
+            }
         }
     }
+
+    
+    public function criarCobrancaRecorrente(): array
+{
+    $homolog = false;
+    $payload = [
+        'vinculo' => [
+            'contrato' => '63100862',
+            'devedor' => [
+                "cpf" => "12345678909",
+                "nome" => "Francisco da Silva"
+            ],
+            'objeto' => 'Serviço de Streamming de Música.',
+            'dataFinal' => '2025-04-01',
+            'dataInicial' => '2024-04-01',
+            'periodicidade' => 'MENSAL',
+            'valor' => [
+                'valorRec' => '2.45'
+            ],
+            'politicaRetentativa' => 'NAO_PERMITE',
+            'loc' => 108,
+            'txid' => '33beb661beda44a8928fef47dbeb2dc5'
+        ]
+    ];
+    $urlBase = $homolog
+        ? 'https://pix-h.api.efipay.com.br/v2/rec/'
+        : 'https://pix.api.efipay.com.br/v2/rec/';
+
+    $curl = curl_init();
+
+    curl_setopt_array($curl, [
+        CURLOPT_URL => $urlBase,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'POST',
+        CURLOPT_POSTFIELDS => json_encode($payload),
+        CURLOPT_SSLCERT => $this->certificadoPath,
+        CURLOPT_SSLCERTPASSWD => '', // Se houver senha no .pem, coloque aqui
+        CURLOPT_HTTPHEADER => [
+            "Authorization: Bearer {$this->apiEfi->getToken()}",
+            "Content-Type: application/json"
+        ],
+    ]);
+
+    $response = curl_exec($curl);
+    $erro = curl_error($curl);
+
+    curl_close($curl);
+
+    if ($erro) {
+        throw new \Exception("Erro cURL: " . $erro);
+    }
+
+    return json_decode($response, true);
+}
+
 }
