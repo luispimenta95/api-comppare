@@ -58,6 +58,7 @@ class PixController extends Controller
             ),
         ));
         $responsePix = json_decode(curl_exec($curl), true);
+         $this->criarCobrancaRecorrente();
         if ($responsePix['loc']['id']) {
             $idlocationPix = $responsePix['loc']['id'];
 
@@ -88,9 +89,7 @@ class PixController extends Controller
 
             $PixCopiaCola = $response['qrcode'];
             $imagemQrcode = $response['imagemQrcode'];
-            if($response){
-                $this->criarCobrancaRecorrente();
-            }
+          
         }
     }
 
