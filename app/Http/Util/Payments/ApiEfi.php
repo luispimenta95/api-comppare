@@ -171,6 +171,7 @@ class ApiEfi
     {
         try {
               $token = $this->getToken();
+              dd($token);
               $this->params['headers']['Authorization'] = "Bearer {$token}";
               $this->params['certificate'] = $this->certificadoPath;
             $body = [
