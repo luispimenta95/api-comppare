@@ -216,7 +216,7 @@ class ApiEfi
                 ];
             }
 
-            return json_encode($this->efiPay->createPixRecurrentCharge($this->params, $body));
+            return json_encode($this->efiPay->pixCreateCharge($this->params, $body));
         } catch (EfiException $e) {
             return json_encode(
                 [
