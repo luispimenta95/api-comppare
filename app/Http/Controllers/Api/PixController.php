@@ -24,7 +24,7 @@ class PixController extends Controller
             : storage_path('app/certificates/prd.pem');
     }
 
-    public function criarCobrancaPixSimples(): void
+    public function criarCobranca(): void
     {
         $curl = curl_init();
 
