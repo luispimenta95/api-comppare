@@ -48,7 +48,7 @@ curl_setopt_array($curl, array(
         "valor": {
         "original": "0.45"
         },
-        "chave": "chave.pix@email.com.br"
+        "chave": "contato@comppare.com.br"
     }',
     CURLOPT_SSLCERT => $this->certificadoPath, // Caminho do certificado
     CURLOPT_SSLCERTPASSWD => "",
