@@ -16,6 +16,7 @@ class ApiEfi
     private string $enviroment;
     private EfiPay $efiPay;
     private string $url;
+    private string $certificadoPath;
     public function __construct()
     {
         $this->enviroment = env('APP_ENV');
@@ -31,31 +32,12 @@ class ApiEfi
             "timeout" => 30, // Aumentar timeout
             "responseHeaders" => true
         ];
+        $this->certificadoPath = $this->enviroment == "local"
+            ? storage_path('app/certificates/hml.pem')
+            : storage_path('app/certificates/prd.pem');
 
-        // Validar se as credenciais foram carregadas
-        if (empty($this->options['clientId']) || empty($this->options['clientSecret'])) {
-            $error = 'Credenciais EFI Pay não configuradas para ambiente: ' . $this->enviroment;
-            Log::error($error, $this->options);
-            throw new \Exception($error);
-        }
-
-        try {
-            Log::info('ApiEfi - Inicializando SDK EFI Pay', [
-                'sandbox' => $this->options['sandbox'],
-                'timeout' => $this->options['timeout']
-            ]);
-            
-            $this->efiPay = new EfiPay($this->options);
-            
-            Log::info('ApiEfi - SDK EFI Pay inicializado com sucesso');
-        } catch (\Exception $e) {
-            Log::error('ApiEfi - Erro ao inicializar SDK EFI Pay', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
-            throw $e;
-        }
+   
+        
     }
 
     public function createPlan(string $name, int $frequencia): mixed
@@ -182,6 +164,7 @@ class ApiEfi
         try {
               $token = $this->getToken();
               $this->params['headers']['Authorization'] = "Bearer {$token}";
+              $this->params['certificate'] = $this->certificadoPath;
             $body = [
                 "vinculo" => [
                     "contrato" => $dados['contrato'],
@@ -307,16 +290,13 @@ class ApiEfi
             // Configurações baseadas no ambiente
             $clientId = $this->enviroment == "local" ? env('ID_EFI_HML') : env('ID_EFI_PRD');
             $clientSecret = $this->enviroment == "local" ? env('SECRET_EFI_HML') : env('SECRET_EFI_PRD');
-            $certificadoPath = $this->enviroment == "local"
-                ? storage_path('app/certificates/hml.pem')
-                : storage_path('app/certificates/prd.pem');
             $baseUrl = $this->enviroment == "local" ?
                 "https://pix-h.api.efipay.com.br" :
                 "https://pix.api.efipay.com.br";
 
             Log::info('ApiEfi - Verificando certificado', [
-                'certificado_path' => $certificadoPath,
-                'arquivo_existe' => file_exists($certificadoPath),
+                'certificado_path' => $this->certificadoPath,
+                'arquivo_existe' => file_exists($this->certificadoPath),
                 'ambiente' => $this->enviroment
             ]);
 
@@ -349,25 +329,25 @@ class ApiEfi
             ];
 
             // Verificar se o certificado existe e adicionar às opções
-            if (file_exists($certificadoPath)) {
+            if (file_exists($this->certificadoPath)) {
                 // Verificar se é um arquivo válido e legível
-                if (is_readable($certificadoPath)) {
-                    $curlOptions[CURLOPT_SSLCERT] = $certificadoPath;
+                if (is_readable($this->certificadoPath)) {
+                    $curlOptions[CURLOPT_SSLCERT] = $this->certificadoPath;
                     $curlOptions[CURLOPT_SSLCERTPASSWD] = env('EFI_CERTIFICADO_PASSWORD', '');
                     $curlOptions[CURLOPT_SSL_VERIFYPEER] = true;
                     $curlOptions[CURLOPT_SSL_VERIFYHOST] = 2;
 
-                    Log::info('ApiEfi - Usando certificado SSL', ['certificado' => $certificadoPath]);
+                    Log::info('ApiEfi - Usando certificado SSL', ['certificado' => $this->certificadoPath]);
                 } else {
                     Log::warning('ApiEfi - Certificado não é legível, continuando sem SSL client cert', [
-                        'certificado' => $certificadoPath
+                        'certificado' => $this->certificadoPath
                     ]);
                     $curlOptions[CURLOPT_SSL_VERIFYPEER] = false;
                     $curlOptions[CURLOPT_SSL_VERIFYHOST] = false;
                 }
             } else {
                 Log::warning('ApiEfi - Certificado não encontrado, continuando sem SSL client cert', [
-                    'certificado_esperado' => $certificadoPath
+                    'certificado_esperado' => $this->certificadoPath
                 ]);
                 // Para testes sem certificado (não recomendado em produção)
                 $curlOptions[CURLOPT_SSL_VERIFYPEER] = false;
@@ -379,7 +359,7 @@ class ApiEfi
             Log::info('ApiEfi - Executando requisição para obter token', [
                 'url' => $baseUrl . "/oauth/token",
                 'environment' => $this->enviroment,
-                'usando_certificado' => file_exists($certificadoPath) && is_readable($certificadoPath)
+                'usando_certificado' => file_exists($this->certificadoPath) && is_readable($this->certificadoPath)
             ]);
 
             $response = curl_exec($curl);
