@@ -24,7 +24,7 @@ class PixController extends Controller
             : storage_path('app/certificates/prd.pem');
     }
 
-    public function criarCobranca(): void
+    public function criarCobranca(): void // Mover chave pix para o arquivo de configuração
     {
         $curl = curl_init();
 
@@ -48,7 +48,7 @@ class PixController extends Controller
         "valor": {
         "original": "2.45"
         },
-        "chave": "contato@comppare.com.br"
+        "chave": "contato@comppare.com.br" 
     }',
             CURLOPT_SSLCERT => $this->certificadoPath, // Caminho do certificado
             CURLOPT_SSLCERTPASSWD => "",
@@ -58,139 +58,89 @@ class PixController extends Controller
             ),
         ));
         $responsePix = json_decode(curl_exec($curl), true);
-   $locationId = $responsePix['loc']['id'];
-            $txid = $responsePix['txid'];
-            
-           
-            
-            // Segunda requisição para v2/locrec
-            $curlLocrec = curl_init();
-            
-            $bodyLocrec = json_encode([
-                "ativacao" => [
-                    "txid" => $txid
-                ]
-            ]);
-            
-   $urlLocrec = $this->enviroment === 'local' 
+        curl_close($curl);
+        
+        $this->createRecurrentCharge($responsePix);
+        $this->generateQRCode($responsePix['txid']);
+
+    }
+    
+
+    
+
+
+private function createRecurrentCharge(array $responsePix): void
+{
+    if (isset($responsePix['loc']['id'])) {
+        $locationId = $responsePix['loc']['id'];
+        $txid = $responsePix['txid'];
+           $curlLocrec = curl_init();
+
+        $bodyLocrec = json_encode([
+            "ativacao" => [
+                "txid" => $txid
+            ]
+        ]);
+
+        $urlLocrec = $this->enviroment === 'local'
             ? "https://pix-h.api.efipay.com.br/v2/locrec/{$locationId}?tipoCob=cob"
             : "https://pix.api.efipay.com.br/v2/locrec/{$locationId}?tipoCob=cob";
-            
-            curl_setopt_array($curlLocrec, array(
-                CURLOPT_URL => $urlLocrec,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING => '',
-                CURLOPT_MAXREDIRS => 10,
-                CURLOPT_TIMEOUT => 30,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST => 'POST',
-                CURLOPT_POSTFIELDS => $bodyLocrec,
-                CURLOPT_SSLCERT => $this->certificadoPath,
-                CURLOPT_SSLCERTPASSWD => "",
-                CURLOPT_HTTPHEADER => array(
-                    "Authorization: Bearer " . $this->apiEfi->getToken(),
-                    "Content-Type: application/json"
-                ),
-            ));
-            
-            $responseLocrec = curl_exec($curlLocrec);
-            dd($responseLocrec);
-        
 
-        /* QR code generation 
-        if ($responsePix['loc']['id']) {
-            $idlocationPix = $responsePix['loc']['id'];
+        curl_setopt_array($curlLocrec, array(
+            CURLOPT_URL => $urlLocrec,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => $bodyLocrec,
+            CURLOPT_SSLCERT => $this->certificadoPath,
+            CURLOPT_SSLCERTPASSWD => "",
+            CURLOPT_HTTPHEADER => array(
+                "Authorization: Bearer " . $this->apiEfi->getToken(),
+                "Content-Type: application/json"
+            ),
+        ));
 
-            // Obtêm o Pix Copia e Cola e QR Code
-            $curl = curl_init();
+        $responseLocrec = curl_exec($curlLocrec);
+        curl_close($curlLocrec);
 
-            curl_setopt_array($curl, array(
-                CURLOPT_URL =>  $this->enviroment === 'local' ? 'https://pix-h.api.efipay.com.br/v2/loc/' . $idlocationPix . '/qrcode' : 'https://pix.api.efipay.com.br/v2/loc/' . $idlocationPix . '/qrcode',
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING => '',
-                CURLOPT_MAXREDIRS => 10,
-                CURLOPT_TIMEOUT => 0,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST => 'GET',
-                CURLOPT_SSLCERT => $this->certificadoPath, // Caminho do certificado
-                CURLOPT_SSLCERTPASSWD => "",
-                CURLOPT_HTTPHEADER => array(
-                    "Authorization: Bearer " . $this->apiEfi->getToken(),
-                ),
-            ));
+        // Aqui você pode fazer o que for necessário com o locationId e txid
+        Log::info("Location ID: {$locationId}, TXID: {$txid}");
+    } else {
+        Log::error("Erro ao criar cobrança recorrente: " . json_encode($responsePix));
+    }   
 
-            $response = json_decode(curl_exec($curl), true);
-        
-
-            curl_close($curl);
-
-
-            $PixCopiaCola = $response['qrcode'];
-            $imagemQrcode = $response['imagemQrcode'];
-            */
-          
-        }
-    
-
-    
-    public function criarCobrancaRecorrente(): array
+}
+private function generateQRCode(string $txid): void
 {
-    $homolog = false;
-    $payload = [
-        'vinculo' => [
-            'contrato' => '63100862',
-            'devedor' => [
-                "cpf" => "12345678909",
-                "nome" => "Francisco da Silva"
-            ],
-            'objeto' => 'Serviço de Streamming de Música.',
-            'dataFinal' => '2025-04-01',
-            'dataInicial' => '2024-04-01',
-            'periodicidade' => 'MENSAL',
-            'valor' => [
-                'valorRec' => '2.45'
-            ],
-            'politicaRetentativa' => 'NAO_PERMITE',
-            'loc' => 108,
-            'txid' => '33beb661beda44a8928fef47dbeb2dc5'
-        ]
-    ];
-    $urlBase = $homolog
-        ? 'https://pix-h.api.efipay.com.br/v2/rec/'
-        : 'https://pix.api.efipay.com.br/v2/rec/';
-
     $curl = curl_init();
 
-    curl_setopt_array($curl, [
-        CURLOPT_URL => $urlBase,
+    curl_setopt_array($curl, array(
+        CURLOPT_URL => $this->enviroment === 'local' ? "https://pix-h.api.efipay.com.br/v2/loc/{$txid}/qrcode" : "https://pix.api.efipay.com.br/v2/loc/{$txid}/qrcode",
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_ENCODING => '',
         CURLOPT_MAXREDIRS => 10,
         CURLOPT_TIMEOUT => 30,
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => 'POST',
-        CURLOPT_POSTFIELDS => json_encode($payload),
+        CURLOPT_CUSTOMREQUEST => 'GET',
         CURLOPT_SSLCERT => $this->certificadoPath,
-        CURLOPT_SSLCERTPASSWD => '', // Se houver senha no .pem, coloque aqui
-        CURLOPT_HTTPHEADER => [
-            "Authorization: Bearer {$this->apiEfi->getToken()}",
+        CURLOPT_SSLCERTPASSWD => "",
+        CURLOPT_HTTPHEADER => array(
+            "Authorization: Bearer " . $this->apiEfi->getToken(),
             "Content-Type: application/json"
-        ],
-    ]);
+        ),
+    ));
 
-    $response = curl_exec($curl);
-    $erro = curl_error($curl);
-
+    $responseQRCode = curl_exec($curl);
     curl_close($curl);
-
-    if ($erro) {
-        throw new \Exception("Erro cURL: " . $erro);
-    }
-
-    return json_decode($response, true);
+    $PixCopiaCola = $responseQRCode['qrcode'];
+    $imagemQrcode = $responseQRCode['imagemQrcode'];
 }
 
+    
 }
+
