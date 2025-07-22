@@ -151,17 +151,16 @@ class PixController extends Controller
     /**
      * Passo 3: Criar Location Rec - POST /v2/locrec
      */
-    private function criarLocationRec(string $txid): array
+    private function criarLocationRec(): array
     {
         $curl = curl_init();
-
-        $url = $this->enviroment === 'local'
+        
+        $url = $this->enviroment === 'local' 
             ? "https://pix-h.api.efipay.com.br/v2/locrec"
             : "https://pix.api.efipay.com.br/v2/locrec";
-
+        
         $body = json_encode([
-            "tipoCob" => "rec",
-            //"txId" => $txid
+            "tipoCob" => "rec"
         ]);
 
         curl_setopt_array($curl, [
