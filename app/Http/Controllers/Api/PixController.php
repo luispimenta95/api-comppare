@@ -4,6 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Util\Payments\ApiEfi;
+use App\Models\PagamentoPix;
+use App\Models\Usuarios;
+use App\Mail\EmailPix;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class PixController extends Controller
 {
@@ -22,53 +29,129 @@ class PixController extends Controller
     }
 
     /**
-     * Fluxo completo: COB → LOCREC → REC → QRCODE
+     * Fluxo completo: COB → LOCREC → REC → QRCODE → SAVE → EMAIL
      */
-    public function criarCobranca()
+    public function criarCobranca(Request $request = null)
     {
+        // Dados do usuário (pode vir da request ou usar padrão para teste)
+        $idUsuario = $request?->input('idUsuario') ?? 1; // ID padrão para teste
+        $emailUsuario = $request?->input('email') ?? 'teste@comppare.com.br';
+        $nomeUsuario = $request?->input('nome') ?? 'Fulano';
 
-        
         // Passo 1: Definir TXID
         $txid = $this->definirTxid();
+        $numeroContrato = strval(mt_rand(10000000, 99999999));
       
-        
         // Passo 2: Criar COB
         $cobResponse = $this->criarCob($txid);
         
         if (!$cobResponse['success']) {
+            Log::error('Falha na criação da COB', $cobResponse);
+            return null;
         }
         
         // Passo 3: Criar Location Rec
         $locrecResponse = $this->criarLocationRec();
         
         if (!$locrecResponse['success']) {
-            
+            Log::error('Falha na criação do Location Rec', $locrecResponse);
+            return null;
         }
         
         $locrecId = $locrecResponse['data']['id'] ?? null;
         if (!$locrecId) {
-            return;
+            Log::error('ID do Location Rec não encontrado');
+            return null;
         }
         
         // Passo 4: Criar REC
         $recResponse = $this->criarRec($txid, $locrecId);
         
         if (!$recResponse['success']) {
-            return;
+            Log::error('Falha na criação da REC', $recResponse);
+            return null;
         }
-
         
-        $recId = $recResponse['data']['idRec'] ?? null;
+        $recId = $recResponse['data']['id'] ?? null;
         if (!$recId) {
-            return;
+            Log::error('ID da REC não encontrado');
+            return null;
         }
         
         // Passo 5: Resgatar QR Code
         $qrcodeResponse = $this->resgatarQRCode($recId, $txid);
-        $PixCopiaCola = $qrcodeResponse['data']['dadosQR']['pixCopiaECola'] ?? null;
-        return $PixCopiaCola;
+        $pixCopiaECola = $qrcodeResponse['data']['dadosQR']['pixCopiaECola'] ?? null;
+        
+        if (!$pixCopiaECola) {
+            Log::error('PIX Copia e Cola não encontrado', $qrcodeResponse);
+            return null;
+        }
 
+        // Passo 6: Salvar no banco de dados
+        try {
+            $pagamentoPix = PagamentoPix::create([
+                'idUsuario' => $idUsuario,
+                'txid' => $txid,
+                'numeroContrato' => $numeroContrato,
+                'pixCopiaECola' => $pixCopiaECola,
+                'valor' => 2.45,
+                'chavePixRecebedor' => 'contato@comppare.com.br',
+                'nomeDevedor' => 'Fulano',
+                'cpfDevedor' => '02342288140',
+                'locationId' => $locrecId,
+                'recId' => $recId,
+                'status' => 'ATIVA',
+                'statusPagamento' => 'PENDENTE',
+                'dataInicial' => '2025-07-23',
+                'periodicidade' => 'MENSAL',
+                'objeto' => 'Serviço de Streamming de Música.',
+                'responseApiCompleta' => [
+                    'cob' => $cobResponse['data'],
+                    'locrec' => $locrecResponse['data'],
+                    'rec' => $recResponse['data'],
+                    'qrcode' => $qrcodeResponse['data']
+                ]
+            ]);
 
+            Log::info('Pagamento PIX salvo no banco', ['id' => $pagamentoPix->id]);
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao salvar pagamento PIX', [
+                'error' => $e->getMessage(),
+                'txid' => $txid
+            ]);
+        }
+
+        // Passo 7: Enviar email com o código PIX
+        try {
+            $dadosEmail = [
+                'nome' => $nomeUsuario,
+                'valor' => 2.45,
+                'pixCopiaECola' => $pixCopiaECola,
+                'contrato' => $numeroContrato,
+                'objeto' => 'Serviço de Streamming de Música.',
+                'periodicidade' => 'MENSAL',
+                'dataInicial' => '2025-07-23',
+                'dataFinal' => null,
+                'txid' => $txid
+            ];
+
+            Mail::to($emailUsuario)->send(new EmailPix($dadosEmail));
+            
+            Log::info('Email PIX enviado com sucesso', [
+                'email' => $emailUsuario,
+                'txid' => $txid
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao enviar email PIX', [
+                'error' => $e->getMessage(),
+                'email' => $emailUsuario,
+                'txid' => $txid
+            ]);
+        }
+
+        return $pixCopiaECola;
     }
 
     /**
