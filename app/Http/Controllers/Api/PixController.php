@@ -203,7 +203,7 @@ class PixController extends Controller
         
         $body = json_encode([
             "vinculo" => [
-                "contrato" => "63100862",
+                "contrato" => strval(mt_rand(10000000, 99999999)),
                 "devedor" => [
                     "cpf" => "02342288140",
                     "nome" => "Fulano"
