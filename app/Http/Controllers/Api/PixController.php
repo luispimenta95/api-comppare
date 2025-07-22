@@ -151,59 +151,48 @@ class PixController extends Controller
     /**
      * Passo 3: Criar Location Rec - POST /v2/locrec
      */
-   private function criarLocationRec(): array
-{
-    $curl = curl_init();
-    
-    $url = $this->enviroment === 'local' 
-        ? "https://pix-h.api.efipay.com.br/v2/locrec"
-        : "https://pix.api.efipay.com.br/v2/locrec";
-    
-    // Schema correto para location rec
-    $body = json_encode([
-        "calendario" => [
-            "dataInicio" => date('Y-m-d'),
-            "dataFinal" => date('Y-m-d', strtotime('+1 year'))
-        ],
-        "devedor" => [
-            "cpf" => "12345678909",
-            "nome" => "Francisco da Silva"
-        ],
-        "valor" => [
-            "valorRec" => "2.45"
-        ],
-        "chave" => "contato@comppare.com.br",
-        "solicitacaoPagador" => "Cobranca recorrente"
-    ]);
+    private function criarLocationRec(string $txid): array
+    {
+        $curl = curl_init();
 
-    curl_setopt_array($curl, [
-        CURLOPT_URL => $url,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 30,
-        CURLOPT_CUSTOMREQUEST => 'POST',
-        CURLOPT_POSTFIELDS => $body,
-        CURLOPT_SSLCERT => $this->certificadoPath,
-        CURLOPT_SSLCERTPASSWD => "",
-        CURLOPT_HTTPHEADER => [
-            "Authorization: Bearer " . $this->apiEfi->getToken(),
-            "Content-Type: application/json"
-        ],
-    ]);
+        $url = $this->enviroment === 'local'
+            ? "https://pix-h.api.efipay.com.br/v2/locrec"
+            : "https://pix.api.efipay.com.br/v2/locrec";
 
-    $response = curl_exec($curl);
-    $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-    $error = curl_error($curl);
-    curl_close($curl);
+        $body = json_encode([
+            "tipoCob" => "rec",
+            //"txId" => $txid
+        ]);
 
-    return [
-        'success' => !$error && ($httpCode >= 200 && $httpCode < 300),
-        'http_code' => $httpCode,
-        'error' => $error,
-        'data' => $response ? json_decode($response, true) : null,
-        'url' => $url,
-        'body' => $body
-    ];
-}
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => $body,
+            CURLOPT_SSLCERT => $this->certificadoPath,
+            CURLOPT_SSLCERTPASSWD => "",
+            CURLOPT_HTTPHEADER => [
+                "Authorization: Bearer " . $this->apiEfi->getToken(),
+                "Content-Type: application/json"
+            ],
+        ]);
+
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $error = curl_error($curl);
+        curl_close($curl);
+
+        return [
+            'success' => !$error && ($httpCode >= 200 && $httpCode < 300),
+            'http_code' => $httpCode,
+            'error' => $error,
+            'data' => $response ? json_decode($response, true) : null,
+            'url' => $url,
+            'body' => $body
+        ];
+    }
+
     /**
      * Passo 4: Criar REC - POST /v2/rec
      */
