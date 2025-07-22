@@ -49,7 +49,6 @@ class PixController extends Controller
         "valorRec": "2.45"
         },
         "chave": "contato@comppare.com.br",
-        "txid": "33beb661beda44a8928fef47dbeb2dc5"
     }',
             CURLOPT_SSLCERT => $this->certificadoPath, // Caminho do certificado
             CURLOPT_SSLCERTPASSWD => "",
