@@ -58,6 +58,7 @@ class PixController extends Controller
             ),
         ));
         $responsePix = json_decode(curl_exec($curl), true);
+        dd($responsePix);
    $locationId = $responsePix['loc']['id'];
             $txid = $responsePix['txid'] ?? '33beb661beda44a8928fef47dbeb2dc5';
             
