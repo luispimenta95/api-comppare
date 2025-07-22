@@ -52,7 +52,6 @@ class PixController extends Controller
         $this->exibirResultado('3️⃣ CRIAR LOCATION REC (POST /v2/locrec)', $locrecResponse);
         
         if (!$locrecResponse['success']) {
-            echo '<p style="color: red;">❌ Falha na criação do Location Rec. Processo interrompido.</p>';
             return;
         }
         
