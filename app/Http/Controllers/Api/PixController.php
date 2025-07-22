@@ -68,50 +68,74 @@ class PixController extends Controller
 
 
 
-    private function createRecurrentCharge(array $responsePix): void
-    {
-        if (isset($responsePix['loc']['id'])) {
-            $locationId = $responsePix['loc']['id'];
-            $txid = $responsePix['txid'];
-            $curlLocrec = curl_init();
+  private function createRecurrentCharge(array $responsePix): void
+{
+    echo '<h2>🔄 2. CONSULTA LOCATION RECORRENTE (v2/locrec)</h2>';
+    
+    if (isset($responsePix['txid'])) {
+        $txid = $responsePix['txid'];
+        $curlLocrec = curl_init();
 
-            $bodyLocrec = json_encode([
-                "ativacao" => [
-                    "txid" => $txid
-                ]
-            ]);
+        $urlLocrec = $this->enviroment === 'local'
+            ? "https://pix-h.api.efipay.com.br/v2/locrec/{$txid}"
+            : "https://pix.api.efipay.com.br/v2/locrec/{$txid}";
 
-            $urlLocrec = $this->enviroment === 'local'
-                ? "https://pix-h.api.efipay.com.br/v2/locrec/{$locationId}?tipoCob=cob"
-                : "https://pix.api.efipay.com.br/v2/locrec/{$locationId}?tipoCob=cob";
+        echo '<p><strong>URL:</strong> ' . $urlLocrec . '</p>';
+        echo '<p><strong>TXID:</strong> ' . $txid . '</p>';
 
-            curl_setopt_array($curlLocrec, array(
-                CURLOPT_URL => $urlLocrec,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_ENCODING => '',
-                CURLOPT_MAXREDIRS => 10,
-                CURLOPT_TIMEOUT => 30,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST => 'POST',
-                CURLOPT_POSTFIELDS => $bodyLocrec,
-                CURLOPT_SSLCERT => $this->certificadoPath,
-                CURLOPT_SSLCERTPASSWD => "",
-                CURLOPT_HTTPHEADER => array(
-                    "Authorization: Bearer " . $this->apiEfi->getToken(),
-                    "Content-Type: application/json"
-                ),
-            ));
+        curl_setopt_array($curlLocrec, array(
+            CURLOPT_URL => $urlLocrec,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'GET',
+            CURLOPT_SSLCERT => $this->certificadoPath,
+            CURLOPT_SSLCERTPASSWD => "",
+            CURLOPT_HTTPHEADER => array(
+                "Authorization: Bearer " . $this->apiEfi->getToken(),
+                "Content-Type: application/json"
+            ),
+        ));
 
-            $responseLocrec = curl_exec($curlLocrec);
-            curl_close($curlLocrec);
+        $responseLocrec = curl_exec($curlLocrec);
+        $httpCode = curl_getinfo($curlLocrec, CURLINFO_HTTP_CODE);
+        $error = curl_error($curlLocrec);
+        curl_close($curlLocrec);
 
-            // Aqui você pode fazer o que for necessário com o locationId e txid
-            Log::info("Location ID: {$locationId}, TXID: {$txid}");
-        } else {
-            Log::error("Erro ao criar cobrança recorrente: " . json_encode($responsePix));
+        if ($responseLocrec) {
+            $responseLocrecData = json_decode($responseLocrec, true);
         }
+
+        echo '<p><strong>HTTP Code:</strong> ' . $httpCode . '</p>';
+        echo '<p><strong>Erro cURL:</strong> ' . ($error ?? 'Nenhum') . '</p>';
+        echo '<p><strong>Resposta:</strong></p>';
+        echo '<pre style="background: #f5f5f5; padding: 10px; border-radius: 5px;">' . 
+             json_encode($responseLocrecData ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . 
+             '</pre>';
+
+        if (!$error && ($httpCode === 200 || $httpCode === 201)) {
+            echo '<p style="color: green;">✅ <strong>Consulta locrec realizada com sucesso!</strong></p>';
+            Log::info("Consulta locrec bem-sucedida para TXID: {$txid}", $responseLocrecData ?? []);
+        } else {
+            echo '<p style="color: red;">❌ <strong>Erro na consulta locrec</strong></p>';
+            Log::error("Erro na consulta locrec para TXID: {$txid}", [
+                'error' => $error,
+                'http_code' => $httpCode,
+                'response' => $responseLocrecData ?? null
+            ]);
+        }
+    } else {
+        echo '<p style="color: red;">❌ <strong>TXID não encontrado na resposta PIX</strong></p>';
+        echo '<p>Resposta recebida:</p>';
+        echo '<pre style="background: #ffe6e6; padding: 10px; border-radius: 5px;">' . 
+             json_encode($responsePix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . 
+             '</pre>';
+        Log::error("TXID não encontrado na resposta PIX: " . json_encode($responsePix));
     }
+}
     private function generateQRCode(string $txid): void
     {
         $curl = curl_init();
