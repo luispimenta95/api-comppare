@@ -106,6 +106,7 @@ class PixController extends Controller
             ));
             
             $responseLocrec = curl_exec($curlLocrec);
+            dd($responseLocrec);
             $httpCodeLocrec = curl_getinfo($curlLocrec, CURLINFO_HTTP_CODE);
             $errorLocrec = curl_error($curlLocrec);
             
