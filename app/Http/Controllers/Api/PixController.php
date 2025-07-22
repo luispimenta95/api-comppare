@@ -198,7 +198,7 @@ class PixController extends Controller
                 "periodicidade" => "MENSAL"
             ],
             "valor" => [
-                "valorRec" => "35.00"
+                "valorRec" => "2.45"
             ],
             "politicaRetentativa" => "NAO_PERMITE",
             "loc" => $locrecId,
