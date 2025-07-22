@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Util\Helper;
 use App\Http\Util\Payments\ApiEfi;
 use App\Models\PagamentoPix;
 use App\Models\Usuarios;
 use App\Mail\EmailPix;
+use App\Models\Planos;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -31,19 +33,20 @@ class PixController extends Controller
     /**
      * Fluxo completo: COB → LOCREC → REC → QRCODE → SAVE → EMAIL
      */
-    public function criarCobranca(Request $request = null)
+    public function criarCobranca(Request $request)
     {
         // Dados do usuário (pode vir da request ou usar padrão para teste)
-        $idUsuario = $request?->input('idUsuario') ?? 1; // ID padrão para teste
-        $emailUsuario = $request?->input('email') ?? 'teste@comppare.com.br';
-        $nomeUsuario = $request?->input('nome') ?? 'Fulano';
-
+        $campos = ['usuario', 'plano'];
+        $campos = Helper::validarRequest($request, $campos);
+        
+        $usuario = Usuarios::find($request->usuario);
+        $plano = Planos::find($request->plano);
         // Passo 1: Definir TXID
         $txid = $this->definirTxid();
         $numeroContrato = strval(mt_rand(10000000, 99999999));
       
         // Passo 2: Criar COB
-        $cobResponse = $this->criarCob($txid);
+        $cobResponse = $this->criarCob($txid , $usuario, $plano);
         
         if (!$cobResponse['success']) {
             Log::error('Falha na criação da COB', $cobResponse);
@@ -65,7 +68,7 @@ class PixController extends Controller
         }
         
         // Passo 4: Criar REC
-        $recResponse = $this->criarRec($txid, $locrecId);
+        $recResponse = $this->criarRec($txid, $locrecId, $usuario, $plano);
         
         if (!$recResponse['success']) {
             Log::error('Falha na criação da REC', $recResponse);
@@ -90,21 +93,21 @@ class PixController extends Controller
         // Passo 6: Salvar no banco de dados
         try {
             $pagamentoPix = PagamentoPix::create([
-                'idUsuario' => $idUsuario,
+                'idUsuario' => $usuario->id,
                 'txid' => $txid,
                 'numeroContrato' => $numeroContrato,
                 'pixCopiaECola' => $pixCopiaECola,
                 'valor' => 2.45,
                 'chavePixRecebedor' => 'contato@comppare.com.br',
-                'nomeDevedor' => 'Fulano',
-                'cpfDevedor' => '02342288140',
+                'nomeDevedor' =>  $usuario->primeiroNome . " " . $usuario->sobrenome,
+                'cpfDevedor' => $usuario->cpf,
                 'locationId' => $locrecId,
                 'recId' => $recId,
                 'status' => 'ATIVA',
                 'statusPagamento' => 'PENDENTE',
                 'dataInicial' => '2025-07-23',
                 'periodicidade' => 'MENSAL',
-                'objeto' => 'Serviço de Streamming de Música.',
+                'objeto' => $plano->nome,
                 'responseApiCompleta' => [
                     'cob' => $cobResponse['data'],
                     'locrec' => $locrecResponse['data'],
@@ -125,7 +128,7 @@ class PixController extends Controller
         // Passo 7: Enviar email com o código PIX
         try {
             $dadosEmail = [
-                'nome' => $nomeUsuario,
+                'nome' => $usuario->primeiroNome . " " . $usuario->sobrenome,
                 'valor' => 2.45,
                 'pixCopiaECola' => $pixCopiaECola,
                 'contrato' => $numeroContrato,
@@ -136,17 +139,17 @@ class PixController extends Controller
                 'txid' => $txid
             ];
 
-            Mail::to($emailUsuario)->send(new EmailPix($dadosEmail));
+            Mail::to($usuario->email)->send(new EmailPix($dadosEmail));
             
             Log::info('Email PIX enviado com sucesso', [
-                'email' => $emailUsuario,
+                'email' => $usuario->email,
                 'txid' => $txid
             ]);
 
         } catch (\Exception $e) {
             Log::error('Erro ao enviar email PIX', [
                 'error' => $e->getMessage(),
-                'email' => $emailUsuario,
+                'email' => $usuario->email,
                 'txid' => $txid
             ]);
         }
@@ -165,7 +168,7 @@ class PixController extends Controller
     /**
      * Passo 2: Criar COB - PUT /v2/cob/:txid
      */
-    private function criarCob(string $txid): array
+    private function criarCob(string $txid, $usuario, $plano): array
     {
         $curl = curl_init();
         
@@ -178,11 +181,11 @@ class PixController extends Controller
                 "expiracao" => 3600
             ],
             "devedor" => [
-                "cpf" => "02342288140",
-                "nome" => "Fulano"
+                "cpf" => $usuario->cpf,
+                "nome" => $usuario->primeiroNome . " " . $usuario->sobrenome
             ],
             "valor" => [
-                "original" => "2.45"
+                "original" => $plano->valor
             ],
             "chave" => "contato@comppare.com.br"
         ]);
@@ -259,7 +262,7 @@ class PixController extends Controller
     /**
      * Passo 4: Criar REC - POST /v2/rec
      */
-    private function criarRec(string $txid, $locrecId): array
+    private function criarRec(string $txid, $locrecId, $usuario, $plano): array
     {
         $curl = curl_init();
         
@@ -271,17 +274,17 @@ class PixController extends Controller
             "vinculo" => [
                 "contrato" => strval(mt_rand(10000000, 99999999)),
                 "devedor" => [
-                    "cpf" => "02342288140",
-                    "nome" => "Fulano"
+                    "cpf" => $usuario->cpf,
+                    "nome" => $usuario->primeiroNome . " " . $usuario->sobrenome
                 ],
-                "objeto" => "Serviço de Streamming de Música."
+                "objeto" => $plano->nome
             ],
             "calendario" => [
-                "dataInicial" => "2025-07-23",
+                "dataInicial" => date('Y-m-d'),
                 "periodicidade" => "MENSAL"
             ],
             "valor" => [
-                "valorRec" => "2.45"
+                "valorRec" => $plano->valor
             ],
             "politicaRetentativa" => "NAO_PERMITE",
             "loc" => $locrecId,

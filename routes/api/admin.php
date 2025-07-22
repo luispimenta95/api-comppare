@@ -15,6 +15,7 @@ Route::prefix('admin')->group(
     function () {
 
         Route::post('/planos/cadastrar', [PlanoController::class, 'createPlan']);
+        Route::get('/planos/listar', [PlanoController::class, 'index']);
         Route::get('/usuarios/listar', [UsuarioController::class, 'index']);
 
         Route::get('/planos/recuperar/{id}', [PlanoController::class, 'getPlano']);
