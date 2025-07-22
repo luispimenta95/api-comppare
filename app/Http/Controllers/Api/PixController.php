@@ -60,6 +60,7 @@ class PixController extends Controller
         $responsePix = json_decode(curl_exec($curl), true);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         $error = curl_error($curl);
+        dd($error);
         
         curl_close($curl);
         
