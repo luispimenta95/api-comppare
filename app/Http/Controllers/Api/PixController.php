@@ -61,7 +61,7 @@ class PixController extends Controller
         curl_close($curl);
 
         $this->createRecurrentCharge($responsePix);
-        $this->generateQRCode($responsePix['txid']);
+      //  $this->generateQRCode($responsePix['txid']);
     }
 
 
@@ -72,8 +72,8 @@ class PixController extends Controller
 {
     echo '<h2>🔄 2. CONSULTA LOCATION RECORRENTE (v2/locrec)</h2>';
     
-    if (isset($responsePix['txid'])) {
-        $txid = $responsePix['txid'];
+    if (isset($responsePix['loc']['id'])) {
+        $txid = $responsePix['loc']['id'];
         $curlLocrec = curl_init();
 
         $urlLocrec = $this->enviroment === 'local'
