@@ -191,7 +191,7 @@ class PixController extends Controller
     /**
      * Passo 4: Criar REC - POST /v2/rec
      */
-    private function criarRec(string $txid, int $locrecId): array
+    private function criarRec(string $txid, $locrecId): array
     {
         $curl = curl_init();
         
@@ -203,9 +203,9 @@ class PixController extends Controller
             "ativacao" => [
                 "dadosJornada" => [
                     "txId" => $txid
-                ]
-            ],
-            "loc" => $locrecId
+                ],
+                "loc" => $locrecId
+            ]
         ]);
 
         curl_setopt_array($curl, [
