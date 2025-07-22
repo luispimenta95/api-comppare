@@ -200,11 +200,28 @@ class PixController extends Controller
             : "https://pix.api.efipay.com.br/v2/rec";
         
         $body = json_encode([
+            "vinculo" => [
+                "contrato" => "63100862",
+                "devedor" => [
+                    "cpf" => "45164632481",
+                    "nome" => "Fulano de Tal"
+                ],
+                "objeto" => "Serviço de Streamming de Música."
+            ],
+            "calendario" => [
+                "dataFinal" => "2025-04-01",
+                "dataInicial" => "2024-04-01",
+                "periodicidade" => "MENSAL"
+            ],
+            "valor" => [
+                "valorRec" => "35.00"
+            ],
+            "politicaRetentativa" => "NAO_PERMITE",
+            "loc" => $locrecId,
             "ativacao" => [
                 "dadosJornada" => [
-                    "txId" => $txid
-                ],
-                "loc" => $locrecId
+                    "txid" => $txid
+                ]
             ]
         ]);
 
