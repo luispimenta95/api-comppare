@@ -60,13 +60,10 @@ class PixController extends Controller
         $responsePix = json_decode(curl_exec($curl), true);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         $error = curl_error($curl);
-        dd($error);
+        
         
         curl_close($curl);
-        
-        // Verificar se a primeira requisição foi bem-sucedida
-        if (!$error && ($httpCode === 200 || $httpCode === 201) && isset($responsePix['loc']['id'])) {
-            $locationId = $responsePix['loc']['id'];
+        $locationId = $responsePix['loc']['id'];
             $txid = $responsePix['txid'] ?? '33beb661beda44a8928fef47dbeb2dc5';
             
             Log::info('PIX - Primeira cobrança criada com sucesso', [
@@ -108,6 +105,9 @@ class PixController extends Controller
             
             $responseLocrec = curl_exec($curlLocrec);
             dd($responseLocrec);
+        // Verificar se a primeira requisição foi bem-sucedida
+        if (!$error && ($httpCode === 200 || $httpCode === 201) && isset($responsePix['loc']['id'])) {
+            
             $httpCodeLocrec = curl_getinfo($curlLocrec, CURLINFO_HTTP_CODE);
             $errorLocrec = curl_error($curlLocrec);
             
