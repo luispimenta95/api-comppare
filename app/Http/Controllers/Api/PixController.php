@@ -110,8 +110,8 @@ class PixController extends Controller
                 "expiracao" => 3600
             ],
             "devedor" => [
-                "cpf" => "12345678909",
-                "nome" => "Francisco da Silva"
+                "cpf" => "02342288140",
+                "nome" => "Fulano"
             ],
             "valor" => [
                 "original" => "2.45"
@@ -203,8 +203,8 @@ class PixController extends Controller
             "vinculo" => [
                 "contrato" => "63100862",
                 "devedor" => [
-                    "cpf" => "45164632481",
-                    "nome" => "Fulano de Tal"
+                    "cpf" => "02342288140",
+                    "nome" => "Fulano"
                 ],
                 "objeto" => "Serviço de Streamming de Música."
             ],
