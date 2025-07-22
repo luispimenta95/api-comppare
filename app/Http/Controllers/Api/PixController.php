@@ -159,16 +159,13 @@ class PixController extends Controller
             ? "https://pix-h.api.efipay.com.br/v2/locrec"
             : "https://pix.api.efipay.com.br/v2/locrec";
         
-        $body = json_encode([
-            "tipoCob" => "rec"
-        ]);
+       
 
         curl_setopt_array($curl, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 30,
             CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => $body,
             CURLOPT_SSLCERT => $this->certificadoPath,
             CURLOPT_SSLCERTPASSWD => "",
             CURLOPT_HTTPHEADER => [
@@ -187,8 +184,7 @@ class PixController extends Controller
             'http_code' => $httpCode,
             'error' => $error,
             'data' => $response ? json_decode($response, true) : null,
-            'url' => $url,
-            'body' => $body
+            'url' => $url
         ];
     }
 
