@@ -46,9 +46,10 @@ class PixController extends Controller
         "nome": "Francisco da Silva"
         },
         "valor": {
-        "original": "2.45"
+        "valorRec": "2.45"
         },
-        "chave": "contato@comppare.com.br"
+        "chave": "contato@comppare.com.br",
+        "txid": "33beb661beda44a8928fef47dbeb2dc5"
     }',
             CURLOPT_SSLCERT => $this->certificadoPath, // Caminho do certificado
             CURLOPT_SSLCERTPASSWD => "",
@@ -58,98 +59,109 @@ class PixController extends Controller
             ),
         ));
         $responsePix = json_decode(curl_exec($curl), true);
-         $this->criarCobrancaRecorrente();
-        if ($responsePix['loc']['id']) {
-            $idlocationPix = $responsePix['loc']['id'];
-
-            // Obtêm o Pix Copia e Cola e QR Code
-            $curl = curl_init();
-
-            curl_setopt_array($curl, array(
-                CURLOPT_URL =>  $this->enviroment === 'local' ? 'https://pix-h.api.efipay.com.br/v2/loc/' . $idlocationPix . '/qrcode' : 'https://pix.api.efipay.com.br/v2/loc/' . $idlocationPix . '/qrcode',
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $error = curl_error($curl);
+        
+        curl_close($curl);
+        
+        // Verificar se a primeira requisição foi bem-sucedida
+        if (!$error && ($httpCode === 200 || $httpCode === 201) && isset($responsePix['loc']['id'])) {
+            $locationId = $responsePix['loc']['id'];
+            $txid = $responsePix['txid'] ?? '33beb661beda44a8928fef47dbeb2dc5';
+            
+            Log::info('PIX - Primeira cobrança criada com sucesso', [
+                'location_id' => $locationId,
+                'txid' => $txid,
+                'http_code' => $httpCode
+            ]);
+            
+            // Segunda requisição para v2/locrec
+            $curlLocrec = curl_init();
+            
+            $bodyLocrec = json_encode([
+                "ativacao" => [
+                    "txid" => $txid
+                ]
+            ]);
+            
+            $urlLocrec = $this->enviroment === 'local' 
+                ? "https://pix-h.api.efipay.com.br/v2/locrec/{$locationId}"
+                : "https://pix.api.efipay.com.br/v2/locrec/{$locationId}";
+            
+            curl_setopt_array($curlLocrec, array(
+                CURLOPT_URL => $urlLocrec,
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_ENCODING => '',
                 CURLOPT_MAXREDIRS => 10,
-                CURLOPT_TIMEOUT => 0,
+                CURLOPT_TIMEOUT => 30,
                 CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-                CURLOPT_CUSTOMREQUEST => 'GET',
-                CURLOPT_SSLCERT => $this->certificadoPath, // Caminho do certificado
+                CURLOPT_CUSTOMREQUEST => 'POST',
+                CURLOPT_POSTFIELDS => $bodyLocrec,
+                CURLOPT_SSLCERT => $this->certificadoPath,
                 CURLOPT_SSLCERTPASSWD => "",
                 CURLOPT_HTTPHEADER => array(
                     "Authorization: Bearer " . $this->apiEfi->getToken(),
+                    "Content-Type: application/json"
                 ),
             ));
-
-            $response = json_decode(curl_exec($curl), true);
-        
-
-            curl_close($curl);
-
-
-            $PixCopiaCola = $response['qrcode'];
-            $imagemQrcode = $response['imagemQrcode'];
-          
+            
+            $responseLocrec = curl_exec($curlLocrec);
+            $httpCodeLocrec = curl_getinfo($curlLocrec, CURLINFO_HTTP_CODE);
+            $errorLocrec = curl_error($curlLocrec);
+            
+            curl_close($curlLocrec);
+            
+            if (!$errorLocrec && ($httpCodeLocrec === 200 || $httpCodeLocrec === 201)) {
+                $responseLocrecData = json_decode($responseLocrec, true);
+                
+                Log::info('PIX - Segunda requisição locrec bem-sucedida', [
+                    'location_id' => $locationId,
+                    'txid' => $txid,
+                    'http_code_locrec' => $httpCodeLocrec,
+                    'response_locrec' => $responseLocrecData
+                ]);
+                
+                echo '<h2>✅ PIX Criado com Sucesso!</h2>';
+                echo '<h3>Primeira Cobrança (v2/cob):</h3>';
+                echo '<pre>' . json_encode($responsePix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</pre>';
+                echo '<h3>Segunda Requisição (v2/locrec):</h3>';
+                echo '<pre>' . json_encode($responseLocrecData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</pre>';
+                
+            } else {
+                Log::error('PIX - Erro na segunda requisição locrec', [
+                    'location_id' => $locationId,
+                    'txid' => $txid,
+                    'error_locrec' => $errorLocrec,
+                    'http_code_locrec' => $httpCodeLocrec,
+                    'response_locrec' => $responseLocrec
+                ]);
+                
+                echo '<h2>⚠️ PIX Criado, mas erro no locrec</h2>';
+                echo '<h3>Primeira Cobrança (Sucesso):</h3>';
+                echo '<pre>' . json_encode($responsePix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</pre>';
+                echo '<h3>Erro no locrec:</h3>';
+                echo '<p>Erro: ' . $errorLocrec . '</p>';
+                echo '<p>HTTP Code: ' . $httpCodeLocrec . '</p>';
+                echo '<p>Response: ' . $responseLocrec . '</p>';
+            }
+            
+        } else {
+            Log::error('PIX - Erro na primeira requisição', [
+                'error' => $error,
+                'http_code' => $httpCode,
+                'response' => $responsePix
+            ]);
+            
+            echo '<h2>❌ Erro ao Criar PIX</h2>';
+            echo '<p>Erro cURL: ' . $error . '</p>';
+            echo '<p>HTTP Code: ' . $httpCode . '</p>';
+            echo '<pre>' . json_encode($responsePix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . '</pre>';
         }
     }
 
-    
-    public function criarCobrancaRecorrente(): array
-{
-    $homolog = false;
-    $payload = [
-        'vinculo' => [
-            'contrato' => '63100862',
-            'devedor' => [
-                "cpf" => "12345678909",
-                "nome" => "Francisco da Silva"
-            ],
-            'objeto' => 'Serviço de Streamming de Música.',
-            'dataFinal' => '2025-04-01',
-            'dataInicial' => '2024-04-01',
-            'periodicidade' => 'MENSAL',
-            'valor' => [
-                'valorRec' => '2.45'
-            ],
-            'politicaRetentativa' => 'NAO_PERMITE',
-            'loc' => 108,
-            'txid' => '33beb661beda44a8928fef47dbeb2dc5'
-        ]
-    ];
-    $urlBase = $homolog
-        ? 'https://pix-h.api.efipay.com.br/v2/rec/'
-        : 'https://pix.api.efipay.com.br/v2/rec/';
-
-    $curl = curl_init();
-
-    curl_setopt_array($curl, [
-        CURLOPT_URL => $urlBase,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => '',
-        CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 30,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => 'POST',
-        CURLOPT_POSTFIELDS => json_encode($payload),
-        CURLOPT_SSLCERT => $this->certificadoPath,
-        CURLOPT_SSLCERTPASSWD => '', // Se houver senha no .pem, coloque aqui
-        CURLOPT_HTTPHEADER => [
-            "Authorization: Bearer {$this->apiEfi->getToken()}",
-            "Content-Type: application/json"
-        ],
-    ]);
-
-    $response = curl_exec($curl);
-    $erro = curl_error($curl);
-
-    curl_close($curl);
-
-    if ($erro) {
-        throw new \Exception("Erro cURL: " . $erro);
-    }
-
-    return json_decode($response, true);
-}
-
+    /**
+     * Método principal para envio de PIX - aceita formato oficial EFI Pay
+     */
+   
 }
