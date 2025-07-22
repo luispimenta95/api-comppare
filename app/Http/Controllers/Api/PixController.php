@@ -60,7 +60,7 @@ class PixController extends Controller
         $responsePix = json_decode(curl_exec($curl), true);
         dd($responsePix);
    $locationId = $responsePix['loc']['id'];
-            $txid = $responsePix['txid'] ?? '33beb661beda44a8928fef47dbeb2dc5';
+            $txid = $responsePix['txid'];
             
            
             
@@ -73,9 +73,9 @@ class PixController extends Controller
                 ]
             ]);
             
-            $urlLocrec = $this->enviroment === 'local' 
-                ? "https://pix-h.api.efipay.com.br/v2/locrec/{$locationId}"
-                : "https://pix.api.efipay.com.br/v2/locrec/{$locationId}";
+   $urlLocrec = $this->enviroment === 'local' 
+            ? "https://pix-h.api.efipay.com.br/v2/locrec/{$locationId}?tipoCob=cob"
+            : "https://pix.api.efipay.com.br/v2/locrec/{$locationId}?tipoCob=cob";
             
             curl_setopt_array($curlLocrec, array(
                 CURLOPT_URL => $urlLocrec,
