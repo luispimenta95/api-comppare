@@ -209,8 +209,7 @@ class PixController extends Controller
                 "objeto" => "Serviço de Streamming de Música."
             ],
             "calendario" => [
-                "dataFinal" => "2025-04-01",
-                "dataInicial" => "2024-04-01",
+                "dataInicial" => "2025-07-23",
                 "periodicidade" => "MENSAL"
             ],
             "valor" => [
