@@ -24,142 +24,290 @@ class PixController extends Controller
             : storage_path('app/certificates/prd.pem');
     }
 
-    public function criarCobranca(): void // Mover chave pix para o arquivo de configuração
+    /**
+     * Fluxo completo: COB → LOCREC → REC → QRCODE
+     */
+    public function criarCobranca(): void
     {
-        $curl = curl_init();
-
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $this->enviroment === 'local' ? 'https://pix-h.api.efipay.com.br/v2/cob/' : 'https://pix.api.efipay.com.br/v2/cob/',
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => '{
-        "calendario": {
-        "expiracao": 3600
-        },
-        "devedor": {
-        "cpf": "12345678909",
-        "nome": "Francisco da Silva"
-        },
-        "valor": {
-        "original": "2.45"
-        },
-        "chave": "contato@comppare.com.br" 
-    }',
-            CURLOPT_SSLCERT => $this->certificadoPath, // Caminho do certificado
-            CURLOPT_SSLCERTPASSWD => "",
-            CURLOPT_HTTPHEADER => array(
-                "Authorization: Bearer " . $this->apiEfi->getToken(),
-                "Content-Type: application/json"
-            ),
-        ));
-        $responsePix = json_decode(curl_exec($curl), true);
-        curl_close($curl);
-
-        $this->createRecurrentCharge($responsePix);
-      //  $this->generateQRCode($responsePix['txid']);
+        echo '<h1>🚀 FLUXO COMPLETO PIX RECORRENTE</h1>';
+        echo '<hr>';
+        
+        // Passo 1: Definir TXID
+        $txid = $this->definirTxid();
+        echo '<h2>1️⃣ TXID DEFINIDO</h2>';
+        echo '<p><strong>TXID:</strong> ' . $txid . '</p>';
+        echo '<hr>';
+        
+        // Passo 2: Criar COB
+        $cobResponse = $this->criarCob($txid);
+        $this->exibirResultado('2️⃣ CRIAR COB (PUT /v2/cob/:txid)', $cobResponse);
+        
+        if (!$cobResponse['success']) {
+            echo '<p style="color: red;">❌ Falha na criação da COB. Processo interrompido.</p>';
+            return;
+        }
+        
+        // Passo 3: Criar Location Rec
+        $locrecResponse = $this->criarLocationRec();
+        $this->exibirResultado('3️⃣ CRIAR LOCATION REC (POST /v2/locrec)', $locrecResponse);
+        
+        if (!$locrecResponse['success']) {
+            echo '<p style="color: red;">❌ Falha na criação do Location Rec. Processo interrompido.</p>';
+            return;
+        }
+        
+        $locrecId = $locrecResponse['data']['id'] ?? null;
+        if (!$locrecId) {
+            echo '<p style="color: red;">❌ ID do Location Rec não encontrado. Processo interrompido.</p>';
+            return;
+        }
+        
+        // Passo 4: Criar REC
+        $recResponse = $this->criarRec($txid, $locrecId);
+        $this->exibirResultado('4️⃣ CRIAR REC (POST /v2/rec)', $recResponse);
+        
+        if (!$recResponse['success']) {
+            echo '<p style="color: red;">❌ Falha na criação da REC. Processo interrompido.</p>';
+            return;
+        }
+        
+        $recId = $recResponse['data']['id'] ?? null;
+        if (!$recId) {
+            echo '<p style="color: red;">❌ ID da REC não encontrado. Processo interrompido.</p>';
+            return;
+        }
+        
+        // Passo 5: Resgatar QR Code
+        $qrcodeResponse = $this->resgatarQRCode($recId, $txid);
+        $this->exibirResultado('5️⃣ RESGATAR QRCODE (GET /v2/rec/{idRec}?txid={txid})', $qrcodeResponse);
+        
+        echo '<hr>';
+        echo '<h2>🎉 PROCESSO FINALIZADO</h2>';
+        echo '<p><em>Teste concluído em ' . date('d/m/Y H:i:s') . '</em></p>';
     }
 
+    /**
+     * Passo 1: Definir um TXID único
+     */
+    private function definirTxid(): string
+    {
+        return md5(uniqid(rand(), true));
+    }
 
+    /**
+     * Passo 2: Criar COB - PUT /v2/cob/:txid
+     */
+    private function criarCob(string $txid): array
+    {
+        $curl = curl_init();
+        
+        $url = $this->enviroment === 'local' 
+            ? "https://pix-h.api.efipay.com.br/v2/cob/{$txid}"
+            : "https://pix.api.efipay.com.br/v2/cob/{$txid}";
+        
+        $body = json_encode([
+            "calendario" => [
+                "expiracao" => 3600
+            ],
+            "devedor" => [
+                "cpf" => "12345678909",
+                "nome" => "Francisco da Silva"
+            ],
+            "valor" => [
+                "original" => "2.45"
+            ],
+            "chave" => "contato@comppare.com.br"
+        ]);
 
-
-
-  private function createRecurrentCharge(array $responsePix): void
-{
-    echo '<h2>🔄 2. CONSULTA LOCATION RECORRENTE (v2/locrec)</h2>';
-    
-    if (isset($responsePix['txid'])) {
-        $txid = $responsePix['txid'];
-        $curlLocrec = curl_init();
-
-        $urlLocrec = $this->enviroment === 'local'
-            ? "https://pix-h.api.efipay.com.br/v2/locrec/{$txid}"
-            : "https://pix.api.efipay.com.br/v2/locrec/{$txid}";
-
-        echo '<p><strong>URL:</strong> ' . $urlLocrec . '</p>';
-        echo '<p><strong>TXID:</strong> ' . $txid . '</p>';
-
-        curl_setopt_array($curlLocrec, array(
-            CURLOPT_URL => $urlLocrec,
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
             CURLOPT_TIMEOUT => 30,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'PUT',
+            CURLOPT_POSTFIELDS => $body,
+            CURLOPT_SSLCERT => $this->certificadoPath,
+            CURLOPT_SSLCERTPASSWD => "",
+            CURLOPT_HTTPHEADER => [
+                "Authorization: Bearer " . $this->apiEfi->getToken(),
+                "Content-Type: application/json"
+            ],
+        ]);
+
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $error = curl_error($curl);
+        curl_close($curl);
+
+        return [
+            'success' => !$error && ($httpCode >= 200 && $httpCode < 300),
+            'http_code' => $httpCode,
+            'error' => $error,
+            'data' => $response ? json_decode($response, true) : null,
+            'url' => $url,
+            'body' => $body
+        ];
+    }
+
+    /**
+     * Passo 3: Criar Location Rec - POST /v2/locrec
+     */
+    private function criarLocationRec(): array
+    {
+        $curl = curl_init();
+        
+        $url = $this->enviroment === 'local' 
+            ? "https://pix-h.api.efipay.com.br/v2/locrec"
+            : "https://pix.api.efipay.com.br/v2/locrec";
+        
+        $body = json_encode([
+            "tipoCob" => "rec"
+        ]);
+
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => $body,
+            CURLOPT_SSLCERT => $this->certificadoPath,
+            CURLOPT_SSLCERTPASSWD => "",
+            CURLOPT_HTTPHEADER => [
+                "Authorization: Bearer " . $this->apiEfi->getToken(),
+                "Content-Type: application/json"
+            ],
+        ]);
+
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $error = curl_error($curl);
+        curl_close($curl);
+
+        return [
+            'success' => !$error && ($httpCode >= 200 && $httpCode < 300),
+            'http_code' => $httpCode,
+            'error' => $error,
+            'data' => $response ? json_decode($response, true) : null,
+            'url' => $url,
+            'body' => $body
+        ];
+    }
+
+    /**
+     * Passo 4: Criar REC - POST /v2/rec
+     */
+    private function criarRec(string $txid, int $locrecId): array
+    {
+        $curl = curl_init();
+        
+        $url = $this->enviroment === 'local' 
+            ? "https://pix-h.api.efipay.com.br/v2/rec"
+            : "https://pix.api.efipay.com.br/v2/rec";
+        
+        $body = json_encode([
+            "ativacao" => [
+                "dadosJornada" => [
+                    "txId" => $txid
+                ]
+            ],
+            "loc" => $locrecId
+        ]);
+
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => $body,
+            CURLOPT_SSLCERT => $this->certificadoPath,
+            CURLOPT_SSLCERTPASSWD => "",
+            CURLOPT_HTTPHEADER => [
+                "Authorization: Bearer " . $this->apiEfi->getToken(),
+                "Content-Type: application/json"
+            ],
+        ]);
+
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $error = curl_error($curl);
+        curl_close($curl);
+
+        return [
+            'success' => !$error && ($httpCode >= 200 && $httpCode < 300),
+            'http_code' => $httpCode,
+            'error' => $error,
+            'data' => $response ? json_decode($response, true) : null,
+            'url' => $url,
+            'body' => $body
+        ];
+    }
+
+    /**
+     * Passo 5: Resgatar QR Code - GET /v2/rec/{idRec}?txid={txid}
+     */
+    private function resgatarQRCode(string $recId, string $txid): array
+    {
+        $curl = curl_init();
+        
+        $url = $this->enviroment === 'local' 
+            ? "https://pix-h.api.efipay.com.br/v2/rec/{$recId}?txid={$txid}"
+            : "https://pix.api.efipay.com.br/v2/rec/{$recId}?txid={$txid}";
+
+        curl_setopt_array($curl, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 30,
             CURLOPT_CUSTOMREQUEST => 'GET',
             CURLOPT_SSLCERT => $this->certificadoPath,
             CURLOPT_SSLCERTPASSWD => "",
-            CURLOPT_HTTPHEADER => array(
+            CURLOPT_HTTPHEADER => [
                 "Authorization: Bearer " . $this->apiEfi->getToken(),
                 "Content-Type: application/json"
-            ),
-        ));
+            ],
+        ]);
 
-        $responseLocrec = curl_exec($curlLocrec);
-        $httpCode = curl_getinfo($curlLocrec, CURLINFO_HTTP_CODE);
-        $error = curl_error($curlLocrec);
-        curl_close($curlLocrec);
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $error = curl_error($curl);
+        curl_close($curl);
 
-        if ($responseLocrec) {
-            $responseLocrecData = json_decode($responseLocrec, true);
+        return [
+            'success' => !$error && ($httpCode >= 200 && $httpCode < 300),
+            'http_code' => $httpCode,
+            'error' => $error,
+            'data' => $response ? json_decode($response, true) : null,
+            'url' => $url,
+            'body' => null
+        ];
+    }
+
+    /**
+     * Método auxiliar para exibir resultados
+     */
+    private function exibirResultado(string $titulo, array $resultado): void
+    {
+        echo '<h2>' . $titulo . '</h2>';
+        echo '<p><strong>URL:</strong> ' . $resultado['url'] . '</p>';
+        echo '<p><strong>HTTP Code:</strong> ' . $resultado['http_code'] . '</p>';
+        echo '<p><strong>Erro cURL:</strong> ' . ($resultado['error'] ?? 'Nenhum') . '</p>';
+        
+        if ($resultado['body']) {
+            echo '<p><strong>Body enviado:</strong></p>';
+            echo '<pre style="background: #e8f4f8; padding: 10px; border-radius: 5px;">' . 
+                 $resultado['body'] . 
+                 '</pre>';
         }
-
-        echo '<p><strong>HTTP Code:</strong> ' . $httpCode . '</p>';
-        echo '<p><strong>Erro cURL:</strong> ' . ($error ?? 'Nenhum') . '</p>';
+        
         echo '<p><strong>Resposta:</strong></p>';
         echo '<pre style="background: #f5f5f5; padding: 10px; border-radius: 5px;">' . 
-             json_encode($responseLocrecData ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . 
+             json_encode($resultado['data'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . 
              '</pre>';
-
-        if (!$error && ($httpCode === 200 || $httpCode === 201)) {
-            echo '<p style="color: green;">✅ <strong>Consulta locrec realizada com sucesso!</strong></p>';
-            Log::info("Consulta locrec bem-sucedida para TXID: {$txid}", $responseLocrecData ?? []);
+        
+        if ($resultado['success']) {
+            echo '<p style="color: green;">✅ <strong>Sucesso!</strong></p>';
         } else {
-            echo '<p style="color: red;">❌ <strong>Erro na consulta locrec</strong></p>';
-            Log::error("Erro na consulta locrec para TXID: {$txid}", [
-                'error' => $error,
-                'http_code' => $httpCode,
-                'response' => $responseLocrecData ?? null
-            ]);
+            echo '<p style="color: red;">❌ <strong>Erro!</strong></p>';
         }
-    } else {
-        echo '<p style="color: red;">❌ <strong>TXID não encontrado na resposta PIX</strong></p>';
-        echo '<p>Resposta recebida:</p>';
-        echo '<pre style="background: #ffe6e6; padding: 10px; border-radius: 5px;">' . 
-             json_encode($responsePix, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . 
-             '</pre>';
-        Log::error("TXID não encontrado na resposta PIX: " . json_encode($responsePix));
-    }
-}
-    private function generateQRCode(string $txid): void
-    {
-        $curl = curl_init();
-
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => $this->enviroment === 'local' ? "https://pix-h.api.efipay.com.br/v2/loc/{$txid}/qrcode" : "https://pix.api.efipay.com.br/v2/loc/{$txid}/qrcode",
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'GET',
-            CURLOPT_SSLCERT => $this->certificadoPath,
-            CURLOPT_SSLCERTPASSWD => "",
-            CURLOPT_HTTPHEADER => array(
-                "Authorization: Bearer " . $this->apiEfi->getToken(),
-                "Content-Type: application/json"
-            ),
-        ));
-
-        $responseQRCode = curl_exec($curl);
-        curl_close($curl);
-        $PixCopiaCola = $responseQRCode['qrcode'];
-        $imagemQrcode = $responseQRCode['imagemQrcode'];
+        
+        echo '<hr>';
     }
 }
