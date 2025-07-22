@@ -286,7 +286,7 @@ class PixController extends Controller
         echo '<p><strong>HTTP Code:</strong> ' . $resultado['http_code'] . '</p>';
         echo '<p><strong>Erro cURL:</strong> ' . ($resultado['error'] ?? 'Nenhum') . '</p>';
         
-        if ($resultado['body']) {
+        if (isset($resultado['body'])) {
             echo '<p><strong>Body enviado:</strong></p>';
             echo '<pre style="background: #e8f4f8; padding: 10px; border-radius: 5px;">' . 
                  $resultado['body'] . 
