@@ -71,9 +71,8 @@ class PixController extends Controller
             return;
         }
 
-        dd($recResponse);
         
-        $recId = $recResponse['data']['id'] ?? null;
+        $recId = $recResponse['data']['idRec'] ?? null;
         if (!$recId) {
             echo '<p style="color: red;">❌ ID da REC não encontrado. Processo interrompido.</p>';
             return;
