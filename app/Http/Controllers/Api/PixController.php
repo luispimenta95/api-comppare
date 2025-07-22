@@ -27,63 +27,51 @@ class PixController extends Controller
     /**
      * Fluxo completo: COB → LOCREC → REC → QRCODE
      */
-    public function criarCobranca(): void
+    public function criarCobranca()
     {
-        echo '<h1>🚀 FLUXO COMPLETO PIX RECORRENTE</h1>';
-        echo '<hr>';
+
         
         // Passo 1: Definir TXID
         $txid = $this->definirTxid();
-        echo '<h2>1️⃣ TXID DEFINIDO</h2>';
-        echo '<p><strong>TXID:</strong> ' . $txid . '</p>';
-        echo '<hr>';
+      
         
         // Passo 2: Criar COB
         $cobResponse = $this->criarCob($txid);
-        $this->exibirResultado('2️⃣ CRIAR COB (PUT /v2/cob/:txid)', $cobResponse);
         
         if (!$cobResponse['success']) {
-            echo '<p style="color: red;">❌ Falha na criação da COB. Processo interrompido.</p>';
-            return;
         }
         
         // Passo 3: Criar Location Rec
         $locrecResponse = $this->criarLocationRec();
-        $this->exibirResultado('3️⃣ CRIAR LOCATION REC (POST /v2/locrec)', $locrecResponse);
         
         if (!$locrecResponse['success']) {
-            return;
+            
         }
         
         $locrecId = $locrecResponse['data']['id'] ?? null;
         if (!$locrecId) {
-            echo '<p style="color: red;">❌ ID do Location Rec não encontrado. Processo interrompido.</p>';
             return;
         }
         
         // Passo 4: Criar REC
         $recResponse = $this->criarRec($txid, $locrecId);
-        $this->exibirResultado('4️⃣ CRIAR REC (POST /v2/rec)', $recResponse);
         
         if (!$recResponse['success']) {
-            echo '<p style="color: red;">❌ Falha na criação da REC. Processo interrompido.</p>';
             return;
         }
 
         
         $recId = $recResponse['data']['idRec'] ?? null;
         if (!$recId) {
-            echo '<p style="color: red;">❌ ID da REC não encontrado. Processo interrompido.</p>';
             return;
         }
         
         // Passo 5: Resgatar QR Code
         $qrcodeResponse = $this->resgatarQRCode($recId, $txid);
-        $this->exibirResultado('5️⃣ RESGATAR QRCODE (GET /v2/rec/{idRec}?txid={txid})', $qrcodeResponse);
-        
-        echo '<hr>';
-        echo '<h2>🎉 PROCESSO FINALIZADO</h2>';
-        echo '<p><em>Teste concluído em ' . date('d/m/Y H:i:s') . '</em></p>';
+        $PixCopiaCola = $qrcodeResponse['data']['dadosQR']['pixCopiaECola'] ?? null;
+        return $PixCopiaCola;
+
+
     }
 
     /**
@@ -295,31 +283,5 @@ class PixController extends Controller
     /**
      * Método auxiliar para exibir resultados
      */
-    private function exibirResultado(string $titulo, array $resultado): void
-    {
-        echo '<h2>' . $titulo . '</h2>';
-        echo '<p><strong>URL:</strong> ' . $resultado['url'] . '</p>';
-        echo '<p><strong>HTTP Code:</strong> ' . $resultado['http_code'] . '</p>';
-        echo '<p><strong>Erro cURL:</strong> ' . ($resultado['error'] ?? 'Nenhum') . '</p>';
-        
-        if (isset($resultado['body'])) {
-            echo '<p><strong>Body enviado:</strong></p>';
-            echo '<pre style="background: #e8f4f8; padding: 10px; border-radius: 5px;">' . 
-                 $resultado['body'] . 
-                 '</pre>';
-        }
-        
-        echo '<p><strong>Resposta:</strong></p>';
-        echo '<pre style="background: #f5f5f5; padding: 10px; border-radius: 5px;">' . 
-             json_encode($resultado['data'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . 
-             '</pre>';
-        
-        if ($resultado['success']) {
-            echo '<p style="color: green;">✅ <strong>Sucesso!</strong></p>';
-        } else {
-            echo '<p style="color: red;">❌ <strong>Erro!</strong></p>';
-        }
-        
-        echo '<hr>';
-    }
+  
 }
