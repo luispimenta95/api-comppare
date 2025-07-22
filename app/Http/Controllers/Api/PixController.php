@@ -70,6 +70,8 @@ class PixController extends Controller
             echo '<p style="color: red;">❌ Falha na criação da REC. Processo interrompido.</p>';
             return;
         }
+
+        dd($recResponse);
         
         $recId = $recResponse['data']['id'] ?? null;
         if (!$recId) {
