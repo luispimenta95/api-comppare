@@ -3,16 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Util\Helper;
 use App\Http\Util\Payments\ApiEfi;
-use App\Models\PagamentoPix;
-use App\Models\Usuarios;
-use App\Mail\EmailPix;
-use App\Models\Planos;
-use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class PixController extends Controller
 {
@@ -31,130 +22,53 @@ class PixController extends Controller
     }
 
     /**
-     * Fluxo completo: COB → LOCREC → REC → QRCODE → SAVE → EMAIL
+     * Fluxo completo: COB → LOCREC → REC → QRCODE
      */
-    public function criarCobranca(Request $request)
+    public function criarCobranca()
     {
-        // Dados do usuário (pode vir da request ou usar padrão para teste)
-        $campos = ['usuario', 'plano'];
-        $campos = Helper::validarRequest($request, $campos);
+
         
-        $usuario = Usuarios::find($request->usuario);
-        $plano = Planos::find($request->plano);
         // Passo 1: Definir TXID
         $txid = $this->definirTxid();
-        $numeroContrato = strval(mt_rand(10000000, 99999999));
       
+        
         // Passo 2: Criar COB
-        $cobResponse = $this->criarCob($txid , $usuario, $plano);
+        $cobResponse = $this->criarCob($txid);
         
         if (!$cobResponse['success']) {
-            Log::error('Falha na criação da COB', $cobResponse);
-            return null;
         }
         
         // Passo 3: Criar Location Rec
         $locrecResponse = $this->criarLocationRec();
         
         if (!$locrecResponse['success']) {
-            Log::error('Falha na criação do Location Rec', $locrecResponse);
-            return null;
+            
         }
         
         $locrecId = $locrecResponse['data']['id'] ?? null;
         if (!$locrecId) {
-            Log::error('ID do Location Rec não encontrado');
-            return null;
+            return;
         }
         
         // Passo 4: Criar REC
-        $recResponse = $this->criarRec($txid, $locrecId, $usuario, $plano);
+        $recResponse = $this->criarRec($txid, $locrecId);
         
         if (!$recResponse['success']) {
-            Log::error('Falha na criação da REC', $recResponse);
-            return null;
+            return;
         }
+
         
-        $recId = $recResponse['data']['id'] ?? null;
+        $recId = $recResponse['data']['idRec'] ?? null;
         if (!$recId) {
-            Log::error('ID da REC não encontrado');
-            return null;
+            return;
         }
         
         // Passo 5: Resgatar QR Code
         $qrcodeResponse = $this->resgatarQRCode($recId, $txid);
-        $pixCopiaECola = $qrcodeResponse['data']['dadosQR']['pixCopiaECola'] ?? null;
-        
-        if (!$pixCopiaECola) {
-            Log::error('PIX Copia e Cola não encontrado', $qrcodeResponse);
-            return null;
-        }
+        $PixCopiaCola = $qrcodeResponse['data']['dadosQR']['pixCopiaECola'] ?? null;
+        return $PixCopiaCola;
 
-        // Passo 6: Salvar no banco de dados
-        try {
-            $pagamentoPix = PagamentoPix::create([
-                'idUsuario' => $usuario->id,
-                'txid' => $txid,
-                'numeroContrato' => $numeroContrato,
-                'pixCopiaECola' => $pixCopiaECola,
-                'valor' => 2.45,
-                'chavePixRecebedor' => 'contato@comppare.com.br',
-                'nomeDevedor' =>  $usuario->primeiroNome . " " . $usuario->sobrenome,
-                'cpfDevedor' => $usuario->cpf,
-                'locationId' => $locrecId,
-                'recId' => $recId,
-                'status' => 'ATIVA',
-                'statusPagamento' => 'PENDENTE',
-                'dataInicial' => '2025-07-23',
-                'periodicidade' => 'MENSAL',
-                'objeto' => $plano->nome,
-                'responseApiCompleta' => [
-                    'cob' => $cobResponse['data'],
-                    'locrec' => $locrecResponse['data'],
-                    'rec' => $recResponse['data'],
-                    'qrcode' => $qrcodeResponse['data']
-                ]
-            ]);
 
-            Log::info('Pagamento PIX salvo no banco', ['id' => $pagamentoPix->id]);
-
-        } catch (\Exception $e) {
-            Log::error('Erro ao salvar pagamento PIX', [
-                'error' => $e->getMessage(),
-                'txid' => $txid
-            ]);
-        }
-
-        // Passo 7: Enviar email com o código PIX
-        try {
-            $dadosEmail = [
-                'nome' => $usuario->primeiroNome . " " . $usuario->sobrenome,
-                'valor' => 2.45,
-                'pixCopiaECola' => $pixCopiaECola,
-                'contrato' => $numeroContrato,
-                'objeto' => 'Serviço de Streamming de Música.',
-                'periodicidade' => 'MENSAL',
-                'dataInicial' => '2025-07-23',
-                'dataFinal' => null,
-                'txid' => $txid
-            ];
-
-            Mail::to($usuario->email)->send(new EmailPix($dadosEmail));
-            
-            Log::info('Email PIX enviado com sucesso', [
-                'email' => $usuario->email,
-                'txid' => $txid
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Erro ao enviar email PIX', [
-                'error' => $e->getMessage(),
-                'email' => $usuario->email,
-                'txid' => $txid
-            ]);
-        }
-
-        return $pixCopiaECola;
     }
 
     /**
@@ -168,7 +82,7 @@ class PixController extends Controller
     /**
      * Passo 2: Criar COB - PUT /v2/cob/:txid
      */
-    private function criarCob(string $txid, $usuario, $plano): array
+    private function criarCob(string $txid): array
     {
         $curl = curl_init();
         
@@ -181,8 +95,8 @@ class PixController extends Controller
                 "expiracao" => 3600
             ],
             "devedor" => [
-                "cpf" => $usuario->cpf,
-                "nome" => $usuario->primeiroNome . " " . $usuario->sobrenome
+                "cpf" => "02342288140",
+                "nome" => "Fulano"
             ],
             "valor" => [
                 "original" => "2.45"
@@ -262,7 +176,7 @@ class PixController extends Controller
     /**
      * Passo 4: Criar REC - POST /v2/rec
      */
-    private function criarRec(string $txid, $locrecId, $usuario, $plano): array
+    private function criarRec(string $txid, $locrecId): array
     {
         $curl = curl_init();
         
@@ -274,13 +188,13 @@ class PixController extends Controller
             "vinculo" => [
                 "contrato" => strval(mt_rand(10000000, 99999999)),
                 "devedor" => [
-                    "cpf" => $usuario->cpf,
-                    "nome" => $usuario->primeiroNome . " " . $usuario->sobrenome
+                    "cpf" => "02342288140",
+                    "nome" => "Fulano"
                 ],
-                "objeto" => $plano->nome
+                "objeto" => "Serviço de Streamming de Música."
             ],
             "calendario" => [
-                "dataInicial" => date('Y-m-d'),
+                "dataInicial" => "2025-07-23",
                 "periodicidade" => "MENSAL"
             ],
             "valor" => [
