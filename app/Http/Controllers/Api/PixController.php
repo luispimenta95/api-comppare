@@ -185,7 +185,7 @@ class PixController extends Controller
                 "nome" => $usuario->primeiroNome . " " . $usuario->sobrenome
             ],
             "valor" => [
-                "original" => 24
+                "original" => strval($plano->valor)
             ],
             "chave" => "contato@comppare.com.br"
         ]);
@@ -284,7 +284,7 @@ class PixController extends Controller
                 "periodicidade" => "MENSAL"
             ],
             "valor" => [
-                "valorRec" => 24
+                "valorRec" => strval($plano->valor)
             ],
             "politicaRetentativa" => "NAO_PERMITE",
             "loc" => $locrecId,
