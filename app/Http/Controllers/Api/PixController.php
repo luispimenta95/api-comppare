@@ -58,8 +58,47 @@ class PixController extends Controller
             ),
         ));
         $responsePix = json_decode(curl_exec($curl), true);
+   $locationId = $responsePix['loc']['id'];
+            $txid = $responsePix['txid'] ?? '33beb661beda44a8928fef47dbeb2dc5';
+            
+           
+            
+            // Segunda requisição para v2/locrec
+            $curlLocrec = curl_init();
+            
+            $bodyLocrec = json_encode([
+                "ativacao" => [
+                    "txid" => $txid
+                ]
+            ]);
+            
+            $urlLocrec = $this->enviroment === 'local' 
+                ? "https://pix-h.api.efipay.com.br/v2/locrec/{$locationId}"
+                : "https://pix.api.efipay.com.br/v2/locrec/{$locationId}";
+            
+            curl_setopt_array($curlLocrec, array(
+                CURLOPT_URL => $urlLocrec,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'POST',
+                CURLOPT_POSTFIELDS => $bodyLocrec,
+                CURLOPT_SSLCERT => $this->certificadoPath,
+                CURLOPT_SSLCERTPASSWD => "",
+                CURLOPT_HTTPHEADER => array(
+                    "Authorization: Bearer " . $this->apiEfi->getToken(),
+                    "Content-Type: application/json"
+                ),
+            ));
+            
+            $responseLocrec = curl_exec($curlLocrec);
+            dd($responseLocrec);
+        
 
-        dd($responsePix);
+        /* QR code generation 
         if ($responsePix['loc']['id']) {
             $idlocationPix = $responsePix['loc']['id'];
 
@@ -90,9 +129,10 @@ class PixController extends Controller
 
             $PixCopiaCola = $response['qrcode'];
             $imagemQrcode = $response['imagemQrcode'];
+            */
           
         }
-    }
+    
 
     
     public function criarCobrancaRecorrente(): array
