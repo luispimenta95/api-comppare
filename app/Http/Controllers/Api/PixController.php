@@ -142,6 +142,7 @@ class PixController extends Controller
         // Passo 7: Enviar email com o código PIX
         try {
             $dadosEmail = [
+                'to' => $this->usuario->email,
                 'nome' => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome,
                 'valor' => 2.45,
                 'pixCopiaECola' => $PixCopiaCola,
@@ -153,8 +154,8 @@ class PixController extends Controller
                 'txid' => $txid
             ];
 
-            Mail::to('luisfelipearaujopimenta@gmail.com')->send(new EmailPix($dadosEmail));
-
+            Mail::to($this->usuario->email)->send(new EmailPix($dadosEmail));
+            
 
             Log::info('Email PIX enviado com sucesso', [
                 'email' => $this->usuario->email,
