@@ -141,9 +141,6 @@ class PixController extends Controller
         }
 
         // Passo 7: Enviar email com o código PIX
-        $emailEnviado = false;
-        $mensagemEmail = '';
-        
         try {
             Log::info('Iniciando envio de email PIX', [
                 'email' => $this->usuario->email,
@@ -177,41 +174,31 @@ class PixController extends Controller
 
             // Enviar o email usando o método correto
             Mail::send($emailPix);
-            
-            // Se chegou até aqui sem exceção, o email foi enviado com sucesso
-            $emailEnviado = true;
-            $mensagemEmail = 'Email PIX enviado com sucesso';
-            
-            Log::info('Email PIX enviado com SUCESSO', [
+            Log::info('Email PIX enviado com sucesso via Mail::send()', [
                 'email' => $this->usuario->email,
-                'txid' => $txid,
-                'status' => 'ENVIADO'
+                'txid' => $txid
             ]);
 
         } catch (\Exception $e) {
-            $emailEnviado = false;
-            $mensagemEmail = 'Erro ao enviar email: ' . $e->getMessage();
-            
-            Log::error('ERRO ao enviar email PIX', [
+            Log::error('ERRO CRÍTICO ao enviar email PIX', [
                 'error_message' => $e->getMessage(),
                 'error_file' => $e->getFile(),
                 'error_line' => $e->getLine(),
+                'error_trace' => $e->getTraceAsString(),
                 'email_destino' => $this->usuario->email,
-                'txid' => $txid,
-                'status' => 'ERRO_ENVIO'
+                'txid' => $txid
             ]);
+            
+            // Não retornar erro aqui para não interromper o fluxo
+            // O usuário ainda recebe o PIX mesmo se o email falhar
+            Log::warning('Continuando fluxo apesar do erro no email');
         }
         return response()->json([
             'codRetorno' => 200,
             'message' => 'Cobrança PIX criada com sucesso',
             'data' => [
-                'pix' => $PixCopiaCola,
-                'txid' => $txid,
-                'numeroContrato' => $this->numeroContrato
-            ],
-            'email' => [
-                'enviado' => $emailEnviado,
-                'status' => $mensagemEmail
+                'pix' => $PixCopiaCola
+                
             ]
         ]);
         
