@@ -158,11 +158,10 @@ class PixController extends Controller
                 'dados_corpo' => array_merge($dadosParaEmail['body'], ['pixCopiaECola' => 'OCULTO_POR_SEGURANCA'])
             ]);
 
-            $emailPix = new EmailPix($dadosParaEmail);
+            Mail::to($this->usuario->email)->send(new EmailPix($dadosParaEmail));
             Log::info('Objeto EmailPix criado com sucesso');
 
             // Enviar o email usando o método correto
-            Mail::send($emailPix);
             Log::info('Email PIX enviado com sucesso via Mail::send()', [
                 'email' => $this->usuario->email,
                 'txid' => $txid
