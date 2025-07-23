@@ -116,8 +116,8 @@ class PixController extends Controller
                 "expiracao" => 3600
             ],
             "devedor" => [
-                "cpf" => "02342288140",
-                "nome" => "Fulano"
+                "cpf" => $this->usuario->cpf,
+                "nome" => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome
             ],
             "valor" => [
                 "original" => "2.45"
