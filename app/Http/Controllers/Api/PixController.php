@@ -224,7 +224,7 @@ class PixController extends Controller
                 "nome" => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome
             ],
             "valor" => [
-                "original" => "3.25"
+                "original" => number_format($this->plano->valor, 2, '.', '')
             ],
             "chave" => "contato@comppare.com.br"
         ]);
@@ -323,7 +323,7 @@ class PixController extends Controller
                 "periodicidade" => "MENSAL"
             ],
             "valor" => [
-                "valorRec" => "3.25"
+                "valorRec" => number_format($this->plano->valor, 2, '.', '')
             ],
             "politicaRetentativa" => "NAO_PERMITE",
             "loc" => $locrecId,
