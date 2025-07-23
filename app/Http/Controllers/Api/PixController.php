@@ -82,6 +82,7 @@ class PixController extends Controller
         // Passo 5: Resgatar QR Code
         $qrcodeResponse = $this->resgatarQRCode($recId, $txid);
         $PixCopiaCola = $qrcodeResponse['data']['dadosQR']['pixCopiaECola'] ?? null;
+        dd($qrcodeResponse);
          if(!$PixCopiaCola) {
             return response()->json([
                 'codRetorno' => 500,
