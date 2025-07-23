@@ -146,12 +146,6 @@
     <div class="details">
         <h3>📋 Detalhes do Pagamento</h3>
         <table>
-            @if(isset($dados['contrato']))
-            <tr>
-                <td>Contrato:</td>
-                <td>{{ $dados['contrato'] }}</td>
-            </tr>
-            @endif
             @if(isset($dados['objeto']))
             <tr>
                 <td>Serviço:</td>
@@ -170,10 +164,6 @@
                 <td>{{ date('d/m/Y', strtotime($dados['dataInicial'])) }} a {{ date('d/m/Y', strtotime($dados['dataFinal'])) }}</td>
             </tr>
             @endif
-            <tr>
-                <td>TXID:</td>
-                <td>{{ $dados['txid'] ?? 'N/A' }}</td>
-            </tr>
         </table>
     </div>
     @endif
@@ -181,7 +171,6 @@
     <div class="warning">
         <strong>⚠️ Importante:</strong><br>
         • O código PIX é válido por tempo limitado<br>
-        • Após o pagamento, você receberá uma confirmação<br>
         • Guarde este e-mail para sua segurança
     </div>
 

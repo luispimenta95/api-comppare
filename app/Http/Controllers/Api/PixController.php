@@ -95,7 +95,7 @@ class PixController extends Controller
                 'txid' => $txid,
                 'numeroContrato' => $this->numeroContrato,
                 'pixCopiaECola' => $PixCopiaCola,
-                'valor' => 2.45,
+                'valor' => number_format($this->plano->valor, 2, '.', ''),
                 'chavePixRecebedor' => 'contato@comppare.com.br',
                 'nomeDevedor' =>  $this->usuario->primeiroNome . " " . $this->usuario->sobrenome,
                 'cpfDevedor' => $this->usuario->cpf,
@@ -142,7 +142,7 @@ class PixController extends Controller
                 'to' => $this->usuario->email,
                 'body' => [
                     'nome' => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome,
-                    'valor' => 2.45,
+                    'valor' => number_format($this->plano->valor, 2, '.', ''),
                     'pixCopiaECola' => $PixCopiaCola,
                     'contrato' => $this->numeroContrato,
                     'objeto' => $this->plano->nome ?? 'Serviço de Streaming de Música',
@@ -221,7 +221,7 @@ class PixController extends Controller
                 "nome" => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome
             ],
             "valor" => [
-                "original" => "2.45"
+                "original" => number_format($this->plano->valor, 2, '.', '')
             ],
             "chave" => "contato@comppare.com.br"
         ]);
@@ -320,7 +320,7 @@ class PixController extends Controller
                 "periodicidade" => "MENSAL"
             ],
             "valor" => [
-                "valorRec" => "2.45"
+                "valorRec" => number_format($this->plano->valor, 2, '.', ''),
             ],
             "politicaRetentativa" => "NAO_PERMITE",
             "loc" => $locrecId,
