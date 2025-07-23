@@ -137,12 +137,21 @@ class PixController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Erro ao enviar email PIX', [
-                'error' => $e->getMessage(),
-                'email' => $this->usuario->email,
-                'txid' => $txid
-            ]);
+          return response()->json([
+                'codRetorno' => 500,
+                'message' => 'Erro ao enviar e-mail PIX',
+                'error' => $e->getMessage()
+            ], 500);
         }
+        return response()->json([
+            'codRetorno' => 200,
+            'message' => 'Cobrança PIX criada com sucesso',
+            'data' => [
+                'txid' => $txid,
+                'pixCopiaECola' => $PixCopiaCola,
+                'recId' => $recId
+            ]
+        ]);
         
         
 
