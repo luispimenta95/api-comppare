@@ -145,7 +145,7 @@ class PixController extends Controller
                 'to' => $this->usuario->email,
                 'nome' => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome,
                 'valor' => 2.45,
-                'pix' => $PixCopiaCola,
+                'pixCopiaECola' => $PixCopiaCola,
                 'contrato' => $this->numeroContrato,
                 'objeto' => 'Serviço de Streamming de Música.',
                 'periodicidade' => 'MENSAL',

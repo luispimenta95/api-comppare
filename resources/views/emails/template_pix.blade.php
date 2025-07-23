@@ -139,7 +139,7 @@
     </div>
 
     <div class="pix-code">
-        {{ $dados['pix'] }}
+        {{ $dados['pixCopiaECola'] ?? 'Código PIX não disponível' }}
     </div>
 
     @if(isset($dados['contrato']) || isset($dados['objeto']))
