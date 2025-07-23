@@ -11,7 +11,7 @@ use App\Models\Usuarios;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-
+use App\Http\Util\Helper;
 class PixController extends Controller
 {
     private ApiEfi $apiEfi;
@@ -20,6 +20,7 @@ class PixController extends Controller
     private Usuarios $usuario;
     private Planos $plano;
     private string $numeroContrato;
+    private string $dataInicial;
 
 
     public function __construct()
@@ -39,6 +40,8 @@ class PixController extends Controller
         $this ->usuario = Usuarios::find($request->usuario);
         $this ->plano = Planos::find($request->plano);
         $this->numeroContrato = strval(mt_rand(10000000, 99999999)); // Gerando um número de contrato aleatório
+        $this->dataInicial = now()->addDay()->toDateString();
+
 
         
         
@@ -97,14 +100,14 @@ class PixController extends Controller
                 'pixCopiaECola' => $PixCopiaCola,
                 'valor' => number_format($this->plano->valor, 2, '.', ''),
                 'chavePixRecebedor' => 'contato@comppare.com.br',
-                'nomeDevedor' =>  $this->usuario->primeiroNome . " " . $this->usuario->sobrenome,
+                'nomeDevedor' =>  strtoupper($this->usuario->primeiroNome . " " . $this->usuario->sobrenome),
                 'cpfDevedor' => $this->usuario->cpf,
                 'locationId' => $locrecId,
                 'recId' => $recId,
                 'status' => 'ATIVA',
                 'statusPagamento' => 'PENDENTE',
-                'dataInicial' => '2025-07-23',
-                'periodicidade' => 'MENSAL',
+                'dataInicial' => $this->dataInicial,
+                'periodicidade' => Helper::PERIODICIDADE_MENSAL,
                 'objeto' => $this->plano->nome,
                 'responseApiCompleta' => [
                     'cob' => $cobResponse['data'],
@@ -141,13 +144,13 @@ class PixController extends Controller
             $dadosParaEmail = [
                 'to' => $this->usuario->email,
                 'body' => [
-                    'nome' => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome,
+                    'nome' => strtoupper($this->usuario->primeiroNome . " " . $this->usuario->sobrenome),
                     'valor' => number_format($this->plano->valor, 2, '.', ''),
                     'pixCopiaECola' => $PixCopiaCola,
                     'contrato' => $this->numeroContrato,
-                    'objeto' => $this->plano->nome ?? 'Serviço de Streaming de Música',
-                    'periodicidade' => 'MENSAL',
-                    'dataInicial' => now()->addDay()->toDateString(),
+                    'objeto' => $this->plano->nome,
+                    'periodicidade' => Helper::PERIODICIDADE_MENSAL,
+                    'dataInicial' => $this->dataInicial,
                     'dataFinal' => null,
                     'txid' => $txid
                 ]
@@ -221,7 +224,7 @@ class PixController extends Controller
                 "nome" => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome
             ],
             "valor" => [
-                "original" => number_format($this->plano->valor, 2, '.', '')
+                "original" => "3.25"
             ],
             "chave" => "contato@comppare.com.br"
         ]);
@@ -320,7 +323,7 @@ class PixController extends Controller
                 "periodicidade" => "MENSAL"
             ],
             "valor" => [
-                "valorRec" => number_format($this->plano->valor, 2, '.', ''),
+                "valorRec" => "3.25"
             ],
             "politicaRetentativa" => "NAO_PERMITE",
             "loc" => $locrecId,

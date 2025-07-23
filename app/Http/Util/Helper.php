@@ -24,6 +24,9 @@ class Helper
     const ID_PERFIL_USUARIO = 2;
     const ID_PERFIL_CONVIDADO = 3;
     const ID_PLANO_CONVIDADO = 7;
+    const PERIODICIDADE_MENSAL = 'MENSAL';
+    const PERIODICIDADE_ANUAL = 'ANUAL';
+    const PERIODICIDADE_SEMESTRAL = 'SEMESTRAL';
 
     const ATIVO = 1;
 
