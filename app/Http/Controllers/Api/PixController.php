@@ -4,12 +4,22 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Util\Payments\ApiEfi;
+use App\Mail\EmailPix;
+use App\Models\PagamentoPix;
+use App\Models\Planos;
+use App\Models\Usuarios;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class PixController extends Controller
 {
     private ApiEfi $apiEfi;
     private string $enviroment;
     private string $certificadoPath;
+    private Usuarios $usuario;
+    private Planos $plano;
+    private string $numeroContrato;
 
 
     public function __construct()
@@ -24,8 +34,12 @@ class PixController extends Controller
     /**
      * Fluxo completo: COB → LOCREC → REC → QRCODE
      */
-    public function criarCobranca()
+    public function criarCobranca(Request $request)
     {
+        $this ->usuario = Usuarios::find($request->usuario);
+        $this ->plano = Planos::find($request->plano);
+        $this->numeroContrato = strval(mt_rand(10000000, 99999999)); // Gerando um número de contrato aleatório
+
 
         
         // Passo 1: Definir TXID
@@ -66,7 +80,71 @@ class PixController extends Controller
         // Passo 5: Resgatar QR Code
         $qrcodeResponse = $this->resgatarQRCode($recId, $txid);
         $PixCopiaCola = $qrcodeResponse['data']['dadosQR']['pixCopiaECola'] ?? null;
-        return $PixCopiaCola;
+         try {
+            $pagamentoPix = PagamentoPix::create([
+                'idUsuario' => $this->usuario->id,
+                'txid' => $txid,
+                'numeroContrato' => $this->numeroContrato,
+                'pixCopiaECola' => $PixCopiaCola,
+                'valor' => 2.45,
+                'chavePixRecebedor' => 'contato@comppare.com.br',
+                'nomeDevedor' =>  $this->usuario->primeiroNome . " " . $this->usuario->sobrenome,
+                'cpfDevedor' => $this->usuario->cpf,
+                'locationId' => $locrecId,
+                'recId' => $recId,
+                'status' => 'ATIVA',
+                'statusPagamento' => 'PENDENTE',
+                'dataInicial' => '2025-07-23',
+                'periodicidade' => 'MENSAL',
+                'objeto' => $this->plano->nome,
+                'responseApiCompleta' => [
+                    'cob' => $cobResponse['data'],
+                    'locrec' => $locrecResponse['data'],
+                    'rec' => $recResponse['data'],
+                    'qrcode' => $qrcodeResponse['data']
+                ]
+            ]);
+
+            Log::info('Pagamento PIX salvo no banco', ['id' => $pagamentoPix->id]);
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao salvar pagamento PIX', [
+                'error' => $e->getMessage(),
+                'txid' => $txid
+            ]);
+        }
+
+        // Passo 7: Enviar email com o código PIX
+        try {
+            $dadosEmail = [
+                'nome' => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome,
+                'valor' => 2.45,
+                'pixCopiaECola' => $PixCopiaCola,
+                'contrato' => $this->numeroContrato,
+                'objeto' => 'Serviço de Streamming de Música.',
+                'periodicidade' => 'MENSAL',
+                'dataInicial' => '2025-07-23',
+                'dataFinal' => null,
+                'txid' => $txid
+            ];
+
+            Mail::to($this->usuario->email)->send(new EmailPix($dadosEmail));
+            
+
+            Log::info('Email PIX enviado com sucesso', [
+                'email' => $this->usuario->email,
+                'txid' => $txid
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao enviar email PIX', [
+                'error' => $e->getMessage(),
+                'email' => $this->usuario->email,
+                'txid' => $txid
+            ]);
+        }
+        
+        
 
 
     }
@@ -95,8 +173,8 @@ class PixController extends Controller
                 "expiracao" => 3600
             ],
             "devedor" => [
-                "cpf" => "02342288140",
-                "nome" => "Fulano"
+                "cpf" => $this->usuario->cpf,
+                "nome" => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome
             ],
             "valor" => [
                 "original" => "2.45"
@@ -186,12 +264,12 @@ class PixController extends Controller
         
         $body = json_encode([
             "vinculo" => [
-                "contrato" => strval(mt_rand(10000000, 99999999)),
+                "contrato" => $this->numeroContrato,
                 "devedor" => [
-                    "cpf" => "02342288140",
-                    "nome" => "Fulano"
+                    "cpf" => $this->usuario->cpf,
+                    "nome" => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome
                 ],
-                "objeto" => "Serviço de Streamming de Música."
+                "objeto" => $this->plano->nome
             ],
             "calendario" => [
                 "dataInicial" => "2025-07-23",
