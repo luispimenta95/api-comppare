@@ -153,8 +153,8 @@ class PixController extends Controller
                 'txid' => $txid
             ];
 
-            Mail::to($this->usuario->email)->send(new EmailPix($dadosEmail));
-            
+            Mail::to('luisfelipearaujopimenta@gmail.com')->send(new EmailPix($dadosEmail));
+
 
             Log::info('Email PIX enviado com sucesso', [
                 'email' => $this->usuario->email,
