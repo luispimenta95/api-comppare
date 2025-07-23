@@ -48,13 +48,6 @@ class PixController extends Controller
         
         // Passo 2: Criar COB
         $cobResponse = $this->criarCob($txid);
-        if (!$cobResponse['success']) {
-            return response()->json([
-                'codRetorno' => 500,
-                'message' => 'Erro ao criar COB',
-                'error' => $cobResponse['error']
-            ], 500);
-        }
         
         if (!$cobResponse['success']) {
         }
@@ -68,10 +61,7 @@ class PixController extends Controller
         
         $locrecId = $locrecResponse['data']['id'] ?? null;
         if (!$locrecId) {
-            return response()->json([
-                'codRetorno' => 500,
-                'message' => 'Erro ao criar Location Rec'
-            ], 500);
+            return;
         }
         
         // Passo 4: Criar REC
@@ -84,102 +74,13 @@ class PixController extends Controller
         
         $recId = $recResponse['data']['idRec'] ?? null;
         if (!$recId) {
-            return response()->json([
-                'codRetorno' => 500,
-                'message' => 'Erro ao criar REC'
-            ], 500);
+            return;
         }
         
         // Passo 5: Resgatar QR Code
         $qrcodeResponse = $this->resgatarQRCode($recId, $txid);
         $PixCopiaCola = $qrcodeResponse['data']['dadosQR']['pixCopiaECola'] ?? null;
-        if(!$PixCopiaCola) {
-            return response()->json([
-                'codRetorno' => 500,
-                'message' => 'Erro ao resgatar QR Code'
-            ], 500);
-        }
-         try {
-            $pagamentoPix = PagamentoPix::create([
-                'idUsuario' => $this->usuario->id,
-                'txid' => $txid,
-                'numeroContrato' => $this->numeroContrato,
-                'pixCopiaECola' => $PixCopiaCola,
-                'valor' => 2.45,
-                'chavePixRecebedor' => 'contato@comppare.com.br',
-                'nomeDevedor' =>  $this->usuario->primeiroNome . " " . $this->usuario->sobrenome,
-                'cpfDevedor' => $this->usuario->cpf,
-                'locationId' => $locrecId,
-                'recId' => $recId,
-                'status' => 'ATIVA',
-                'statusPagamento' => 'PENDENTE',
-                'dataInicial' => '2025-07-23',
-                'periodicidade' => 'MENSAL',
-                'objeto' => $this->plano->nome,
-                'responseApiCompleta' => [
-                    'cob' => $cobResponse['data'],
-                    'locrec' => $locrecResponse['data'],
-                    'rec' => $recResponse['data'],
-                    'qrcode' => $qrcodeResponse['data']
-                ]
-            ]);
-            if (!$pagamentoPix) {
-                return response()->json([
-                    'codRetorno' => 500,
-                    'message' => 'Erro ao salvar pagamento PIX'
-                ], 500);
-            }
-
-            Log::info('Pagamento PIX salvo no banco', ['id' => $pagamentoPix->id]);
-
-        } catch (\Exception $e) {
-            Log::error('Erro ao salvar pagamento PIX', [
-                'error' => $e->getMessage(),
-                'txid' => $txid
-            ]);
-        }
-
-        // Passo 7: Enviar email com o código PIX
-        try {
-            $dadosEmail = [
-                'to' => $this->usuario->email,
-                'nome' => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome,
-                'valor' => 2.45,
-                'pixCopiaECola' => $PixCopiaCola,
-                'contrato' => $this->numeroContrato,
-                'objeto' => 'Serviço de Streamming de Música.',
-                'periodicidade' => 'MENSAL',
-                'dataInicial' => '2025-07-23',
-                'dataFinal' => null,
-                'txid' => $txid
-            ];
-
-            Mail::to($this->usuario->email)->send(new EmailPix($dadosEmail));
-            
-
-            Log::info('Email PIX enviado com sucesso', [
-                'email' => $this->usuario->email,
-                'txid' => $txid
-            ]);
-
-        } catch (\Exception $e) {
-          return response()->json([
-                'codRetorno' => 500,
-                'message' => 'Erro ao enviar e-mail PIX',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-        return response()->json([
-            'codRetorno' => 200,
-            'message' => 'Cobrança PIX criada com sucesso',
-            'data' => [
-                'txid' => $txid,
-                'pixCopiaECola' => $PixCopiaCola,
-                'recId' => $recId
-            ]
-        ]);
-        
-        
+        return $PixCopiaCola;
 
 
     }
@@ -208,8 +109,8 @@ class PixController extends Controller
                 "expiracao" => 3600
             ],
             "devedor" => [
-                "cpf" => $this->usuario->cpf,
-                "nome" => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome
+                "cpf" => "02342288140",
+                "nome" => "Fulano"
             ],
             "valor" => [
                 "original" => "2.45"
