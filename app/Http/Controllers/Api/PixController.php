@@ -48,14 +48,12 @@ class PixController extends Controller
         
         // Passo 2: Criar COB
         $cobResponse = $this->criarCob($txid);
-        var_dump($cobResponse);
         
         if (!$cobResponse['success']) {
         }
         
         // Passo 3: Criar Location Rec
         $locrecResponse = $this->criarLocationRec();
-        var_dump($locrecResponse);
         
         if (!$locrecResponse['success']) {
             
@@ -68,7 +66,6 @@ class PixController extends Controller
         
         // Passo 4: Criar REC
         $recResponse = $this->criarRec($txid, $locrecId);
-        var_dump($recResponse);
         
          // Verifica se a criação do REC foi bem-sucedida
         
@@ -84,10 +81,114 @@ class PixController extends Controller
         
         // Passo 5: Resgatar QR Code
         $qrcodeResponse = $this->resgatarQRCode($recId, $txid);
-        var_dump($qrcodeResponse);
         $PixCopiaCola = $qrcodeResponse['data']['dadosQR']['pixCopiaECola'] ?? null;
-        var_dump($PixCopiaCola);
-        return $PixCopiaCola;
+         if(!$PixCopiaCola) {
+            return response()->json([
+                'codRetorno' => 500,
+                'message' => 'Erro ao resgatar QR Code'
+            ], 500);
+        }
+         try {
+            $pagamentoPix = PagamentoPix::create([
+                'idUsuario' => $this->usuario->id,
+                'txid' => $txid,
+                'numeroContrato' => $this->numeroContrato,
+                'pixCopiaECola' => $PixCopiaCola,
+                'valor' => 2.45,
+                'chavePixRecebedor' => 'contato@comppare.com.br',
+                'nomeDevedor' =>  $this->usuario->primeiroNome . " " . $this->usuario->sobrenome,
+                'cpfDevedor' => $this->usuario->cpf,
+                'locationId' => $locrecId,
+                'recId' => $recId,
+                'status' => 'ATIVA',
+                'statusPagamento' => 'PENDENTE',
+                'dataInicial' => '2025-07-23',
+                'periodicidade' => 'MENSAL',
+                'objeto' => $this->plano->nome,
+                'responseApiCompleta' => [
+                    'cob' => $cobResponse['data'],
+                    'locrec' => $locrecResponse['data'],
+                    'rec' => $recResponse['data'],
+                    'qrcode' => $qrcodeResponse['data']
+                ]
+            ]);
+            if (!$pagamentoPix) {
+                return response()->json([
+                    'codRetorno' => 500,
+                    'message' => 'Erro ao salvar pagamento PIX'
+                ], 500);
+            }
+
+            Log::info('Pagamento PIX salvo no banco', ['id' => $pagamentoPix->id]);
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao salvar pagamento PIX', [
+                'error' => $e->getMessage(),
+                'txid' => $txid
+            ]);
+        }
+
+        // Passo 7: Enviar email com o código PIX
+        try {
+            Log::info('Iniciando envio de email PIX', [
+                'email' => $this->usuario->email,
+                'txid' => $txid,
+                'nome' => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome
+            ]);
+
+            // Estrutura correta para BaseEmail
+            $dadosParaEmail = [
+                'to' => $this->usuario->email,
+                'body' => [
+                    'nome' => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome,
+                    'valor' => 2.45,
+                    'pixCopiaECola' => $PixCopiaCola,
+                    'contrato' => $this->numeroContrato,
+                    'objeto' => $this->plano->nome ?? 'Serviço de Streaming de Música',
+                    'periodicidade' => 'MENSAL',
+                    'dataInicial' => now()->addDay()->toDateString(),
+                    'dataFinal' => null,
+                    'txid' => $txid
+                ]
+            ];
+
+            Log::info('Dados do email PIX preparados', [
+                'email_destino' => $dadosParaEmail['to'],
+                'dados_corpo' => array_merge($dadosParaEmail['body'], ['pixCopiaECola' => 'OCULTO_POR_SEGURANCA'])
+            ]);
+
+            $emailPix = new EmailPix($dadosParaEmail);
+            Log::info('Objeto EmailPix criado com sucesso');
+
+            // Enviar o email usando o método correto
+            Mail::send($emailPix);
+            Log::info('Email PIX enviado com sucesso via Mail::send()', [
+                'email' => $this->usuario->email,
+                'txid' => $txid
+            ]);
+
+        } catch (\Exception $e) {
+              return response()->json([
+                'error_message' => $e->getMessage(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'error_trace' => $e->getTraceAsString(),
+                'email_destino' => $this->usuario->email,
+                'txid' => $txid
+            ]);
+            
+            // Não retornar erro aqui para não interromper o fluxo
+            // O usuário ainda recebe o PIX mesmo se o email falhar
+            Log::warning('Continuando fluxo apesar do erro no email');
+        }
+        return response()->json([
+            'codRetorno' => 200,
+            'message' => 'Cobrança PIX criada com sucesso',
+            'data' => [
+                'pix' => $PixCopiaCola
+                
+            ]
+        ]);
 
 
     }
@@ -298,8 +399,5 @@ class PixController extends Controller
         ];
     }
 
-    /**
-     * Método auxiliar para exibir resultados
-     */
-  
+
 }
