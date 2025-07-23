@@ -4,14 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Util\Payments\ApiEfi;
-use App\Mail\EmailPix;
-use App\Models\PagamentoPix;
-use App\Models\Planos;
-use App\Models\Usuarios;
-use Carbon\Carbon;
-use Efi\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class PixController extends Controller
 {
@@ -32,11 +24,10 @@ class PixController extends Controller
     /**
      * Fluxo completo: COB → LOCREC → REC → QRCODE
      */
-    public function criarCobranca(Request $request)
+    public function criarCobranca()
     {
 
-          $usuario = Usuarios::find($request->usuario);
-        $plano = Planos::find($request->plano);
+        
         // Passo 1: Definir TXID
         $txid = $this->definirTxid();
       
@@ -74,72 +65,8 @@ class PixController extends Controller
         
         // Passo 5: Resgatar QR Code
         $qrcodeResponse = $this->resgatarQRCode($recId, $txid);
-        $pixCopiaECola = $qrcodeResponse['data']['dadosQR']['pixCopiaECola'] ?? null;
-        $numeroContrato = strval(mt_rand(10000000, 99999999));
-
-         try {
-            $pagamentoPix = PagamentoPix::create([
-                'idUsuario' => $usuario->id,
-                'txid' => $txid,
-                'numeroContrato' => $numeroContrato,
-                'pixCopiaECola' => $pixCopiaECola,
-                'valor' => 2.45,
-                'chavePixRecebedor' => 'contato@comppare.com.br',
-                'nomeDevedor' =>  $usuario->primeiroNome . " " . $usuario->sobrenome,
-                'cpfDevedor' => $usuario->cpf,
-                'locationId' => $locrecId,
-                'recId' => $recId,
-                'status' => 'ATIVA',
-                'statusPagamento' => 'PENDENTE',
-                'dataInicial' => Carbon::now()->format('Y-m-d'),
-                'periodicidade' => 'MENSAL',
-                'objeto' => $plano->nome,
-                'responseApiCompleta' => [
-                    'cob' => $cobResponse['data'],
-                    'locrec' => $locrecResponse['data'],
-                    'rec' => $recResponse['data'],
-                    'qrcode' => $qrcodeResponse['data']
-                ]
-            ]);
-
-            Log::info('Pagamento PIX salvo no banco', ['id' => $pagamentoPix->id]);
-            
-
-        } catch (\Exception $e) {
-            Log::error('Erro ao salvar pagamento PIX', [
-                'error' => $e->getMessage(),
-                'txid' => $txid
-            ]);
-        }
-
-        // Passo 7: Enviar email com o código PIX
-        try {
-            $dadosEmail = [
-                'nome' => $usuario->primeiroNome . " " . $usuario->sobrenome,
-                'valor' => 2.45,
-                'pixCopiaECola' => $pixCopiaECola,
-                'contrato' => $numeroContrato,
-                'objeto' => 'Serviço de Streamming de Música.',
-                'periodicidade' => 'MENSAL',
-                'dataInicial' => '2025-07-23',
-                'dataFinal' => null,
-                'txid' => $txid
-            ];
-
-            Mail::to($usuario->email)->send(new EmailPix($dadosEmail));
-            
-            Log::info('Email PIX enviado com sucesso', [
-                'email' => $usuario->email,
-                'txid' => $txid
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Erro ao enviar email PIX', [
-                'error' => $e->getMessage(),
-                'email' => $usuario->email,
-                'txid' => $txid
-            ]);
-        }
+        $PixCopiaCola = $qrcodeResponse['data']['dadosQR']['pixCopiaECola'] ?? null;
+        return $PixCopiaCola;
 
 
     }
@@ -267,7 +194,7 @@ class PixController extends Controller
                 "objeto" => "Serviço de Streamming de Música."
             ],
             "calendario" => [
-                "dataInicial" => Carbon::now()->format('Y-m-d'),
+                "dataInicial" => "2025-07-23",
                 "periodicidade" => "MENSAL"
             ],
             "valor" => [
