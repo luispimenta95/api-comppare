@@ -48,6 +48,13 @@ class PixController extends Controller
         
         // Passo 2: Criar COB
         $cobResponse = $this->criarCob($txid);
+        if (!$cobResponse['success']) {
+            return response()->json([
+                'codRetorno' => 500,
+                'message' => 'Erro ao criar COB',
+                'error' => $cobResponse['error']
+            ], 500);
+        }
         
         if (!$cobResponse['success']) {
         }
@@ -61,7 +68,10 @@ class PixController extends Controller
         
         $locrecId = $locrecResponse['data']['id'] ?? null;
         if (!$locrecId) {
-            return;
+            return response()->json([
+                'codRetorno' => 500,
+                'message' => 'Erro ao criar Location Rec'
+            ], 500);
         }
         
         // Passo 4: Criar REC
@@ -74,12 +84,21 @@ class PixController extends Controller
         
         $recId = $recResponse['data']['idRec'] ?? null;
         if (!$recId) {
-            return;
+            return response()->json([
+                'codRetorno' => 500,
+                'message' => 'Erro ao criar REC'
+            ], 500);
         }
         
         // Passo 5: Resgatar QR Code
         $qrcodeResponse = $this->resgatarQRCode($recId, $txid);
         $PixCopiaCola = $qrcodeResponse['data']['dadosQR']['pixCopiaECola'] ?? null;
+        if(!$PixCopiaCola) {
+            return response()->json([
+                'codRetorno' => 500,
+                'message' => 'Erro ao resgatar QR Code'
+            ], 500);
+        }
          try {
             $pagamentoPix = PagamentoPix::create([
                 'idUsuario' => $this->usuario->id,
@@ -104,6 +123,12 @@ class PixController extends Controller
                     'qrcode' => $qrcodeResponse['data']
                 ]
             ]);
+            if (!$pagamentoPix) {
+                return response()->json([
+                    'codRetorno' => 500,
+                    'message' => 'Erro ao salvar pagamento PIX'
+                ], 500);
+            }
 
             Log::info('Pagamento PIX salvo no banco', ['id' => $pagamentoPix->id]);
 
