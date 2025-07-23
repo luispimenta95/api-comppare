@@ -197,8 +197,9 @@ class PixController extends Controller
             'codRetorno' => 200,
             'message' => 'Cobrança PIX criada com sucesso',
             'data' => [
-                'pix' => $PixCopiaCola
-                
+                'txid' => $txid,
+                'pixCopiaECola' => $PixCopiaCola,
+                'recId' => $recId
             ]
         ]);
         
