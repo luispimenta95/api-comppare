@@ -21,6 +21,7 @@ class PixController extends Controller
     private Planos $plano;
     private string $numeroContrato;
     private string $dataInicial;
+    private string $frequencia;
 
 
     public function __construct()
@@ -41,6 +42,10 @@ class PixController extends Controller
         $this ->plano = Planos::find($request->plano);
         $this->numeroContrato = strval(mt_rand(10000000, 99999999)); // Gerando um número de contrato aleatório
         $this->dataInicial = now()->addDay()->toDateString();
+        $this->frequencia = Helper::PERIODICIDADE_MENSAL; // 
+        if($this->plano->frequenciaCobranca == 12){
+            $this->frequencia = Helper::PERIODICIDADE_ANUAL; // Se for anual, ajusta a frequência
+        }
 
 
         
@@ -107,7 +112,7 @@ class PixController extends Controller
                 'status' => 'ATIVA',
                 'statusPagamento' => 'PENDENTE',
                 'dataInicial' => $this->dataInicial,
-                'periodicidade' => Helper::PERIODICIDADE_MENSAL,
+                'periodicidade' => $this->frequencia,
                 'objeto' => $this->plano->nome,
                 'responseApiCompleta' => [
                     'cob' => $cobResponse['data'],
@@ -149,7 +154,7 @@ class PixController extends Controller
                     'pixCopiaECola' => $PixCopiaCola,
                     'contrato' => $this->numeroContrato,
                     'objeto' => $this->plano->nome,
-                    'periodicidade' => Helper::PERIODICIDADE_MENSAL,
+                    'periodicidade' => $this->frequencia,
                     'dataInicial' => $this->dataInicial,
                     'dataFinal' => null,
                     'txid' => $txid
@@ -320,7 +325,7 @@ class PixController extends Controller
             ],
             "calendario" => [
                 "dataInicial" => now()->addDay()->toDateString(),
-                "periodicidade" => "MENSAL"
+                "periodicidade" => $this->frequencia, // Ajusta a periodicidade
             ],
             "valor" => [
                 "valorRec" => number_format($this->plano->valor, 2, '.', '')
