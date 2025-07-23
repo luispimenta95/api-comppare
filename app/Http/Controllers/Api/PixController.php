@@ -215,7 +215,7 @@ class PixController extends Controller
                 "objeto" => $this->plano->nome
             ],
             "calendario" => [
-                "dataInicial" => "2025-07-23",
+                "dataInicial" => date('Y-m-d'),
                 "periodicidade" => "MENSAL"
             ],
             "valor" => [
