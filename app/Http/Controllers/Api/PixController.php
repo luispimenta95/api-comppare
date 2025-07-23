@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Util\Payments\ApiEfi;
 use App\Mail\EmailPix;
+use App\Mail\EmailPixSimples;
 use App\Models\PagamentoPix;
 use App\Models\Planos;
 use App\Models\Usuarios;
@@ -141,33 +142,56 @@ class PixController extends Controller
 
         // Passo 7: Enviar email com o código PIX
         try {
-            $dadosEmail = [
+            Log::info('Iniciando envio de email PIX', [
+                'email' => $this->usuario->email,
+                'txid' => $txid,
+                'nome' => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome
+            ]);
+
+            // Estrutura correta para BaseEmail
+            $dadosParaEmail = [
                 'to' => $this->usuario->email,
-                'nome' => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome,
-                'valor' => 2.45,
-                'pixCopiaECola' => $PixCopiaCola,
-                'contrato' => $this->numeroContrato,
-                'objeto' => 'Serviço de Streamming de Música.',
-                'periodicidade' => 'MENSAL',
-                'dataInicial' => '2025-07-23',
-                'dataFinal' => null,
-                'txid' => $txid
+                'body' => [
+                    'nome' => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome,
+                    'valor' => 2.45,
+                    'pixCopiaECola' => $PixCopiaCola,
+                    'contrato' => $this->numeroContrato,
+                    'objeto' => $this->plano->nome ?? 'Serviço de Streaming de Música',
+                    'periodicidade' => 'MENSAL',
+                    'dataInicial' => '2025-07-23',
+                    'dataFinal' => null,
+                    'txid' => $txid
+                ]
             ];
 
-            Mail::to($this->usuario->email)->send(new EmailPix($dadosEmail));
-            
+            Log::info('Dados do email PIX preparados', [
+                'email_destino' => $dadosParaEmail['to'],
+                'dados_corpo' => array_merge($dadosParaEmail['body'], ['pixCopiaECola' => 'OCULTO_POR_SEGURANCA'])
+            ]);
 
-            Log::info('Email PIX enviado com sucesso', [
+            $emailPix = new EmailPix($dadosParaEmail);
+            Log::info('Objeto EmailPix criado com sucesso');
+
+            // Enviar o email usando o método correto
+            Mail::send($emailPix);
+            Log::info('Email PIX enviado com sucesso via Mail::send()', [
                 'email' => $this->usuario->email,
                 'txid' => $txid
             ]);
 
         } catch (\Exception $e) {
-          return response()->json([
-                'codRetorno' => 500,
-                'message' => 'Erro ao enviar e-mail PIX',
-                'error' => $e->getMessage()
-            ], 500);
+            Log::error('ERRO CRÍTICO ao enviar email PIX', [
+                'error_message' => $e->getMessage(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'error_trace' => $e->getTraceAsString(),
+                'email_destino' => $this->usuario->email,
+                'txid' => $txid
+            ]);
+            
+            // Não retornar erro aqui para não interromper o fluxo
+            // O usuário ainda recebe o PIX mesmo se o email falhar
+            Log::warning('Continuando fluxo apesar do erro no email');
         }
         return response()->json([
             'codRetorno' => 200,

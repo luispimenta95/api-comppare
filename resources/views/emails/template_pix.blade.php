@@ -116,7 +116,9 @@
 <body>
 <div class="container">
     <div class="header">
+        <div class="pix-icon">💳</div>
         <h1>PIX Gerado com Sucesso!</h1>
+    </div>
     
     <div class="content">
         <p>Olá, {{ $dados['nome'] ?? 'Cliente' }}!</p>
@@ -128,7 +130,7 @@
     </div>
 
     <div class="info-box">
-        <strong> Como pagar:</strong><br>
+        <strong>📱 Como pagar:</strong><br>
         1. Abra o app do seu banco<br>
         2. Escolha a opção PIX<br>
         3. Selecione "Copiar e Colar" ou "PIX Copia e Cola"<br>
