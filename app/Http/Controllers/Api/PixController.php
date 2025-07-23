@@ -48,12 +48,14 @@ class PixController extends Controller
         
         // Passo 2: Criar COB
         $cobResponse = $this->criarCob($txid);
+        var_dump($cobResponse);
         
         if (!$cobResponse['success']) {
         }
         
         // Passo 3: Criar Location Rec
         $locrecResponse = $this->criarLocationRec();
+        var_dump($locrecResponse);
         
         if (!$locrecResponse['success']) {
             
@@ -66,6 +68,9 @@ class PixController extends Controller
         
         // Passo 4: Criar REC
         $recResponse = $this->criarRec($txid, $locrecId);
+        var_dump($recResponse);
+        
+         // Verifica se a criação do REC foi bem-sucedida
         
         if (!$recResponse['success']) {
             return;
@@ -79,8 +84,9 @@ class PixController extends Controller
         
         // Passo 5: Resgatar QR Code
         $qrcodeResponse = $this->resgatarQRCode($recId, $txid);
+        var_dump($qrcodeResponse);
         $PixCopiaCola = $qrcodeResponse['data']['dadosQR']['pixCopiaECola'] ?? null;
-        dd($cobResponse,  $locrecResponse, $recResponse, $qrcodeResponse, $PixCopiaCola);
+        var_dump($PixCopiaCola);
         return $PixCopiaCola;
 
 
