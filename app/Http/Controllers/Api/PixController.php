@@ -17,6 +17,7 @@ class PixController extends Controller
     private ApiEfi $apiEfi;
     private string $enviroment;
     private string $certificadoPath;
+    private string $chavePix;
     private Usuarios $usuario;
     private Planos $plano;
     private string $numeroContrato;
@@ -31,6 +32,7 @@ class PixController extends Controller
         $this->certificadoPath = $this->enviroment == "local"
             ? storage_path('app/certificates/hml.pem')
             : storage_path('app/certificates/prd.pem');
+        $this->chavePix =  env('CHAVE_PIX');
     }
 
     /**
@@ -104,7 +106,7 @@ class PixController extends Controller
                 'numeroContrato' => $this->numeroContrato,
                 'pixCopiaECola' => $PixCopiaCola,
                 'valor' => number_format($this->plano->valor, 2, '.', ''),
-                'chavePixRecebedor' => 'contato@comppare.com.br',
+                'chavePixRecebedor' => $this->chavePix,
                 'nomeDevedor' =>  strtoupper($this->usuario->primeiroNome . " " . $this->usuario->sobrenome),
                 'cpfDevedor' => $this->usuario->cpf,
                 'locationId' => $locrecId,
@@ -231,7 +233,7 @@ class PixController extends Controller
             "valor" => [
                 "original" => number_format($this->plano->valor, 2, '.', '')
             ],
-            "chave" => "contato@comppare.com.br"
+            "chave" => $this->chavePix
         ]);
 
         curl_setopt_array($curl, [
@@ -324,7 +326,7 @@ class PixController extends Controller
                 "objeto" => $this->plano->nome
             ],
             "calendario" => [
-                "dataInicial" => now()->addDay()->toDateString(),
+                "dataInicial" => $this->dataInicial,
                 "periodicidade" => $this->frequencia, // Ajusta a periodicidade
             ],
             "valor" => [
