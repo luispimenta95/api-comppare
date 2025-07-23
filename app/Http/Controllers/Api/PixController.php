@@ -40,7 +40,7 @@ class PixController extends Controller
         $this ->plano = Planos::find($request->plano);
         $this->numeroContrato = strval(mt_rand(10000000, 99999999)); // Gerando um número de contrato aleatório
 
-
+        dd($this->usuario, $this->plano, $this->numeroContrato);
         
         // Passo 1: Definir TXID
         $txid = $this->definirTxid();
