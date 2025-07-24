@@ -25,6 +25,7 @@ class Planos extends Model
         'quantidadeTags',
         'quantidadeFotos',
         'quantidadePastas',
+        'quantidadeSubpastas',
         'quantidadeConvites',
         'idHost',
         'frequenciaCobranca',
