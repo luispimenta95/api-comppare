@@ -38,6 +38,17 @@ class PixController extends Controller
     /**
      * Fluxo completo: COB → LOCREC → REC → QRCODE
      */
+    /**
+     * Exemplo de request para criar uma cobrança PIX recorrente:
+     * 
+     * POST {host}/pix/enviar
+     * Content-Type: application/json
+     * 
+     * {
+     *   "usuario": 123, // ID do usuário existente
+     *   "plano": 456    // ID do plano existente
+     * }
+     */
     public function criarCobranca(Request $request)
     {
         $this ->usuario = Usuarios::find($request->usuario);
