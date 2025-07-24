@@ -43,6 +43,13 @@ class ApiEfi
         $this->efiPay = new EfiPay($this->options);
         Log::info('ApiEfi - EfiPay inicializado com sucesso');
     } catch (\Exception $e) {
+        Log::error('ApiEfi - Falha na inicialização do EfiPay', [
+            'error_message' => $e->getMessage(),
+            'error_file' => $e->getFile(),
+            'error_line' => $e->getLine(),
+            'options' => $this->options,
+            'ambiente' => $this->enviroment
+        ]);
         throw new \Exception('Falha na inicialização do EfiPay: ' . $e->getMessage());
     }
 }
@@ -194,6 +201,17 @@ class ApiEfi
 
             // Validar credenciais
             if (empty($clientId) || empty($clientSecret)) {
+                Log::error('ApiEfi - Credenciais EFI Pay não configuradas', [
+                    'ambiente' => $this->enviroment,
+                    'client_id_vazio' => empty($clientId),
+                    'client_secret_vazio' => empty($clientSecret),
+                    'variaveis_env_verificadas' => [
+                        'ID_EFI_HML' => !empty(env('ID_EFI_HML')),
+                        'SECRET_EFI_HML' => !empty(env('SECRET_EFI_HML')),
+                        'ID_EFI_PRD' => !empty(env('ID_EFI_PRD')),
+                        'SECRET_EFI_PRD' => !empty(env('SECRET_EFI_PRD'))
+                    ]
+                ]);
                 throw new \Exception('Credenciais EFI Pay não configuradas');
             }
 

@@ -104,6 +104,13 @@ class PixController extends Controller
         $this->plano = Planos::find($request->plano);
         
         if (!$this->usuario || !$this->plano) {
+            Log::error('Usuário ou plano não encontrado na inicialização dos dados', [
+                'usuario_id_solicitado' => $request->usuario,
+                'plano_id_solicitado' => $request->plano,
+                'usuario_encontrado' => !is_null($this->usuario),
+                'plano_encontrado' => !is_null($this->plano),
+                'request_data' => $request->all()
+            ]);
             throw new \InvalidArgumentException('Usuário ou plano não encontrado');
         }
         
@@ -148,6 +155,11 @@ class PixController extends Controller
         
         $locrecId = $locrecResponse['data']['id'] ?? null;
         if (!$locrecId) {
+            Log::error('ID do Location Rec não encontrado na resposta da API', [
+                'locrecResponse' => $locrecResponse,
+                'usuario_id' => $this->usuario->id,
+                'plano_id' => $this->plano->id
+            ]);
             throw new \RuntimeException('ID do Location Rec não encontrado');
         }
         
@@ -157,6 +169,12 @@ class PixController extends Controller
         
         $recId = $recResponse['data']['idRec'] ?? null;
         if (!$recId) {
+            Log::error('ID do REC não encontrado na resposta da API', [
+                'recResponse' => $recResponse,
+                'txid' => $txid,
+                'locrecId' => $locrecId,
+                'usuario_id' => $this->usuario->id
+            ]);
             throw new \RuntimeException('ID do REC não encontrado');
         }
         
@@ -166,6 +184,12 @@ class PixController extends Controller
         
         $pixCopiaECola = $qrcodeResponse['data']['dadosQR']['pixCopiaECola'] ?? null;
         if (!$pixCopiaECola) {
+            Log::error('Código PIX não gerado na resposta da API', [
+                'qrcodeResponse' => $qrcodeResponse,
+                'recId' => $recId,
+                'txid' => $txid,
+                'usuario_id' => $this->usuario->id
+            ]);
             throw new \RuntimeException('Código PIX não gerado');
         }
         
@@ -187,6 +211,14 @@ class PixController extends Controller
     private function validateResponse(array $response, string $step): void
     {
         if (!$response['success']) {
+            Log::error("Erro na validação da resposta da API - Passo {$step}", [
+                'step' => $step,
+                'response' => $response,
+                'http_code' => $response['http_code'] ?? null,
+                'error' => $response['error'] ?? 'Erro desconhecido',
+                'url' => $response['url'] ?? null,
+                'body' => $response['body'] ?? null
+            ]);
             throw new \RuntimeException("Erro no passo {$step}: " . ($response['error'] ?? 'Erro desconhecido'));
         }
     }
@@ -296,9 +328,7 @@ class PixController extends Controller
             'codRetorno' => 200,
             'message' => 'Cobrança PIX criada com sucesso',
             'data' => [
-                'pix' => $pixData['pixCopiaECola'],
-                'txid' => $pixData['txid'],
-                'numeroContrato' => $this->numeroContrato
+                'pix' => $pixData['pixCopiaECola']
             ]
         ]);
     }
