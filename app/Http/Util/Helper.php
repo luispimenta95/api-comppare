@@ -36,7 +36,8 @@ class Helper
     const LIMITE_TAGS = 5;
 
     const LIMITE_PASTAS = 10;
-
+    
+    const LIMITE_SUBPASTAS = 5;
 
     const TEMPO_RENOVACAO_MENSAL = 30;
     const TEMPO_RENOVACAO_ANUAL = 360;

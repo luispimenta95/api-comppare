@@ -91,7 +91,7 @@ class UsuarioController extends Controller
             $usuario = Usuarios::with('plano')->where('cpf', $request->cpf)->first();
 
             if (!$usuario) {
-                return $this->respostaErro(HttpCodesEnum::NotFound, 'Usuário não encontrado');
+                return $this->respostaErro(HttpCodesEnum::NotFound, ['message' => 'Usuário não encontrado']);
             }
 
             // Verificar se é o mesmo plano atual
@@ -246,23 +246,41 @@ class UsuarioController extends Controller
         $detalhes = [];
         $restricoes = [];
 
-        // Verificar uso de pastas criadas no mês atual
-        $pastasCriadasMes = Pastas::where('idUsuario', $usuario->id)
+        // Verificar uso de pastas principais criadas no mês atual
+        $pastasPrincipaisCriadasMes = Pastas::where('idUsuario', $usuario->id)
+            ->whereNull('idPastaPai') // Apenas pastas principais
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->count();
 
-        if ($pastasCriadasMes > $planoNovo->quantidadePastas) {
-            $restricoes[] = "Pastas criadas este mês: {$pastasCriadasMes} (limite do novo plano: {$planoNovo->quantidadePastas})";
-            $detalhes['pastas_criadas_mes'] = $pastasCriadasMes;
+        if ($pastasPrincipaisCriadasMes > $planoNovo->quantidadePastas) {
+            $restricoes[] = "Pastas principais criadas este mês: {$pastasPrincipaisCriadasMes} (limite do novo plano: {$planoNovo->quantidadePastas})";
+            $detalhes['pastas_principais_criadas_mes'] = $pastasPrincipaisCriadasMes;
             $detalhes['limite_pastas_novo'] = $planoNovo->quantidadePastas;
         }
 
-        // Verificar total de pastas do usuário
-        $totalPastas = $usuario->pastas()->count();
-        if ($totalPastas > $planoNovo->quantidadePastas) {
-            $restricoes[] = "Total de pastas: {$totalPastas} (limite do novo plano: {$planoNovo->quantidadePastas})";
-            $detalhes['total_pastas'] = $totalPastas;
+        // Verificar total de pastas principais do usuário
+        $totalPastasPrincipais = $usuario->pastas()->whereNull('idPastaPai')->count();
+        if ($totalPastasPrincipais > $planoNovo->quantidadePastas) {
+            $restricoes[] = "Total de pastas principais: {$totalPastasPrincipais} (limite do novo plano: {$planoNovo->quantidadePastas})";
+            $detalhes['total_pastas_principais'] = $totalPastasPrincipais;
+        }
+
+        // Verificar se alguma pasta principal excede o limite de subpastas do novo plano
+        $pastasComExcessoSubpastas = Pastas::where('idUsuario', $usuario->id)
+            ->whereNull('idPastaPai')
+            ->withCount('subpastas')
+            ->having('subpastas_count', '>', $planoNovo->quantidadeSubpastas)
+            ->get();
+
+        if ($pastasComExcessoSubpastas->isNotEmpty()) {
+            $detalhesSubpastas = [];
+            foreach ($pastasComExcessoSubpastas as $pasta) {
+                $detalhesSubpastas[] = "'{$pasta->nome}' tem {$pasta->subpastas_count} subpastas";
+            }
+            $restricoes[] = "Algumas pastas excedem o limite de subpastas do novo plano ({$planoNovo->quantidadeSubpastas}): " . implode(', ', $detalhesSubpastas);
+            $detalhes['pastas_excesso_subpastas'] = $pastasComExcessoSubpastas->pluck('nome', 'subpastas_count');
+            $detalhes['limite_subpastas_novo'] = $planoNovo->quantidadeSubpastas;
         }
 
         // Verificar tags criadas pelo usuário
@@ -474,17 +492,41 @@ class UsuarioController extends Controller
 
         $token = JWTAuth::fromUser($user);
 
-        // Extrai apenas os dados relevantes das pastas com suas imagens
-        $pastas = $user->pastas->map(fn($pasta) => [
-            'id' => $pasta->id,
-            'nome' => $pasta->nome,
-            'caminho' => $pasta->caminho,
-            'imagens' => $pasta->photos->map(fn($photo) => [
-                'id' => $photo->id,
-                'path' => $photo->path,
-                'taken_at' => $photo->taken_at
-            ])->values()
-        ])->values(); // garante índice limpo (0,1,2...)
+        // Buscar dados do plano do usuário
+        $plano = Planos::find($user->idPlano);
+        $currentMonth = now()->month;
+        $currentYear = now()->year;
+
+        // Calcular limites de criação para o mês atual
+        $limitesInfo = $this->calcularLimitesUsuario($user, $plano, $currentMonth, $currentYear);
+
+        // Extrai apenas os dados relevantes das pastas com suas imagens e subpastas
+        $pastas = $user->pastas->where('idPastaPai', null)->map(function($pasta) {
+            return [
+                'id' => $pasta->id,
+                'nome' => $pasta->nome,
+                'caminho' => $pasta->caminho,
+                'imagens' => $pasta->photos->map(fn($photo) => [
+                    'id' => $photo->id,
+                    'path' => $photo->path,
+                    'taken_at' => $photo->taken_at
+                ])->values(),
+                'subpastas' => $pasta->subpastas->map(function($subpasta) {
+                    return [
+                        'id' => $subpasta->id,
+                        'nome' => $subpasta->nome,
+                        'caminho' => $subpasta->caminho,
+                        'imagens' => $subpasta->photos->map(fn($photo) => [
+                            'id' => $photo->id,
+                            'path' => $photo->path,
+                            'taken_at' => $photo->taken_at
+                        ])->values()
+                    ];
+                })->values(),
+                'pode_criar_subpastas' => $limitesInfo['subpastas_por_pasta'][$pasta->id]['pode_criar'] ?? false,
+                'subpastas_restantes' => $limitesInfo['subpastas_por_pasta'][$pasta->id]['restantes'] ?? 0
+            ];
+        })->values(); // garante índice limpo (0,1,2...)
 
         // Atualiza último acesso
         $user->ultimoAcesso = now();
@@ -499,8 +541,65 @@ class UsuarioController extends Controller
             'message' => HttpCodesEnum::OK->description(),
             'token' => $token,
             'dados' => $dadosUsuario,
-            'pastas' => $pastas
+            'pastas' => $pastas,
+            'limites' => $limitesInfo['resumo']
         ]);
+    }
+
+    /**
+     * Calcula os limites de criação de pastas e subpastas para o usuário
+     */
+    private function calcularLimitesUsuario(Usuarios $user, Planos $plano, int $currentMonth, int $currentYear): array
+    {
+        // Contar pastas principais criadas no mês
+        $pastasPrincipaisCriadasNoMes = Pastas::where('idUsuario', $user->id)
+            ->whereNull('idPastaPai')
+            ->whereYear('created_at', $currentYear)
+            ->whereMonth('created_at', $currentMonth)
+            ->count();
+
+        $pastasPrincipaisRestantes = max(0, $plano->quantidadePastas - $pastasPrincipaisCriadasNoMes);
+
+        // Para cada pasta principal, calcular quantas subpastas podem ser criadas
+        $pastasUsuario = Pastas::where('idUsuario', $user->id)
+            ->whereNull('idPastaPai')
+            ->get();
+
+        $subpastasPorPasta = [];
+        
+        foreach ($pastasUsuario as $pasta) {
+            $subpastasCriadasNoMes = Pastas::where('idUsuario', $user->id)
+                ->where('idPastaPai', $pasta->id)
+                ->whereYear('created_at', $currentYear)
+                ->whereMonth('created_at', $currentMonth)
+                ->count();
+
+            $subpastasRestantes = max(0, $plano->quantidadeSubpastas - $subpastasCriadasNoMes);
+            
+            $subpastasPorPasta[$pasta->id] = [
+                'pasta_nome' => $pasta->nome,
+                'criadas_no_mes' => $subpastasCriadasNoMes,
+                'limite_plano' => $plano->quantidadeSubpastas,
+                'restantes' => $subpastasRestantes,
+                'pode_criar' => $subpastasRestantes > 0
+            ];
+        }
+
+        return [
+            'resumo' => [
+                'pastas_principais' => [
+                    'criadas_no_mes' => $pastasPrincipaisCriadasNoMes,
+                    'limite_plano' => $plano->quantidadePastas,
+                    'restantes' => $pastasPrincipaisRestantes,
+                    'pode_criar' => $pastasPrincipaisRestantes > 0
+                ],
+                'subpastas' => [
+                    'limite_por_pasta' => $plano->quantidadeSubpastas,
+                    'total_pastas_principais' => count($pastasUsuario)
+                ]
+            ],
+            'subpastas_por_pasta' => $subpastasPorPasta
+        ];
     }
 
     private function confirmaUser(object $request): bool

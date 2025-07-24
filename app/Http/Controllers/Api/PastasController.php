@@ -31,22 +31,40 @@ class PastasController extends Controller
      * Cria uma nova pasta para o usuário
      * 
      * Valida se o usuário existe e se não excedeu o limite mensal de pastas do seu plano.
-     * Cria a pasta física no storage e registra no banco de dados.
+     * Agora diferencia entre pastas principais e subpastas baseado na estrutura do nome.
      * 
-     * @param Request $request - Deve conter: idUsuario, nomePasta, idPastaPai (opcional)
+     * Formato de entrada esperado:
+     * - Pasta principal: nomePasta = "MinhasPastaPrincipal"
+     * - Subpasta: nomePasta = "PastaPai/MinhaSubpasta"
+     * 
+     * Exemplos de request:
+     * POST /api/pastas/create
+     * Content-Type: application/json
+     * 
+     * Para pasta principal:
+     * {
+     *   "idUsuario": 1,
+     *   "nomePasta": "Viagem2024"
+     * }
+     * 
+     * Para subpasta:
+     * {
+     *   "idUsuario": 1,
+     *   "nomePasta": "Viagem2024/Praia"
+     * }
+     * 
+     * @param Request $request - Deve conter: idUsuario, nomePasta (pode conter '/' para subpastas)
      * @return JsonResponse - Retorna o ID da pasta criada ou erro
      */
     public function create(Request $request): JsonResponse
     {
-        
         $request->validate([
-            'idUsuario' => 'required|exists:usuarios,id', // Validar se o idUsuario existe
-            'nomePasta' => 'required|string|max:255', // Validar se o nomePasta é uma string e tem no máximo 255 caracteres
+            'idUsuario' => 'required|exists:usuarios,id',
+            'nomePasta' => 'required|string|max:255',
         ]);
 
         $user = Usuarios::find($request->idUsuario);
-
-        // Verifica se o usuário foi encontrado
+        
         if (!$user) {
             return response()->json([
                 'codRetorno' => HttpCodesEnum::NotFound->value,
@@ -54,73 +72,282 @@ class PastasController extends Controller
             ]);
         }
 
+        $plano = Planos::find($user->idPlano);
         $currentMonth = now()->month;
         $currentYear = now()->year;
-        $idPlano = $user->idPlano;
 
-        $monthLimit = Planos::find($idPlano)->quantidadePastas;
+        // Analisar a estrutura do nome da pasta para determinar se é principal ou subpasta
+        $analiseEstrutura = $this->analisarEstruturaPasta($request->nomePasta, $user);
+        
+        if (!$analiseEstrutura['valido']) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => $analiseEstrutura['erro'],
+            ], 400);
+        }
 
+        $isPastaSubpasta = $analiseEstrutura['subfloder'];
+        
+        if ($isPastaSubpasta) {
+            // Verificação para subpasta
+            $verificacao = $this->verificarLimiteSubpastas($user, $analiseEstrutura['pasta_pai_id'], $plano, $currentMonth, $currentYear);
+        } else {
+            // Verificação para pasta principal
+            $verificacao = $this->verificarLimitePastasPrincipais($user, $plano, $currentMonth, $currentYear);
+        }
 
-        // Contagem de pastas e subpastas criadas pelo usuário no mês atual
-        $pastasCriadasNoMes = Pastas::where('idUsuario', $user->id)
-            ->whereYear('created_at', $currentYear)  // Filtra pelo ano atual
-            ->whereMonth('created_at', $currentMonth)  // Filtra pelo mês atual
+        if (!$verificacao['permitido']) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => $verificacao['motivo'],
+                'limite_atingido' => true,
+                'detalhes' => $verificacao['detalhes']
+            ], 400);
+        }
+
+        // Criar a pasta
+        $resultado = $this->criarPasta($user, $analiseEstrutura, $isPastaSubpasta);
+        
+        return response()->json($resultado);
+    }
+
+    /**
+     * Analisa a estrutura do nome da pasta para determinar se é principal ou subpasta
+     */
+    private function analisarEstruturaPasta(string $nomePasta, Usuarios $user): array
+    {
+        // Se contém '/', é uma tentativa de criar subpasta
+        if (str_contains($nomePasta, '/')) {
+            $partes = explode('/', $nomePasta);
+            
+            if (count($partes) != 2) {
+                return [
+                    'valido' => false,
+                    'erro' => 'Formato inválido. Use "PastaPai/Subpasta" para criar subpastas.'
+                ];
+            }
+            
+            $nomePastaPai = trim($partes[0]);
+            $nomeSubpasta = trim($partes[1]);
+            
+            if (empty($nomePastaPai) || empty($nomeSubpasta)) {
+                return [
+                    'valido' => false,
+                    'erro' => 'Nome da pasta pai e subpasta não podem estar vazios.'
+                ];
+            }
+            
+            // Buscar a pasta pai
+            $pastaPai = Pastas::where('idUsuario', $user->id)
+                ->where('nome', $nomePastaPai)
+                ->whereNull('idPastaPai') // Garantir que é uma pasta principal
+                ->first();
+            
+            if (!$pastaPai) {
+                return [
+                    'valido' => false,
+                    'erro' => "Pasta pai '{$nomePastaPai}' não encontrada. Certifique-se de que ela existe e pertence a você."
+                ];
+            }
+            
+            // Verificar se a subpasta já existe
+            $subpastaExistente = Pastas::where('idUsuario', $user->id)
+                ->where('nome', $nomeSubpasta)
+                ->where('idPastaPai', $pastaPai->id)
+                ->exists();
+            
+            if ($subpastaExistente) {
+                return [
+                    'valido' => false,
+                    'erro' => "Subpasta '{$nomeSubpasta}' já existe dentro de '{$nomePastaPai}'."
+                ];
+            }
+            
+            return [
+                'valido' => true,
+                'subfloder' => true,
+                'pasta_pai_id' => $pastaPai->id,
+                'pasta_pai_nome' => $nomePastaPai,
+                'nome_subpasta' => $nomeSubpasta,
+                'pasta_pai_caminho' => $pastaPai->caminho
+            ];
+        } else {
+            // É uma pasta principal
+            $nomePasta = trim($nomePasta);
+            
+            if (empty($nomePasta)) {
+                return [
+                    'valido' => false,
+                    'erro' => 'Nome da pasta não pode estar vazio.'
+                ];
+            }
+            
+            // Verificar se pasta principal já existe
+            $pastaExistente = Pastas::where('idUsuario', $user->id)
+                ->where('nome', $nomePasta)
+                ->whereNull('idPastaPai')
+                ->exists();
+            
+            if ($pastaExistente) {
+                return [
+                    'valido' => false,
+                    'erro' => "Pasta principal '{$nomePasta}' já existe."
+                ];
+            }
+            
+            return [
+                'valido' => true,
+                'subfloder' => false,
+                'nome_pasta_principal' => $nomePasta
+            ];
+        }
+    }
+
+    /**
+     * Verifica se o usuário pode criar uma nova pasta principal
+     */
+    private function verificarLimitePastasPrincipais(Usuarios $user, Planos $plano, int $currentMonth, int $currentYear): array
+    {
+        // Contar apenas pastas principais (sem idPastaPai) criadas no mês
+        $pastasPrincipaisCriadasNoMes = Pastas::where('idUsuario', $user->id)
+            ->whereNull('idPastaPai') // Apenas pastas principais
+            ->whereYear('created_at', $currentYear)
+            ->whereMonth('created_at', $currentMonth)
             ->count();
-        //dd($pastasCriadasNoMes);
 
-        $totalFolders = $pastasCriadasNoMes;
+        if ($pastasPrincipaisCriadasNoMes >= $plano->quantidadePastas) {
+            return [
+                'permitido' => false,
+                'motivo' => 'Limite de pastas principais atingido para este mês',
+                'detalhes' => [
+                    'tipo' => 'pasta_principal',
+                    'criadas_no_mes' => $pastasPrincipaisCriadasNoMes,
+                    'limite_plano' => $plano->quantidadePastas,
+                    'restantes' => 0
+                ]
+            ];
+        }
 
+        return [
+            'permitido' => true,
+            'detalhes' => [
+                'tipo' => 'pasta_principal',
+                'criadas_no_mes' => $pastasPrincipaisCriadasNoMes,
+                'limite_plano' => $plano->quantidadePastas,
+                'restantes' => $plano->quantidadePastas - $pastasPrincipaisCriadasNoMes
+            ]
+        ];
+    }
 
-        // Verifica se o número de pastas (incluindo subpastas) criadas é menor que o limite do plano
-        if ($totalFolders < $monthLimit) {
-            // Prossegue com a criação da pasta ou subpasta
-            $folderName =  $user->primeiroNome . '_' . $user->sobrenome . '/' . $request->nomePasta;
+    /**
+     * Verifica se o usuário pode criar uma subpasta dentro de uma pasta específica
+     */
+    private function verificarLimiteSubpastas(Usuarios $user, int $idPastaPai, Planos $plano, int $currentMonth, int $currentYear): array
+    {
+        // Verificar se a pasta pai pertence ao usuário
+        $pastaPai = Pastas::where('id', $idPastaPai)
+            ->where('idUsuario', $user->id)
+            ->first();
+
+        if (!$pastaPai) {
+            return [
+                'permitido' => false,
+                'motivo' => 'Pasta pai não encontrada ou não pertence ao usuário',
+                'detalhes' => ['tipo' => 'pasta_pai_invalida']
+            ];
+        }
+
+        // Contar subpastas da pasta pai criadas no mês
+        $subpastasCriadasNoMes = Pastas::where('idUsuario', $user->id)
+            ->where('idPastaPai', $idPastaPai)
+            ->whereYear('created_at', $currentYear)
+            ->whereMonth('created_at', $currentMonth)
+            ->count();
+
+        if ($subpastasCriadasNoMes >= $plano->quantidadeSubpastas) {
+            return [
+                'permitido' => false,
+                'motivo' => 'Limite de subpastas atingido para esta pasta neste mês',
+                'detalhes' => [
+                    'tipo' => 'subpasta',
+                    'pasta_pai_id' => $idPastaPai,
+                    'pasta_pai_nome' => $pastaPai->nome,
+                    'criadas_no_mes' => $subpastasCriadasNoMes,
+                    'limite_plano' => $plano->quantidadeSubpastas,
+                    'restantes' => 0
+                ]
+            ];
+        }
+
+        return [
+            'permitido' => true,
+            'detalhes' => [
+                'tipo' => 'subpasta',
+                'pasta_pai_id' => $idPastaPai,
+                'pasta_pai_nome' => $pastaPai->nome,
+                'criadas_no_mes' => $subpastasCriadasNoMes,
+                'limite_plano' => $plano->quantidadeSubpastas,
+                'restantes' => $plano->quantidadeSubpastas - $subpastasCriadasNoMes
+            ]
+        ];
+    }
+
+    /**
+     * Cria a pasta fisicamente e no banco de dados
+     */
+    private function criarPasta(Usuarios $user, array $analiseEstrutura, bool $isPastaSubpasta): array
+    {
+        try {
+            if ($isPastaSubpasta) {
+                // Para subpastas, criar dentro da pasta pai
+                $folderName = $analiseEstrutura['pasta_pai_caminho'] . '/' . $analiseEstrutura['nome_subpasta'];
+                $nomePastaParaBanco = $analiseEstrutura['nome_subpasta'];
+                $idPastaPai = $analiseEstrutura['pasta_pai_id'];
+            } else {
+                // Para pastas principais
+                $folderName = $user->primeiroNome . '_' . $user->sobrenome . '/' . $analiseEstrutura['nome_pasta_principal'];
+                $nomePastaParaBanco = $analiseEstrutura['nome_pasta_principal'];
+                $idPastaPai = null;
+            }
+
             $folder = Helper::createFolder($folderName);
 
             if ($folder['path'] !== null) {
-                // Criação da pasta principal
+                // Criar registro no banco
                 $novaPasta = Pastas::create([
-                    'nome' => $folderName,
+                    'nome' => $nomePastaParaBanco,
                     'idUsuario' => $user->id,
-                    'caminho' => $folder['path']
+                    'caminho' => $folder['path'],
+                    'idPastaPai' => $idPastaPai
                 ]);
 
-
-                // Se a pasta for criada com sucesso, associamos o usuário à pasta
-                $novaPasta->usuario()->attach($user->id);
-
-                // Se a pasta for uma subpasta, associamos à pasta pai
-                if ($request->idPastaPai) {
-                    $pastaPai = Pastas::find($request->idPastaPai);
-                    if ($pastaPai) {
-                        $novaPasta->pastaPai()->associate($pastaPai);
-                        $novaPasta->save();
-                    }
+                // Incrementar contador se for pasta principal
+                if (!$isPastaSubpasta) {
+                    $user->increment('pastasCriadas');
                 }
 
-                // Se o convite foi bem sucedido, atualiza o número de pastas criadas
-                $user->increment('pastasCriadas');
-                // Retorna a resposta de sucesso
-                $response = [
-                    'idPasta' => $novaPasta->id,
-                    'codRetorno' => HttpCodesEnum::OK->value,
-                    'message' => HttpCodesEnum::OK->description()
+                return [
+                    'codRetorno' => HttpCodesEnum::Created->value,
+                    'message' => $isPastaSubpasta ? 'Subpasta criada com sucesso!' : 'Pasta criada com sucesso!',
+                    'pasta_id' => $novaPasta->id,
+                    'pasta_nome' => $novaPasta->nome,
+                    'pasta_caminho' => $novaPasta->caminho,
+                    'tipo' => $isPastaSubpasta ? 'subpasta' : 'pasta_principal',
+                    'estrutura_completa' => $isPastaSubpasta 
+                        ? $analiseEstrutura['pasta_pai_nome'] . '/' . $analiseEstrutura['nome_subpasta']
+                        : $analiseEstrutura['nome_pasta_principal']
                 ];
-                return response()->json($response);
             } else {
-                $response = [
+                return [
                     'codRetorno' => HttpCodesEnum::InternalServerError->value,
-                    'message' => HttpCodesEnum::InternalServerError->description()
+                    'message' => 'Erro ao criar a pasta no sistema de arquivos'
                 ];
-                return response()->json($response);
             }
-        } else {
-            // Caso o limite de pastas ou subpastas tenha sido atingido
-            $response = [
+        } catch (\Exception $e) {
+            return [
                 'codRetorno' => HttpCodesEnum::InternalServerError->value,
-                'message' => HttpCodesEnum::MonthlyFolderLimitReached->description()
+                'message' => 'Erro interno ao criar a pasta: ' . $e->getMessage()
             ];
-            return response()->json($response);
         }
     }
 

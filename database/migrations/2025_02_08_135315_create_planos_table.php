@@ -21,6 +21,7 @@ return new class extends Migration
             $table->integer('quantidadeTags')->default(Helper::LIMITE_TAGS);
             $table->integer('quantidadeFotos')->default(Helper::LIMITE_FOTOS);
             $table->integer('quantidadePastas')->default(Helper::LIMITE_PASTAS);
+            $table->integer('quantidadeSubpastas')->default(Helper::LIMITE_SUBPASTAS);
             $table->integer('frequenciaCobranca')->default(Helper::INTERVALO_MENSAL);
             $table->integer('quantidadeConvites')->default(0);
             $table->boolean('status')->default(true);

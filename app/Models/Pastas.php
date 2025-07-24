@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Pastas extends Model
 {
-    protected $fillable = ['nome', 'idUsuario', 'caminho'];
+    protected $fillable = ['nome', 'idUsuario', 'caminho', 'idPastaPai'];
 
     /**
      * Relacionamento: uma pasta pode ter múltiplos usuários
@@ -66,14 +66,23 @@ class Pastas extends Model
             ->withTimestamps();
     }
 
+    /**
+     * Relacionamento: uma pasta pode ter subpastas
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
     public function subpastas()
     {
-        return $this->hasMany(Pastas::class, 'pasta_pai_id');
+        return $this->hasMany(Pastas::class, 'idPastaPai');
     }
 
-    // Relacionamento inverso com a pasta pai
+    /**
+     * Relacionamento: uma pasta pode ter uma pasta pai
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function pastaPai()
     {
-        return $this->belongsTo(Pastas::class, 'pasta_pai_id');
+        return $this->belongsTo(Pastas::class, 'idPastaPai');
     }
 }

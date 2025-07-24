@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('caminho');
             $table->unsignedBigInteger('idUsuario');
             $table->foreign('idUsuario')->references('id')->on('usuarios');
+            $table->unsignedBigInteger('idPastaPai')->nullable();
+            $table->foreign('idPastaPai')->references('id')->on('pastas')->onDelete('cascade');
 
             $table->timestamps();
         });
