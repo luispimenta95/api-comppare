@@ -607,7 +607,8 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
         'message' => HttpCodesEnum::OK->description(),
         'token' => $token,
         'dados' => $dadosUsuario,
-        'pastas' => $todasPastasComCaminho, // Lista plana com caminhos completos
+        'pastas' => $pastas, // Estrutura hierárquica
+        'todas_pastas' => $todasPastasComCaminho, // Lista plana com caminhos completos
         'limites' => $limitesInfo['resumo'],
         'estatisticas' => [
             'total_pastas_principais' => $pastasPrincipais->count(),
