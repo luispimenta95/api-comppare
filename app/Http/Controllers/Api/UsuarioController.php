@@ -629,7 +629,7 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
             ->get();
 
         $subpastasPorPasta = [];
-        
+
         foreach ($pastasUsuario as $pasta) {
             $subpastasCriadasNoMes = Pastas::where('idUsuario', $user->id)
                 ->where('idPastaPai', $pasta->id)
@@ -638,7 +638,7 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
                 ->count();
 
             $subpastasRestantes = max(0, $plano->quantidadeSubpastas - $subpastasCriadasNoMes);
-            
+
             $subpastasPorPasta[$pasta->id] = [
                 'pasta_nome' => $pasta->nome,
                 'criadas_no_mes' => $subpastasCriadasNoMes,
@@ -648,13 +648,20 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
             ];
         }
 
+        // Verifica se há pelo menos uma pasta onde pode criar subpasta
+        $podeCriarSubpastas = collect($subpastasPorPasta)->contains(function ($info) {
+            return $info['pode_criar'] === true;
+        });
+
         return [
             'resumo' => [
-                    'pode_criar_nova_pasta' => $pastasPrincipaisRestantes > 0,
-                    'pode_criar_subpastas' => isset($limitesInfo['subpastas_por_pasta'][$pasta->id]['pode_criar_nova_pasta']) ? $limitesInfo['subpastas_por_pasta'][$pasta->id]['pode_criar_nova_pasta'] : false
+                'pode_criar_nova_pasta' => $pastasPrincipaisRestantes > 0,
+                'pode_criar_subpastas' => $podeCriarSubpastas,
             ],
+            'subpastas_por_pasta' => $subpastasPorPasta,
         ];
     }
+
 
     private function confirmaUser(object $request): bool
     {
