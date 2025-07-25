@@ -554,10 +554,8 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
                 'path' => $photo->path,
                 'taken_at' => $photo->taken_at
             ])->values(),
-            'subpastas' => $subpastas,
-            'total_subpastas' => $subpastas->count(),
-            'pode_criar_subpastas' => $limitesInfo['subpastas_por_pasta'][$pasta->id]['pode_criar'] ?? false,
-            'subpastas_restantes' => $limitesInfo['subpastas_por_pasta'][$pasta->id]['restantes'] ?? 0
+            'subpastas' => $subpastas
+        
         ];
     })->values();
 
