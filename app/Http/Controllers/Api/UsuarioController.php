@@ -608,7 +608,7 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
         'token' => $token,
         'dados' => $dadosUsuario,
         'pastas' => $pastas, // Estrutura hierárquica
-        'limites' => $limitesInfo['resumo']
+        'regras' => $limitesInfo['resumo']
     ]);
 }
     /**
