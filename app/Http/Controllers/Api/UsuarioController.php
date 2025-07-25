@@ -608,13 +608,7 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
         'token' => $token,
         'dados' => $dadosUsuario,
         'pastas' => $pastas, // Estrutura hierárquica
-        'todas_pastas' => $todasPastasComCaminho, // Lista plana com caminhos completos
-        'limites' => $limitesInfo['resumo'],
-        'estatisticas' => [
-            'total_pastas_principais' => $pastasPrincipais->count(),
-            'total_subpastas' => $todasPastas->whereNotNull('idPastaPai')->count(),
-            'total_pastas' => $todasPastas->count()
-        ]
+        'limites' => $limitesInfo['resumo']
     ]);
 }
     /**
@@ -662,14 +656,12 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
                     'criadas_no_mes' => $pastasPrincipaisCriadasNoMes,
                     'limite_plano' => $plano->quantidadePastas,
                     'restantes' => $pastasPrincipaisRestantes,
-                    'pode_criar' => $pastasPrincipaisRestantes > 0
+                    'pode_criar_nova_pasta' => $pastasPrincipaisRestantes > 0,
+                    'pode_criar_subpastas' => $limitesInfo['subpastas_por_pasta'][$pasta->id]['pode_criar_nova_pasta'] ?? false
                 ],
-                'subpastas' => [
-                    'limite_por_pasta' => $plano->quantidadeSubpastas,
-                    'total_pastas_principais' => count($pastasUsuario)
-                ]
+
+              
             ],
-            'subpastas_por_pasta' => $subpastasPorPasta
         ];
     }
 
