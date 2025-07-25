@@ -652,15 +652,8 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
 
         return [
             'resumo' => [
-                'pastas_principais' => [
-                    'criadas_no_mes' => $pastasPrincipaisCriadasNoMes,
-                    'limite_plano' => $plano->quantidadePastas,
-                    'restantes' => $pastasPrincipaisRestantes,
                     'pode_criar_nova_pasta' => $pastasPrincipaisRestantes > 0,
                     'pode_criar_subpastas' => $limitesInfo['subpastas_por_pasta'][$pasta->id]['pode_criar_nova_pasta'] ?? false
-                ],
-
-              
             ],
         ];
     }
