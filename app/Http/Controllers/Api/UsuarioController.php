@@ -529,15 +529,13 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
             ->map(function($subpasta) use ($pasta) {
                 return [
                     
-                    'caminho' => $pasta->nome . '/' . $subpasta->nome, // Caminho completo
-                    'caminho_completo' => Helper::formatFriendlyPath($subpasta),
-                    'url_pasta' => Helper::formatFolderUrl($subpasta),
+        
+                    'path' => Helper::formatFolderUrl($subpasta),
                     'idPastaPai' => $subpasta->idPastaPai,
                     'created_at' => $subpasta->created_at,
                     'imagens' => $subpasta->photos->map(fn($photo) => [
                         'id' => $photo->id,
                         'path' => Helper::formatImageUrl($photo->path),
-                        'url' => Helper::formatImageUrl($photo->path), // URL clicável
                         'taken_at' => $photo->taken_at
                     ])->values()
                 ];
