@@ -638,6 +638,7 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
                 ->count();
 
             $subpastasRestantes = max(0, $plano->quantidadeSubpastas - $subpastasCriadasNoMes);
+            dd($pastasPrincipaisRestantes, $subpastasRestantes);
 
             $subpastasPorPasta[$pasta->id] = [
                 'pasta_nome' => $pasta->nome,
