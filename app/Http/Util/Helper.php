@@ -310,4 +310,39 @@ class Helper
             self::relacionarPastas($subpasta, $usuario);
         }
     }
+
+    /**
+     * Formata o caminho da pasta para URL amigável
+     * 
+     * @param Pastas $pasta
+     * @param string $separador
+     * @return string
+     */
+    public static function formatFriendlyPath(Pastas $pasta, string $separador = '/'): string
+    {
+        $caminho = [];
+        $pastaAtual = $pasta;
+        
+        // Constrói o caminho do filho para o pai
+        while ($pastaAtual) {
+            $nomeFormatado = strtolower(str_replace(' ', '-', $pastaAtual->nome));
+            array_unshift($caminho, $nomeFormatado);
+            $pastaAtual = $pastaAtual->pastaPai;
+        }
+        
+        return implode($separador, $caminho);
+    }
+
+    /**
+     * Formata o caminho da imagem
+     * 
+     * @param string $caminho
+     * @return string
+     */
+    public static function formatImagePath(string $caminho): string
+    {
+        // Remove barras extras e normaliza o caminho
+        $caminho = trim($caminho, '/');
+        return $caminho ? '/' . $caminho : '';
+    }
 }

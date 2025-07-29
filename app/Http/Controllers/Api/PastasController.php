@@ -817,7 +817,7 @@ class PastasController extends Controller
             'data' => [
                 'id' => $pasta->id,
                 'nome' => $pasta->nome,
-                'caminho' => $this->formatFriendlyPath($pasta->caminho),
+                'caminho' => Helper::formatFriendlyPath($pasta),
                 'imagens' => $pasta->photos->map(function($photo) {
                     // Converte o caminho para URL amigável se necessário
                     $imagePath = $photo->path;
@@ -848,29 +848,4 @@ class PastasController extends Controller
         return response()->json($response);
     }
 
-    /**
-     * Formata um caminho de pasta para URL amigável
-     * 
-     * @param string $path - Caminho absoluto da pasta
-     * @return string - URL amigável para a pasta
-     */
-    private function formatFriendlyPath(string $path): string
-    {
-        // Se já é uma URL amigável, retorna como está
-        if (str_starts_with($path, 'http') || str_starts_with($path, '/storage')) {
-            return $path;
-        }
-
-        // Remove o caminho absoluto até storage/app/public/
-        $relativePath = str_replace(
-            env('PUBLIC_PATH', '/home/u757410616/domains/comppare.com.br/public_html/api-comppare/storage/app/public/'),
-            '',
-            $path
-        );
-        $relativePath = trim($relativePath, '/');
-
-        // Formata como: $appUrl . /storage/ . $path
-        $appUrl = config('app.url');
-        return $appUrl . '/storage/' . $relativePath;
-    }
 }
