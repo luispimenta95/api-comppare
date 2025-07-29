@@ -855,12 +855,6 @@ class PastasController extends Controller
                 'id' => $pasta->id,
                 'nome' => $pasta->nome,
                 'path' => Helper::formatFolderUrl($pasta),
-                'imagens' => $pasta->photos->map(function($photo) {
-                    return [
-                        'id' => $photo->id,
-                        'path' => Helper::formatImageUrl($photo->path),
-                    ];
-                })->values()->toArray(),
                 'subpastas' => $pasta->subpastas->map(function($subpasta) {
                     return [
                         'id' => $subpasta->id,
