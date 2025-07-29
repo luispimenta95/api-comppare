@@ -660,8 +660,8 @@ class PastasController extends Controller
     /**
      * Busca todas as pastas de um usuário específico
      * 
-     * Valida se o usuário existe e retorna todas as pastas associadas a ele.
-     * Útil para listar o conteúdo disponível para um usuário.
+     * Valida se o usuário existe e retorna todas as pastas associadas a ele,
+     * incluindo a hierarquia de subpastas com caminhos formatados.
      * 
      * @param Request $request - Deve conter: idUsuario (ID do usuário)
      * @return JsonResponse - Lista de pastas do usuário ou erro se usuário não encontrado
@@ -682,13 +682,43 @@ class PastasController extends Controller
             ]);
         }
 
-        // Busca as pastas do usuário
-        $pastas = Pastas::where('idUsuario', $user->id)->get();
+        // Busca as pastas do usuário com hierarquia e fotos
+        $pastas = Pastas::with(['photos', 'subpastas.photos'])
+            ->where('idUsuario', $user->id)
+            ->whereNull('idPastaPai') // Apenas pastas principais
+            ->get();
+
+        $pastasFormatadas = $pastas->map(function($pasta) {
+            return [
+                'id' => $pasta->id,
+                'nome' => $pasta->nome,
+                'caminho' => Helper::formatFriendlyPath($pasta),
+                'imagens' => $pasta->photos->map(function($photo) {
+                    return [
+                        'id' => $photo->id,
+                        'path' => Helper::formatImageUrl($photo->path)
+                    ];
+                })->values()->toArray(),
+                'subpastas' => $pasta->subpastas->map(function($subpasta) {
+                    return [
+                        'id' => $subpasta->id,
+                        'nome' => $subpasta->nome,
+                        'caminho' => Helper::formatFriendlyPath($subpasta),
+                        'imagens' => $subpasta->photos->map(function($photo) {
+                            return [
+                                'id' => $photo->id,
+                                'path' => Helper::formatImageUrl($photo->path)
+                            ];
+                        })->values()->toArray()
+                    ];
+                })->values()
+            ];
+        });
 
         return response()->json([
             'codRetorno' => HttpCodesEnum::OK->value,
             'message' => HttpCodesEnum::OK->description(),
-            'pastas' => $pastas,
+            'pastas' => $pastasFormatadas,
         ]);
     }
 
@@ -798,10 +828,10 @@ class PastasController extends Controller
     /**
      * Recupera informações de uma pasta específica
      * 
-     * Busca e retorna os dados completos de uma pasta pelo ID, incluindo suas imagens.
+     * Busca e retorna os dados completos de uma pasta pelo ID, incluindo suas imagens e subpastas.
      * 
      * @param Request $request - Deve conter: idPasta (ID da pasta)
-     * @return JsonResponse - Dados completos da pasta com suas imagens ou erro se não encontrada
+     * @return JsonResponse - Dados completos da pasta com suas imagens e subpastas ou erro se não encontrada
      */
     public function getFolder(Request $request): JsonResponse
     {
@@ -809,9 +839,16 @@ class PastasController extends Controller
             'idPasta' => 'required|integer|exists:pastas,id',
         ]);
 
-        $pasta = Pastas::with('photos')->find($request->idPasta);
+        $pasta = Pastas::with(['photos', 'subpastas.photos'])->find($request->idPasta);
 
-        $response = isset($pasta->id) ? [
+        if (!$pasta) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => HttpCodesEnum::NotFound->description()
+            ]);
+        }
+
+        $response = [
             'codRetorno' => HttpCodesEnum::OK->value,
             'message' => HttpCodesEnum::OK->description(),
             'data' => [
@@ -819,30 +856,25 @@ class PastasController extends Controller
                 'nome' => $pasta->nome,
                 'caminho' => Helper::formatFriendlyPath($pasta),
                 'imagens' => $pasta->photos->map(function($photo) {
-                    // Converte o caminho para URL amigável se necessário
-                    $imagePath = $photo->path;
-                    
-                    // Se o path não começa com http, formata como URL completa
-                    if (!str_starts_with($imagePath, 'http')) {
-                        // Se começa com /storage, remove e reconstrói
-                        if (str_starts_with($imagePath, '/storage/')) {
-                            $relativePath = str_replace('/storage/', '', $imagePath);
-                        } else {
-                            $relativePath = trim($imagePath, '/');
-                        }
-                        $appUrl = config('app.url');
-                        $imagePath = $appUrl . '/storage/' . $relativePath;
-                    }
-                    
                     return [
                         'id' => $photo->id,
-                        'path' => $imagePath
+                        'path' => Helper::formatImageUrl($photo->path)
+                    ];
+                })->values()->toArray(),
+                'subpastas' => $pasta->subpastas->map(function($subpasta) {
+                    return [
+                        'id' => $subpasta->id,
+                        'nome' => $subpasta->nome,
+                        'caminho' => Helper::formatFriendlyPath($subpasta),
+                        'imagens' => $subpasta->photos->map(function($photo) {
+                            return [
+                                'id' => $photo->id,
+                                'path' => Helper::formatImageUrl($photo->path)
+                            ];
+                        })->values()->toArray()
                     ];
                 })->values()
             ]
-        ] : [
-            'codRetorno' => HttpCodesEnum::NotFound->value,
-            'message' => HttpCodesEnum::NotFound->description()
         ];
 
         return response()->json($response);

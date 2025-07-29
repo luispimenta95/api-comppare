@@ -345,4 +345,27 @@ class Helper
         $caminho = trim($caminho, '/');
         return $caminho ? '/' . $caminho : '';
     }
+
+    /**
+     * Formata uma URL completa para imagem
+     * 
+     * @param string $imagePath
+     * @return string
+     */
+    public static function formatImageUrl(string $imagePath): string
+    {
+        // Se o path não começa com http, formata como URL completa
+        if (!str_starts_with($imagePath, 'http')) {
+            // Se começa com /storage, remove e reconstrói
+            if (str_starts_with($imagePath, '/storage/')) {
+                $relativePath = str_replace('/storage/', '', $imagePath);
+            } else {
+                $relativePath = trim($imagePath, '/');
+            }
+            $appUrl = config('app.url');
+            return $appUrl . '/storage/' . $relativePath;
+        }
+        
+        return $imagePath;
+    }
 }

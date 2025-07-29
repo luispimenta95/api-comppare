@@ -536,7 +536,7 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
                     'created_at' => $subpasta->created_at,
                     'imagens' => $subpasta->photos->map(fn($photo) => [
                         'id' => $photo->id,
-                        'path' => Helper::formatImagePath($photo->path),
+                        'path' => Helper::formatImageUrl($photo->path),
                         'taken_at' => $photo->taken_at
                     ])->values()
                 ];
@@ -551,7 +551,7 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
             'created_at' => $pasta->created_at,
             'imagens' => $pasta->photos->map(fn($photo) => [
                 'id' => $photo->id,
-                'path' => Helper::formatImagePath($photo->path),
+                'path' => Helper::formatImageUrl($photo->path),
                 'taken_at' => $photo->taken_at
             ])->values(),
             'subpastas' => $subpastas
