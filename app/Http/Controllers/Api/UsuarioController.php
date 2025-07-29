@@ -622,6 +622,9 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
             ->whereYear('created_at', $currentYear)
             ->whereMonth('created_at', $currentMonth)
             ->count();
+            dd($pastasPrincipaisCriadasNoMes);
+            dd($plano->quantidadePastas);
+            dd($pastasPrincipaisCriadasNoMes >= $plano->quantidadePastas);
             if ($pastasPrincipaisCriadasNoMes >= $plano->quantidadePastas) {
             $podeCriarPastas = false;
         }
