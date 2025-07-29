@@ -860,7 +860,6 @@ class PastasController extends Controller
                     return [
                         'id' => $photo->id,
                         'path' => Helper::formatImageUrl($photo->path),
-                        'url' => Helper::formatImageUrl($photo->path) // URL clicável
                     ];
                 })->values()->toArray(),
                 'subpastas' => $pasta->subpastas->map(function($subpasta) {
