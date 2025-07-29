@@ -544,16 +544,10 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
             })->values();
 
         return [
-            'id' => $pasta->id,
-            'nome' => $pasta->nome,
-            'caminho' => Helper::formatFolderUrl($pasta),
+         
+            'path' => Helper::formatFolderUrl($pasta),
             'idPastaPai' => null,
             'created_at' => $pasta->created_at,
-            'imagens' => $pasta->photos->map(fn($photo) => [
-                'id' => $photo->id,
-                'path' => Helper::formatImageUrl($photo->path), // URL clicável
-                'taken_at' => $photo->taken_at
-            ])->values(),
             'subpastas' => $subpastas
         
         ];
