@@ -620,6 +620,7 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
             ->whereYear('created_at', $currentYear)
             ->whereMonth('created_at', $currentMonth)
             ->count();
+            dd($pastasPrincipaisCriadasNoMes);
 
         $pastasPrincipaisRestantes = max(0, $plano->quantidadePastas - $pastasPrincipaisCriadasNoMes);
 
