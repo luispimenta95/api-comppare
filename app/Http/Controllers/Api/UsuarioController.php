@@ -614,15 +614,19 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
      */
     private function calcularLimitesUsuario(Usuarios $user, Planos $plano, int $currentMonth, int $currentYear): array
     {
+        $podeCriarSubpastas = true;
+        $podeCriarPastas = true;
         // Contar pastas principais criadas no mês
         $pastasPrincipaisCriadasNoMes = Pastas::where('idUsuario', $user->id)
             ->whereNull('idPastaPai')
             ->whereYear('created_at', $currentYear)
             ->whereMonth('created_at', $currentMonth)
             ->count();
-            dd($pastasPrincipaisCriadasNoMes);
+            if ($pastasPrincipaisCriadasNoMes >= $plano->quantidadePastas) {
+            $podeCriarPastas = false;
+        }
+         
 
-        $pastasPrincipaisRestantes = max(0, $plano->quantidadePastas - $pastasPrincipaisCriadasNoMes);
 
         // Para cada pasta principal, calcular quantas subpastas podem ser criadas
         $pastasUsuario = Pastas::where('idUsuario', $user->id)
@@ -638,15 +642,16 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
                 ->whereMonth('created_at', $currentMonth)
                 ->count();
 
-            $subpastasRestantes = max(0, $plano->quantidadeSubpastas - $subpastasCriadasNoMes);
-            dd($subpastasCriadasNoMes < $plano->quantidadeSubpastas);
+            $subpastasTotal = Pastas::where('idPastaPai', $pasta->id)->count();
+            if ($subpastasTotal >= $plano->quantidadeSubpastas) {
+                $podeCriarSubpastas = false;
+            }
 
             $subpastasPorPasta[$pasta->id] = [
                 'pasta_nome' => $pasta->nome,
                 'criadas_no_mes' => $subpastasCriadasNoMes,
                 'limite_plano' => $plano->quantidadeSubpastas,
-                'restantes' => $subpastasRestantes,
-                'pode_criar' => $subpastasCriadasNoMes < $plano->quantidadeSubpastas
+                'pode_criar' => $podeCriarSubpastas
             ];
         }
 
@@ -657,7 +662,7 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
 
         return [
             'resumo' => [
-                'pode_criar_nova_pasta' => $pastasPrincipaisRestantes > 0,
+                'pode_criar_nova_pasta' => $podeCriarPastas,
                 'pode_criar_subpastas' => $podeCriarSubpastas,
             ],
             'subpastas_por_pasta' => $subpastasPorPasta,
