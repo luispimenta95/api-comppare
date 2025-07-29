@@ -854,7 +854,7 @@ class PastasController extends Controller
             'data' => [
                 'id' => $pasta->id,
                 'nome' => $pasta->nome,
-                'caminho' => Helper::formatFolderUrl($pasta),
+                'path' => Helper::formatFolderUrl($pasta),
                 'imagens' => $pasta->photos->map(function($photo) {
                     return [
                         'id' => $photo->id,
@@ -865,13 +865,11 @@ class PastasController extends Controller
                     return [
                         'id' => $subpasta->id,
                         'nome' => $subpasta->nome,
-                        'caminho' => Helper::formatFriendlyPath($subpasta),
-                        'url_pasta' => Helper::formatFolderUrl($subpasta),
+                        'path' => Helper::formatFolderUrl($subpasta),
                         'imagens' => $subpasta->photos->map(function($photo) {
                             return [
                                 'id' => $photo->id,
                                 'path' => Helper::formatImageUrl($photo->path),
-                                'url' => Helper::formatImageUrl($photo->path) // URL clicável
                             ];
                         })->values()->toArray()
                     ];
