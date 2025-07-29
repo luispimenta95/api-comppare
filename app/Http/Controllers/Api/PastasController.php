@@ -855,7 +855,6 @@ class PastasController extends Controller
                 'id' => $pasta->id,
                 'nome' => $pasta->nome,
                 'caminho' => Helper::formatFriendlyPath($pasta),
-                'url_pasta' => Helper::formatFolderUrl($pasta),
                 'imagens' => $pasta->photos->map(function($photo) {
                     return [
                         'id' => $photo->id,
