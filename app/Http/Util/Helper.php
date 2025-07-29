@@ -368,4 +368,25 @@ class Helper
         
         return $imagePath;
     }
+
+    /**
+     * Formata uma URL completa para a pasta física
+     * 
+     * @param Pastas $pasta
+     * @return string
+     */
+    public static function formatFolderUrl(Pastas $pasta): string
+    {
+        $appUrl = config('app.url');
+        
+        // Remove o caminho base e formata como URL
+        $relativePath = str_replace(
+            env('PUBLIC_PATH', '/home/u757410616/domains/comppare.com.br/public_html/api-comppare/storage/app/public/'),
+            '',
+            $pasta->caminho
+        );
+        $relativePath = trim($relativePath, '/');
+        
+        return $appUrl . '/storage/' . $relativePath;
+    }
 }

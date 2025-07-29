@@ -532,11 +532,13 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
                     'nome' => $subpasta->nome,
                     'caminho' => $pasta->nome . '/' . $subpasta->nome, // Caminho completo
                     'caminho_completo' => Helper::formatFriendlyPath($subpasta),
+                    'url_pasta' => Helper::formatFolderUrl($subpasta),
                     'idPastaPai' => $subpasta->idPastaPai,
                     'created_at' => $subpasta->created_at,
                     'imagens' => $subpasta->photos->map(fn($photo) => [
                         'id' => $photo->id,
                         'path' => Helper::formatImageUrl($photo->path),
+                        'url' => Helper::formatImageUrl($photo->path), // URL clicável
                         'taken_at' => $photo->taken_at
                     ])->values()
                 ];
@@ -545,13 +547,12 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
         return [
             'id' => $pasta->id,
             'nome' => $pasta->nome,
-            'caminho' => $pasta->nome, // Nome da pasta principal
-            'caminho_completo' => Helper::formatFriendlyPath($pasta),
+            'caminho' => Helper::formatFolderUrl($pasta),
             'idPastaPai' => null,
             'created_at' => $pasta->created_at,
             'imagens' => $pasta->photos->map(fn($photo) => [
                 'id' => $photo->id,
-                'path' => Helper::formatImageUrl($photo->path),
+                'path' => Helper::formatImageUrl($photo->path), // URL clicável
                 'taken_at' => $photo->taken_at
             ])->values(),
             'subpastas' => $subpastas
