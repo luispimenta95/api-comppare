@@ -644,7 +644,7 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
                 'criadas_no_mes' => $subpastasCriadasNoMes,
                 'limite_plano' => $plano->quantidadeSubpastas,
                 'restantes' => $subpastasRestantes,
-                'pode_criar' => $subpastasRestantes > 0
+                'pode_criar' => $subpastasCriadasNoMes < $plano->quantidadeSubpastas
             ];
         }
 
