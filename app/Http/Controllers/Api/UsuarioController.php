@@ -528,8 +528,7 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
             ->get()
             ->map(function($subpasta) use ($pasta) {
                 return [
-                    'id' => $subpasta->id,
-                    'nome' => $subpasta->nome,
+                    
                     'caminho' => $pasta->nome . '/' . $subpasta->nome, // Caminho completo
                     'caminho_completo' => Helper::formatFriendlyPath($subpasta),
                     'url_pasta' => Helper::formatFolderUrl($subpasta),
