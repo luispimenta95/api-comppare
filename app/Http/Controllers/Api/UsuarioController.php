@@ -528,8 +528,8 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
             ->get()
             ->map(function($subpasta) use ($pasta) {
                 return [
-                    
-        
+                    'id' => $subpasta->id,
+                    'nome' => $subpasta->nome,
                     'path' => Helper::formatFolderUrl($subpasta),
                     'idPastaPai' => $subpasta->idPastaPai,
                     'imagens' => $subpasta->photos->map(fn($photo) => [
@@ -541,7 +541,8 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
             })->values();
 
         return [
-         
+            'nome' => $pasta->nome,
+            'id' => $pasta->id,
             'path' => Helper::formatFolderUrl($pasta),
             'idPastaPai' => null,
             'subpastas' => $subpastas
