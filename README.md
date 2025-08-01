@@ -1,8 +1,8 @@
-# CompPare API
+# Comppare API
 
 ## 📋 Visão Geral
 
-CompPare é uma API completa para gerenciamento de usuários, pastas, imagens, planos e pagamentos. Desenvolvida com Laravel 11, oferece autenticação JWT, upload de imagens, controle de planos e integração com gateways de pagamento.
+Comppare é uma API completa para gerenciamento de usuários, pastas, imagens, planos e pagamentos. Desenvolvida com Laravel 11, oferece autenticação JWT, upload de imagens, controle de planos e integração com gateways de pagamento.
 
 ## 📚 Documentação da API
 
@@ -34,7 +34,7 @@ CompPare é uma API completa para gerenciamento de usuários, pastas, imagens, p
 ### 1. Autenticação
 ```bash
 # Login
-POST /api/usuarios/logar
+POST /api/usuarios/login
 {
   "email": "usuario@email.com",
   "senha": "senha123"
@@ -43,34 +43,16 @@ POST /api/usuarios/logar
 # Resposta
 {
   "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-  "user": { ... }
+  "dados": { ... }
 }
 ```
 
-### 2. Listar Pastas
-```bash
-# Listar pastas do usuário autenticado
-GET /api/pastas
-Authorization: Bearer {token}
 
-# Resposta
-{
-  "pastas": [
-    {
-      "id": 1,
-      "nomePasta": "Minha Pasta",
-      "url_completa": "https://api.comppare.com.br/pasta/1",
-      "subpastas": [...],
-      "fotos": [...]
-    }
-  ]
-}
-```
 
-### 3. Upload de Imagem
+### 2. Upload de Imagem
 ```bash
 # Upload de foto para uma pasta
-POST /api/photos/upload
+POST /api/imagens/salvar
 Authorization: Bearer {token}
 Content-Type: multipart/form-data
 
@@ -141,13 +123,16 @@ npm run dev
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
 | `POST` | `/api/usuarios/cadastrar` | Cadastro de usuário |
-| `POST` | `/api/usuarios/logar` | Autenticação |
-| `GET` | `/api/usuarios/dados` | Dados do usuário autenticado |
-| `GET` | `/api/pastas` | Listar pastas |
+| `POST` | `/api/usuarios/login` | Autenticação |
 | `POST` | `/api/pastas` | Criar pasta |
-| `POST` | `/api/photos/upload` | Upload de imagem |
-| `GET` | `/api/planos` | Listar planos |
-| `POST` | `/api/cupons/aplicar` | Aplicar cupom |
+| `POST` | `/api/imagens/salvar` | Upload de imagem |
+| `POST` | `/api/pix/enviar` | Criação de cobrança recorrente PIX |
+| `POST` | `/api/vendas/criar-assinatura` | Criação de cobrança via Cartão de Crédito |
+| `POST` | `/api/vendas/cancelar-assinatura` | Cancelamento de plano pago via Cartão de Crédito |
+| `GET` | `/api/admin/planos/listar` | Listar planos |
+| `GET` | `/api/admin/usuarios/listar` | Listar usuários |
+| `GET` | `/api/pasta/recuperar?idPasta=123` | Recuperar pasta especifica |
+
 
 ### Autenticação
 Todos os endpoints protegidos requerem o header:
