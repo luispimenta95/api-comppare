@@ -1,0 +1,90 @@
+name: Deploy API Documentation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'swagger.yaml'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Create Swagger UI
+        run: |
+          # Criar diretório para documentação
+          mkdir -p docs
+          
+          # Baixar Swagger UI
+          wget https://github.com/swagger-api/swagger-ui/archive/refs/heads/master.zip
+          unzip master.zip
+          cp -r swagger-ui-master/dist/* docs/
+          
+          # Configurar Swagger UI para usar nosso swagger.yaml
+          sed -i 's|https://petstore.swagger.io/v2/swagger.json|./swagger.yaml|g' docs/swagger-initializer.js
+          
+          # Copiar nosso swagger.yaml
+          cp swagger.yaml docs/
+          
+          # Criar index.html customizado
+          cat > docs/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <meta name="description" content="CompPare API Documentation" />
+            <title>CompPare API Documentation</title>
+            <link rel="stylesheet" href="./swagger-ui-bundle.css" />
+          </head>
+          <body>
+            <div id="swagger-ui"></div>
+            <script src="./swagger-ui-bundle.js" crossorigin></script>
+            <script>
+              window.onload = () => {
+                window.ui = SwaggerUIBundle({
+                  url: './swagger.yaml',
+                  dom_id: '#swagger-ui',
+                  presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIBundle.presets.standalone,
+                  ],
+                });
+              };
+            </script>
+          </body>
+          </html>
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

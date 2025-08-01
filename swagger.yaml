@@ -1,0 +1,529 @@
+openapi: 3.0.3
+info:
+  title: CompPare API
+  description: API para gerenciamento de usuários, pastas, fotos e planos da plataforma CompPare
+  version: 1.0.0
+  contact:
+    name: CompPare Support
+    email: luispimenta.contato@gmail.com
+servers:
+  - url: https://api.comppare.com.br/api
+    description: Servidor de produção
+  - url: http://127.0.0.1:8000/api
+    description: Servidor de desenvolvimento
+
+paths:
+  /test:
+    get:
+      summary: Testa a conectividade da API
+      tags:
+        - Test
+      responses:
+        '200':
+          description: API funcionando corretamente
+
+  /usuarios/cadastrar:
+    post:
+      summary: Cadastra um novo usuário
+      tags:
+        - Usuários
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - primeiroNome
+                - sobrenome
+                - cpf
+                - senha
+                - telefone
+                - email
+                - idPlano
+                - nascimento
+              properties:
+                primeiroNome:
+                  type: string
+                  example: "Luis"
+                sobrenome:
+                  type: string
+                  example: "Pimenta"
+                apelido:
+                  type: string
+                  example: "luispimenta95"
+                cpf:
+                  type: string
+                  example: "02049035055"
+                senha:
+                  type: string
+                  example: "Mp13151319!"
+                telefone:
+                  type: string
+                  example: "61998690313"
+                email:
+                  type: string
+                  format: email
+                  example: "luispimenta.contato@gmail.com"
+                idPlano:
+                  type: integer
+                  example: 1
+                nascimento:
+                  type: string
+                  format: date
+                  example: "19/09/1995"
+      responses:
+        '201':
+          description: Usuário cadastrado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codRetorno:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                  usuario:
+                    $ref: '#/components/schemas/Usuario'
+                  token:
+                    type: string
+        '409':
+          description: Usuário já existe
+
+  /usuarios/autenticar:
+    post:
+      summary: Autentica um usuário
+      tags:
+        - Usuários
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cpf
+                - senha
+              properties:
+                cpf:
+                  type: string
+                  example: "02049035055"
+                senha:
+                  type: string
+                  example: "13151319"
+      responses:
+        '200':
+          description: Autenticação realizada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codRetorno:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                  token:
+                    type: string
+                  dados:
+                    $ref: '#/components/schemas/Usuario'
+                  pastas:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Pasta'
+                  regras:
+                    $ref: '#/components/schemas/Regras'
+        '404':
+          description: Usuário não encontrado
+        '400':
+          description: Usuário bloqueado ou assinatura expirada
+
+  /usuarios/atualizar-plano:
+    post:
+      summary: Atualiza o plano de um usuário
+      tags:
+        - Usuários
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cpf
+                - plano
+              properties:
+                cpf:
+                  type: string
+                  example: "81581828012"
+                plano:
+                  type: integer
+                  example: 5
+      responses:
+        '200':
+          description: Plano alterado com sucesso
+        '400':
+          description: Downgrade não permitido
+
+  /usuarios/atualizar-senha:
+    post:
+      summary: Atualiza a senha do usuário
+      tags:
+        - Usuários
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cpf
+                - senha
+              properties:
+                cpf:
+                  type: string
+                  example: "42708782070"
+                senha:
+                  type: string
+                  example: "123"
+      responses:
+        '200':
+          description: Senha atualizada com sucesso
+
+  /usuarios/esqueceu-senha:
+    post:
+      summary: Solicita recuperação de senha
+      tags:
+        - Usuários
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "teste@gmail.com"
+      responses:
+        '200':
+          description: Email de recuperação enviado
+
+  /pasta/create:
+    post:
+      summary: Cria uma nova pasta
+      tags:
+        - Pastas
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - idUsuario
+                - nomePasta
+              properties:
+                idUsuario:
+                  type: integer
+                  example: 2
+                nomePasta:
+                  type: string
+                  example: "pimenta/upload0"
+      responses:
+        '201':
+          description: Pasta criada com sucesso
+
+  /pasta/excluir:
+    delete:
+      summary: Exclui uma pasta
+      tags:
+        - Pastas
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - idUsuario
+                - idPasta
+              properties:
+                idUsuario:
+                  type: integer
+                  example: 2
+                idPasta:
+                  type: integer
+                  example: 40
+      responses:
+        '200':
+          description: Pasta excluída com sucesso
+
+  /pasta/recuperar:
+    get:
+      summary: Recupera uma pasta específica
+      tags:
+        - Pastas
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: idPasta
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 26
+      responses:
+        '200':
+          description: Pasta recuperada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pasta'
+
+  /planos/cadastrar:
+    post:
+      summary: Cadastra um novo plano
+      tags:
+        - Planos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanoInput'
+      responses:
+        '201':
+          description: Plano criado com sucesso
+
+  /planos/listar:
+    get:
+      summary: Lista todos os planos
+      tags:
+        - Planos
+      responses:
+        '200':
+          description: Lista de planos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Plano'
+
+  /cupons/cadastrar:
+    post:
+      summary: Cadastra um novo cupom
+      tags:
+        - Cupons
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cupom
+                - percentualDesconto
+                - quantidadeDias
+              properties:
+                cupom:
+                  type: string
+                  example: "Teste"
+                percentualDesconto:
+                  type: number
+                  example: 10
+                quantidadeDias:
+                  type: integer
+                  example: 5
+      responses:
+        '201':
+          description: Cupom criado com sucesso
+
+  /pix/enviar:
+    post:
+      summary: Cria uma cobrança PIX
+      tags:
+        - Pagamentos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - usuario
+                - plano
+              properties:
+                usuario:
+                  type: integer
+                  example: 2
+                plano:
+                  type: integer
+                  example: 3
+      responses:
+        '200':
+          description: Cobrança criada com sucesso
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Usuario:
+      type: object
+      properties:
+        id:
+          type: integer
+        primeiroNome:
+          type: string
+        sobrenome:
+          type: string
+        apelido:
+          type: string
+        cpf:
+          type: string
+        email:
+          type: string
+        telefone:
+          type: string
+        idPlano:
+          type: integer
+        dataNascimento:
+          type: string
+          format: date
+        status:
+          type: integer
+        ultimoAcesso:
+          type: string
+          format: date-time
+
+    Pasta:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        path:
+          type: string
+        idPastaPai:
+          type: integer
+          nullable: true
+        subpastas:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pasta'
+        imagens:
+          type: array
+          items:
+            $ref: '#/components/schemas/Imagem'
+
+    Imagem:
+      type: object
+      properties:
+        id:
+          type: integer
+        path:
+          type: string
+        taken_at:
+          type: string
+          format: date-time
+
+    Plano:
+      type: object
+      properties:
+        id:
+          type: integer
+        nome:
+          type: string
+        descricao:
+          type: string
+        valor:
+          type: number
+        quantidadeTags:
+          type: integer
+        quantidadeFotos:
+          type: integer
+        quantidadePastas:
+          type: integer
+        quantidadeSubpastas:
+          type: integer
+        online:
+          type: boolean
+        frequenciaCobranca:
+          type: integer
+
+    PlanoInput:
+      type: object
+      required:
+        - nome
+        - descricao
+        - valor
+        - quantidadeTags
+        - quantidadeFotos
+        - quantidadePastas
+        - online
+        - frequenciaCobranca
+      properties:
+        nome:
+          type: string
+          example: "Teste plano EFI"
+        descricao:
+          type: string
+          example: "Teste"
+        valor:
+          type: number
+          example: 1
+        quantidadeTags:
+          type: integer
+          example: 1
+        quantidadeFotos:
+          type: integer
+          example: 1
+        quantidadePastas:
+          type: integer
+          example: 1
+        online:
+          type: boolean
+          example: true
+        frequenciaCobranca:
+          type: integer
+          example: 12
+
+    Regras:
+      type: object
+      properties:
+        pode_criar_nova_pasta:
+          type: boolean
+        pode_criar_subpastas:
+          type: boolean
+
+tags:
+  - name: Test
+    description: Endpoints de teste
+  - name: Usuários
+    description: Gerenciamento de usuários
+  - name: Pastas
+    description: Gerenciamento de pastas
+  - name: Planos
+    description: Gerenciamento de planos
+  - name: Cupons
+    description: Gerenciamento de cupons
+  - name: Pagamentos
+    description: Processamento de pagamentos
