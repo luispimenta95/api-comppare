@@ -613,19 +613,19 @@ class PastasController extends Controller
     public function syncTagsToFolder(Request $request)
     {
         $request->validate([
-            'folder' => 'required|exists:folders,id',
+            'pasta' => 'required|exists:pastas,id',
             'tags' => 'required|array',
             'tags.*' => 'required|integer|exists:tags,id',
         ]);
 
-        $folder = Pastas::findOrFail($request->folder);
+        $folder = Pastas::findOrFail($request->pasta);
 
         // Atualiza as tags da pasta, removendo as antigas
         $folder->tags()->sync($request->tags);
 
         return response()->json([
             'message' => 'Tags associadas com sucesso!',
-            'folder_id' => $folder->id,
+            'id_pasta' => $folder->id,
             'tags' => $request->tags,
         ]);
     }
