@@ -29,6 +29,7 @@ Route::prefix('admin')->group(
         Route::post('/cupons/atualizar-status', [CupomController::class, 'atualizarStatus']);
         Route::post('/cupons/atualizar-dados', [CupomController::class, 'atualizarDados']);
         Route::post('/cupons/verificar-status', [CupomController::class, 'checkStatusTicket']);
+        Route::post('/vendas/cancelar-assinatura', [VendasController::class, 'cancelarAssinatura']);
 
         Route::post('/ranking/atualizar', [RankingController::class, 'updatePoints']);
 
