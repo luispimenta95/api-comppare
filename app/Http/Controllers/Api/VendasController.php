@@ -83,7 +83,7 @@ class VendasController extends Controller
             $responseApi = json_decode($this->apiEfi->createSubscription($data), true)['body'];
 
             if ($responseApi['code'] == 200) {
-                $usuario->plano = $request->plano;
+                $usuario->idPlano = $request->plano;
                 $usuario->save();
 
                 $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
