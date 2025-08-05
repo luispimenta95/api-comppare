@@ -40,6 +40,7 @@ class VendasController extends Controller
 
         $campos = ['usuario', 'plano', 'token'];
         $campos = Helper::validarRequest($request, $campos);
+        dd($request);
 
 
         if ($campos !== true) {
