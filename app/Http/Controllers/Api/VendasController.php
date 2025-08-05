@@ -80,7 +80,7 @@ class VendasController extends Controller
                     "value" => $valor
                 ]
             ];
-            $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
+            $responseApi = json_decode($this->apiEfi->createSubscription($data), true)['body'];
 
             if ($responseApi['code'] == 200) {
                 $usuario->plano = $request->plano;
