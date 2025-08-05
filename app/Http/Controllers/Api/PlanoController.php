@@ -52,6 +52,7 @@ class PlanoController extends Controller
         if ($request->online) {
             $responseApi = json_decode($this->apiEfi->createPlan($request->nome, $request->frequenciaCobranca), true);
         }
+        dd($responseApi);
 
         $plano = Planos::create([
             'nome' => $request->nome,
