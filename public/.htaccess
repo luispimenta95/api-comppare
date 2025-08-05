@@ -23,3 +23,14 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# =============================
+# Libera CORS para arquivos públicos do /storage
+<IfModule mod_headers.c>
+    <FilesMatch "\.(jpg|jpeg|png|gif|webp|svg|bmp|ico|css|js|ttf|woff|woff2|eot|otf)$">
+        SetEnvIf Request_URI "^/storage/" CORS_ALLOWED
+        Header set Access-Control-Allow-Origin "*" env=CORS_ALLOWED
+        Header set Access-Control-Allow-Methods "GET, OPTIONS" env=CORS_ALLOWED
+        Header set Access-Control-Allow-Headers "Origin, Content-Type, Accept, Authorization" env=CORS_ALLOWED
+    </FilesMatch>
+</IfModule>
