@@ -61,7 +61,7 @@ class PlanoController extends Controller
             'frequenciaCobranca' => $request->frequenciaCobranca,
             'quantidadeTags' => $request->quantidadeTags,
             'quantidadePastas' => $request->quantidadePastas,
-            'idHost' => $request->online ? $responseApi['data']['plan_id'] : null,
+            'idHost' => $request->online ? $responseApi['body']['data']['plan_id'] : null,
         ]);
 
         $response = isset($plano->id) ?
