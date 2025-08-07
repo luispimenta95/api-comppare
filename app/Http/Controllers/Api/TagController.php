@@ -9,6 +9,7 @@ use App\Models\Usuarios;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Enums\HttpCodesEnum;
+use App\Models\Planos;
 
 class TagController extends Controller
 {
@@ -70,7 +71,8 @@ class TagController extends Controller
                 'message' => 'Usuário não possui plano associado.',
             ], HttpCodesEnum::BadRequest->value);
         }
-
+            $plano = Planos::find($usuario->idPlano);
+            dd($plano);
         // Contar tags pessoais já criadas pelo usuário
         $tagsPersonaisCriadas = Tag::where('idUsuarioCriador', $request->usuario)
             ->where('status', Helper::ATIVO)
@@ -78,7 +80,7 @@ class TagController extends Controller
 
         // Verificar se o limite do plano foi atingido
         $limiteTags = $usuario->idPlano->quantidadeTags;
-        
+
         if ($tagsPersonaisCriadas >= $limiteTags) {
             return response()->json([
                 'codRetorno' => HttpCodesEnum::Forbidden->value,
