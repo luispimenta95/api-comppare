@@ -64,7 +64,7 @@ class TagController extends Controller
             ], HttpCodesEnum::NotFound->value);
         }
 
-        if (!$usuario->plano) {
+        if (!$usuario->idPlano) {
             return response()->json([
                 'codRetorno' => HttpCodesEnum::BadRequest->value,
                 'message' => 'Usuário não possui plano associado.',
