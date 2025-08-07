@@ -77,7 +77,7 @@ class TagController extends Controller
             ->count();
 
         // Verificar se o limite do plano foi atingido
-        $limiteTags = $usuario->plano->quantidadeTags;
+        $limiteTags = $usuario->idPlano->quantidadeTags;
         
         if ($tagsPersonaisCriadas >= $limiteTags) {
             return response()->json([
