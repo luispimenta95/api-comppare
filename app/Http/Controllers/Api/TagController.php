@@ -72,7 +72,7 @@ class TagController extends Controller
             ], HttpCodesEnum::BadRequest->value);
         }
             $plano = Planos::find($usuario->idPlano);
-            dd($plano);
+            dd($plano->quantidadeTags);
         // Contar tags pessoais já criadas pelo usuário
         $tagsPersonaisCriadas = Tag::where('idUsuarioCriador', $request->usuario)
             ->where('status', Helper::ATIVO)
