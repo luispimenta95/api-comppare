@@ -71,22 +71,19 @@ class TagController extends Controller
                 'message' => 'Usuário não possui plano associado.',
             ], HttpCodesEnum::BadRequest->value);
         }
-            $plano = Planos::find($usuario->idPlano);
-            dd($plano->quantidadeTags);
+            $numTags = Planos::find($usuario->idPlano)->quantidadeTags;
         // Contar tags pessoais já criadas pelo usuário
         $tagsPersonaisCriadas = Tag::where('idUsuarioCriador', $request->usuario)
             ->where('status', Helper::ATIVO)
             ->count();
 
         // Verificar se o limite do plano foi atingido
-        $limiteTags = $usuario->idPlano->quantidadeTags;
-
-        if ($tagsPersonaisCriadas >= $limiteTags) {
+        if ($tagsPersonaisCriadas >= $numTags) {
             return response()->json([
                 'codRetorno' => HttpCodesEnum::Forbidden->value,
                 'message' => 'Limite de tags do plano atingido.',
                 'detalhes' => [
-                    'limite_plano' => $limiteTags,
+                    'limite_plano' => $numTags,
                     'tags_criadas' => $tagsPersonaisCriadas,
                     'plano_atual' => $usuario->plano->nome,
                     'sugestao' => 'Faça upgrade do seu plano para criar mais tags.'
@@ -130,8 +127,8 @@ class TagController extends Controller
             ],
             'limites' => [
                 'usado' => $tagsPersonaisCriadas + 1,
-                'limite' => $limiteTags,
-                'restante' => $limiteTags - ($tagsPersonaisCriadas + 1)
+                'limite' => $numTags,
+                'restante' => $numTags   - ($tagsPersonaisCriadas + 1)
             ]
         ];
 
