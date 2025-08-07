@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Util\Helper;
 use App\Models\Tag;
+use App\Models\Usuarios;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Enums\HttpCodesEnum;
@@ -37,24 +38,102 @@ class TagController extends Controller
 
     /**
      * Cadastrar uma nova tag.
+     * 
+     * Verifica se o usuário ainda pode criar tags baseado no limite do plano.
+     * 
+     * Exemplo de request:
+     * {
+     *   "nomeTag": "Nome da Tag",
+     *   "usuario": 1
+     * }
      */
     public function cadastrarTag(Request $request): JsonResponse
     {
         $request->validate([
             'nomeTag' => 'required|string|max:255',
+            'usuario' => 'required|integer|exists:usuarios,id'
         ]);
 
-        Tag::create([
+        // Buscar o usuário e seu plano
+        $usuario = Usuarios::with('plano')->find($request->usuario);
+        
+        if (!$usuario) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => 'Usuário não encontrado.',
+            ], HttpCodesEnum::NotFound->value);
+        }
+
+        if (!$usuario->plano) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => 'Usuário não possui plano associado.',
+            ], HttpCodesEnum::BadRequest->value);
+        }
+
+        // Contar tags pessoais já criadas pelo usuário
+        $tagsPersonaisCriadas = Tag::where('idUsuarioCriador', $request->usuario)
+            ->where('status', Helper::ATIVO)
+            ->count();
+
+        // Verificar se o limite do plano foi atingido
+        $limiteTags = $usuario->plano->quantidadeTags;
+        
+        if ($tagsPersonaisCriadas >= $limiteTags) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::Forbidden->value,
+                'message' => 'Limite de tags do plano atingido.',
+                'detalhes' => [
+                    'limite_plano' => $limiteTags,
+                    'tags_criadas' => $tagsPersonaisCriadas,
+                    'plano_atual' => $usuario->plano->nome,
+                    'sugestao' => 'Faça upgrade do seu plano para criar mais tags.'
+                ]
+            ], HttpCodesEnum::Forbidden->value);
+        }
+
+        // Verificar se já existe uma tag com o mesmo nome para este usuário
+        $tagExistente = Tag::where('idUsuarioCriador', $request->usuario)
+            ->where('nomeTag', $request->nomeTag)
+            ->where('status', Helper::ATIVO)
+            ->first();
+
+        if ($tagExistente) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::Conflict->value,
+                'message' => 'Você já possui uma tag com este nome.',
+                'tag_existente' => [
+                    'id' => $tagExistente->id,
+                    'nome' => $tagExistente->nomeTag,
+                    'criada_em' => $tagExistente->created_at->format('Y-m-d H:i:s')
+                ]
+            ], HttpCodesEnum::Conflict->value);
+        }
+
+        // Criar a nova tag
+        $novaTag = Tag::create([
             'nomeTag' => $request->nomeTag,
             'idUsuarioCriador' => $request->usuario,
+            'status' => Helper::ATIVO
         ]);
 
         $response = [
-            'codRetorno' => HttpCodesEnum::OK->value,
-            'message' => HttpCodesEnum::OK->description(),
+            'codRetorno' => HttpCodesEnum::Created->value,
+            'message' => 'Tag criada com sucesso.',
+            'tag' => [
+                'id' => $novaTag->id,
+                'nome' => $novaTag->nomeTag,
+                'tipo' => 'pessoal',
+                'criada_em' => $novaTag->created_at->format('Y-m-d H:i:s')
+            ],
+            'limites' => [
+                'usado' => $tagsPersonaisCriadas + 1,
+                'limite' => $limiteTags,
+                'restante' => $limiteTags - ($tagsPersonaisCriadas + 1)
+            ]
         ];
 
-        return response()->json($response);
+        return response()->json($response, HttpCodesEnum::Created->value);
     }
 
     /**

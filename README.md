@@ -185,8 +185,45 @@ Ao realizar autenticação, o usuário recebe automaticamente suas tags:
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
 | `GET` | `/api/tags/usuario?usuario={id}` | Lista tags do usuário |
-| `POST` | `/api/tags/cadastrar` | Cria nova tag |
+| `POST` | `/api/tags/cadastrar` | Cria nova tag (com validação de limite) |
 | `PUT` | `/api/tags/atualizar-status` | Atualiza status da tag |
+
+### Validações e Limites
+- **Limite por Plano**: Cada plano possui um limite de tags pessoais
+- **Validação de Duplicatas**: Não permite tags com nomes iguais para o mesmo usuário
+- **Controle de Status**: Apenas tags ativas são consideradas no limite
+- **Mensagens Detalhadas**: Retorna informações específicas sobre limites e sugestões
+
+### Exemplo de Criação com Limite
+```bash
+POST /api/tags/cadastrar
+{
+  "nomeTag": "Família",
+  "usuario": 1
+}
+
+# Sucesso (201)
+{
+  "message": "Tag criada com sucesso.",
+  "tag": { ... },
+  "limites": {
+    "usado": 5,
+    "limite": 10,
+    "restante": 5
+  }
+}
+
+# Erro - Limite atingido (403)
+{
+  "message": "Limite de tags do plano atingido.",
+  "detalhes": {
+    "limite_plano": 10,
+    "tags_criadas": 10,
+    "plano_atual": "Plano Básico",
+    "sugestao": "Faça upgrade do seu plano para criar mais tags."
+  }
+}
+```
 
 
 ### Autenticação

@@ -387,6 +387,186 @@ paths:
         '200':
           description: Cobrança criada com sucesso
 
+  /tags/cadastrar:
+    post:
+      summary: Cadastra uma nova tag pessoal
+      description: Cria uma nova tag para o usuário, verificando limite do plano
+      tags:
+        - Tags
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nomeTag
+                - usuario
+              properties:
+                nomeTag:
+                  type: string
+                  maxLength: 255
+                  example: "Família"
+                  description: "Nome da tag a ser criada"
+                usuario:
+                  type: integer
+                  example: 1
+                  description: "ID do usuário que está criando a tag"
+      responses:
+        '201':
+          description: Tag criada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codRetorno:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "Tag criada com sucesso."
+                  tag:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      nome:
+                        type: string
+                        example: "Família"
+                      tipo:
+                        type: string
+                        example: "pessoal"
+                      criada_em:
+                        type: string
+                        format: date-time
+                        example: "2024-01-15 10:30:00"
+                  limites:
+                    type: object
+                    properties:
+                      usado:
+                        type: integer
+                        example: 5
+                        description: "Número de tags já criadas (incluindo a nova)"
+                      limite:
+                        type: integer
+                        example: 10
+                        description: "Limite máximo de tags do plano"
+                      restante:
+                        type: integer
+                        example: 5
+                        description: "Quantidade de tags que ainda podem ser criadas"
+        '400':
+          description: Dados inválidos ou usuário sem plano
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codRetorno:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Usuário não possui plano associado."
+        '403':
+          description: Limite de tags atingido
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codRetorno:
+                    type: integer
+                    example: 403
+                  message:
+                    type: string
+                    example: "Limite de tags do plano atingido."
+                  detalhes:
+                    type: object
+                    properties:
+                      limite_plano:
+                        type: integer
+                        example: 10
+                      tags_criadas:
+                        type: integer
+                        example: 10
+                      plano_atual:
+                        type: string
+                        example: "Plano Básico"
+                      sugestao:
+                        type: string
+                        example: "Faça upgrade do seu plano para criar mais tags."
+        '404':
+          description: Usuário não encontrado
+        '409':
+          description: Tag já existe
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codRetorno:
+                    type: integer
+                    example: 409
+                  message:
+                    type: string
+                    example: "Você já possui uma tag com este nome."
+                  tag_existente:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 5
+                      nome:
+                        type: string
+                        example: "Família"
+                      criada_em:
+                        type: string
+                        format: date-time
+                        example: "2024-01-10 08:20:00"
+
+  /tags/usuario:
+    get:
+      summary: Lista tags do usuário
+      description: Retorna tags pessoais e globais disponíveis para o usuário
+      tags:
+        - Tags
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: usuario
+          in: query
+          required: true
+          schema:
+            type: integer
+            example: 1
+          description: ID do usuário
+      responses:
+        '200':
+          description: Lista de tags do usuário
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codRetorno:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "OK"
+                  totalTags:
+                    type: integer
+                    example: 15
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Tag'
+
 components:
   securitySchemes:
     BearerAuth:
@@ -570,6 +750,8 @@ tags:
     description: Gerenciamento de usuários
   - name: Pastas
     description: Gerenciamento de pastas
+  - name: Tags
+    description: Gerenciamento de tags pessoais e globais
   - name: Planos
     description: Gerenciamento de planos
   - name: Cupons

@@ -264,6 +264,50 @@ Content-Type: application/json
     "plano": 3
 }
 
+###Tags
+###cadastrar tag (com verificação de limite do plano)
+POST {{baseUrl}}/tags/cadastrar
+Content-Type: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5jb21wcGFyZS5jb20uYnIvYXBpL3VzdWFyaW9zL2F1dGVudGljYXIiLCJpYXQiOjE3NTI2MTkxMDIsImV4cCI6MTc1MjYyMjcwMiwibmJmIjoxNzUyNjE5MTAyLCJqdGkiOiJqQmdSV0poS2pncE43S29TIiwic3ViIjoiMSIsInBydiI6IjU1NGM1YWVhNGNiMjU0MDE5ZTEyMDY3YTdjYTU0N2Y2NzVkNTQ0Y2EifQ.X36IgXm8avWayQytb4Z2u94NoElPP-s8xbDb8VOccQI
+
+{
+    "nomeTag": "Família",
+    "usuario": 1
+}
+
+### Response de sucesso:
+# {
+#   "codRetorno": 201,
+#   "message": "Tag criada com sucesso.",
+#   "tag": {
+#     "id": 1,
+#     "nome": "Família",
+#     "tipo": "pessoal",
+#     "criada_em": "2024-01-15 10:30:00"
+#   },
+#   "limites": {
+#     "usado": 5,
+#     "limite": 10,
+#     "restante": 5
+#   }
+# }
+
+### Response de erro (limite atingido):
+# {
+#   "codRetorno": 403,
+#   "message": "Limite de tags do plano atingido.",
+#   "detalhes": {
+#     "limite_plano": 10,
+#     "tags_criadas": 10,
+#     "plano_atual": "Plano Básico",
+#     "sugestao": "Faça upgrade do seu plano para criar mais tags."
+#   }
+# }
+
+###listar tags por usuário
+GET {{baseUrl}}/tags/usuario?usuario=1
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5jb21wcGFyZS5jb20uYnIvYXBpL3VzdWFyaW9zL2F1dGVudGljYXIiLCJpYXQiOjE3NTI2MTkxMDIsImV4cCI6MTc1MjYyMjcwMiwibmJmIjoxNzUyNjE5MTAyLCJqdGkiOiJqQmdSV0poS2pncE43S29TIiwic3ViIjoiMSIsInBydiI6IjU1NGM1YWVhNGNiMjU0MDE5ZTEyMDY3YTdjYTU0N2Y2NzVkNTQ0Y2EifQ.X36IgXm8avWayQytb4Z2u94NoElPP-s8xbDb8VOccQI
+
 #criar cobranca
 POST {{baseUrl}}/imagens/salvar
 Content-Type: application/json
