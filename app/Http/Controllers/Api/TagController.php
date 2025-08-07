@@ -85,7 +85,7 @@ class TagController extends Controller
                 'detalhes' => [
                     'limite_plano' => $plano->quantidadeTags,
                     'tags_criadas' => $tagsPersonaisCriadas,
-                    'plano_atual' => $plano->nomePlano,
+                    'plano_atual' => $plano->nome,
                     'sugestao' => 'Faça upgrade do seu plano para criar mais tags.'
                 ]
             ], HttpCodesEnum::Forbidden->value);
