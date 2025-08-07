@@ -41,13 +41,11 @@ class TagController extends Controller
     public function cadastrarTag(Request $request): JsonResponse
     {
         $request->validate([
-            'valor' => 'required|string|max:255',
-            'label' => 'required|string|max:255',
+            'nomeTag' => 'required|string|max:255',
         ]);
 
         Tag::create([
-            'label' => $request->label,
-            'valor' => $request->valor,
+            'nomeTag' => $request->nomeTag,
             'idUsuarioCriador' => $request->usuario,
         ]);
 

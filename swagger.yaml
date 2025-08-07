@@ -134,6 +134,16 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Pasta'
+                  tags:
+                    $ref: '#/components/schemas/TagsResponse'
+                  regras:
+                    $ref: '#/components/schemas/Regras'
+                  dados:
+                    $ref: '#/components/schemas/Usuario'
+                  pastas:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Pasta'
                   regras:
                     $ref: '#/components/schemas/Regras'
         '404':
@@ -513,6 +523,45 @@ components:
           type: boolean
         pode_criar_subpastas:
           type: boolean
+
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nome:
+          type: string
+          example: "Família"
+        tipo:
+          type: string
+          enum: [pessoal, global]
+          description: "Tipo da tag - pessoal (criada pelo usuário) ou global (criada por admin)"
+          example: "pessoal"
+        criada_em:
+          type: string
+          format: date-time
+          example: "2024-01-15 10:30:00"
+
+    TagsResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: "Total de tags disponíveis para o usuário"
+          example: 15
+        pessoais:
+          type: integer
+          description: "Número de tags pessoais criadas pelo usuário"
+          example: 10
+        globais:
+          type: integer
+          description: "Número de tags globais/administrativas disponíveis"
+          example: 5
+        lista:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
 
 tags:
   - name: Test

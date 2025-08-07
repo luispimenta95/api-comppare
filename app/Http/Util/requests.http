@@ -25,7 +25,7 @@ Content-Type: application/json
 GET {{baseUrl}}/admin/usuarios/listar
 
 
-###Autenticar
+###Autenticar (login com tags incluídas na resposta)
 POST {{baseUrl}}/usuarios/autenticar
 Content-Type: application/json
 
@@ -33,6 +33,51 @@ Content-Type: application/json
     "cpf": "02049035055",
     "senha": "13151319"
 }
+
+### Response esperada (com tags):
+# {
+#   "codRetorno": 200,
+#   "message": "OK",
+#   "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+#   "dados": { 
+#     "id": 1,
+#     "primeiroNome": "Luis",
+#     "sobrenome": "Pimenta",
+#     "email": "luispimenta.contato@gmail.com",
+#     ...
+#   },
+#   "pastas": [
+#     {
+#       "id": 1,
+#       "nome": "Pasta Principal",
+#       "path": "https://api.comppare.com.br/pasta/1",
+#       "subpastas": [...]
+#     }
+#   ],
+#   "tags": {
+#     "total": 15,
+#     "pessoais": 10,
+#     "globais": 5,
+#     "lista": [
+#       {
+#         "id": 1,
+#         "nome": "Família",
+#         "tipo": "pessoal",
+#         "criada_em": "2024-01-15 10:30:00"
+#       },
+#       {
+#         "id": 2,
+#         "nome": "Trabalho",
+#         "tipo": "global",
+#         "criada_em": "2024-01-10 09:00:00"
+#       }
+#     ]
+#   },
+#   "regras": {
+#     "pode_criar_nova_pasta": true,
+#     "pode_criar_subpastas": true
+#   }
+# }
 
 ###recuperar
 POST {{baseUrl}}/usuarios/recuperar
@@ -121,7 +166,6 @@ Content-Type: application/json
 {
     "usuario":1,
     "plano": 1,
-    "valor": 39.9,
     "token": "acvvcyt"
 }
 

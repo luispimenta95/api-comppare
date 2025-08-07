@@ -19,6 +19,7 @@ use App\Models\Convite;
 use App\Models\Movimentacoes;
 use App\Models\Pastas;
 use App\Models\Planos;
+use App\Models\Tag;
 use App\Models\Usuarios;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -520,6 +521,28 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
     // Separar pastas principais das subpastas
     $pastasPrincipais = $todasPastas->whereNull('idPastaPai');
     
+    // Buscar tags associadas ao usuário
+    $tags = Tag::where(function ($query) use ($user) {
+        // Tags criadas pelo próprio usuário
+        $query->where('idUsuarioCriador', $user->id)
+            ->where('status', Helper::ATIVO);
+    })->orWhere(function ($query) {
+        // Tags criadas por administradores (públicas/globais)
+        $query->whereHas('usuario', function ($q) {
+            $q->where('idPerfil', Helper::ID_PERFIL_ADMIN);
+        })->where('status', Helper::ATIVO);
+    })->select(['id', 'nomeTag', 'idUsuarioCriador', 'created_at'])
+    ->orderBy('nomeTag', 'asc')
+    ->get()
+    ->map(function($tag) use ($user) {
+        return [
+            'id' => $tag->id,
+            'nome' => $tag->nomeTag,
+            'tipo' => $tag->idUsuarioCriador == $user->id ? 'pessoal' : 'global',
+            'criada_em' => $tag->created_at->format('Y-m-d H:i:s')
+        ];
+    });
+    
     // Criar estrutura completa das pastas com caminhos
     $pastas = $pastasPrincipais->map(function($pasta) use ($limitesInfo) {
         // Buscar subpastas desta pasta principal
@@ -597,6 +620,12 @@ private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $reque
         'token' => $token,
         'dados' => $dadosUsuario,
         'pastas' => $pastas, // Estrutura hierárquica
+        'tags' => [
+            'total' => $tags->count(),
+            'pessoais' => $tags->where('tipo', 'pessoal')->count(),
+            'globais' => $tags->where('tipo', 'global')->count(),
+            'lista' => $tags->values()
+        ],
         'regras' => $limitesInfo['resumo']
     ]);
 }

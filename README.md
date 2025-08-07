@@ -28,22 +28,38 @@ Comppare é uma API completa para gerenciamento de usuários, pastas, imagens, p
 - **💼 Planos de Assinatura**: Controle de recursos e limitações
 - **🎫 Sistema de Cupons**: Descontos e promoções
 - **💳 Processamento de Pagamentos**: Integração com gateways
+- **🏷️ Sistema de Tags**: Tags pessoais e globais para organização
 
 ## ⚡ Início Rápido
 
 ### 1. Autenticação
 ```bash
 # Login
-POST /api/usuarios/login
+POST /api/usuarios/autenticar
 {
-  "email": "usuario@email.com",
+  "cpf": "02049035055",
   "senha": "senha123"
 }
 
-# Resposta
+# Resposta (inclui tags do usuário)
 {
   "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-  "dados": { ... }
+  "dados": { ... },
+  "pastas": [...],
+  "tags": {
+    "total": 15,
+    "pessoais": 10,
+    "globais": 5,
+    "lista": [
+      {
+        "id": 1,
+        "nome": "Família",
+        "tipo": "pessoal",
+        "criada_em": "2024-01-15 10:30:00"
+      }
+    ]
+  },
+  "regras": { ... }
 }
 ```
 
@@ -121,17 +137,56 @@ npm run dev
 ### Endpoints Principais
 
 | Método | Endpoint | Descrição |
+| Método | Endpoint | Descrição |
 |--------|----------|-----------|
 | `POST` | `/api/usuarios/cadastrar` | Cadastro de usuário |
-| `POST` | `/api/usuarios/login` | Autenticação |
+| `POST` | `/api/usuarios/autenticar` | Autenticação (inclui tags) |
+| `GET` | `/api/usuarios/dados` | Dados do usuário autenticado |
+| `GET` | `/api/pastas` | Listar pastas |
 | `POST` | `/api/pastas` | Criar pasta |
-| `POST` | `/api/imagens/salvar` | Upload de imagem |
-| `POST` | `/api/pix/enviar` | Criação de cobrança recorrente PIX |
-| `POST` | `/api/vendas/criar-assinatura` | Criação de cobrança via Cartão de Crédito |
-| `POST` | `/api/vendas/cancelar-assinatura` | Cancelamento de plano pago via Cartão de Crédito |
-| `GET` | `/api/admin/planos/listar` | Listar planos |
-| `GET` | `/api/admin/usuarios/listar` | Listar usuários |
-| `GET` | `/api/pasta/recuperar?idPasta=123` | Recuperar pasta especifica |
+| `POST` | `/api/photos/upload` | Upload de imagem |
+| `GET` | `/api/planos` | Listar planos |
+| `POST` | `/api/cupons/aplicar` | Aplicar cupom |
+
+## 🏷️ Sistema de Tags
+
+### Tags no Login
+Ao realizar autenticação, o usuário recebe automaticamente suas tags:
+
+```json
+{
+  "tags": {
+    "total": 15,
+    "pessoais": 10,
+    "globais": 5,
+    "lista": [
+      {
+        "id": 1,
+        "nome": "Família",
+        "tipo": "pessoal",
+        "criada_em": "2024-01-15 10:30:00"
+      },
+      {
+        "id": 2,
+        "nome": "Trabalho",
+        "tipo": "global",
+        "criada_em": "2024-01-10 09:00:00"
+      }
+    ]
+  }
+}
+```
+
+### Tipos de Tags
+- **Tags Pessoais**: Criadas pelo próprio usuário
+- **Tags Globais**: Criadas por administradores, disponíveis para todos
+
+### Endpoints de Tags
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| `GET` | `/api/tags/usuario?usuario={id}` | Lista tags do usuário |
+| `POST` | `/api/tags/cadastrar` | Cria nova tag |
+| `PUT` | `/api/tags/atualizar-status` | Atualiza status da tag |
 
 
 ### Autenticação
