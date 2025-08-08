@@ -650,8 +650,12 @@ class PixController extends Controller
             
             if (!$webhookUrl) {
                 // Usar URL configurada no .env para webhook com TLS mútuo
+                $webhookUrl = env('WEBHOOK_PIX_URL');
+                
+                // Se não estiver configurada, usar URL base como fallback
+                if (!$webhookUrl) {
                     $webhookUrl = env('APP_URL') . '/api/pix/atualizar';
-
+                }
                 
                 if (!$webhookUrl) {
                     return response()->json([

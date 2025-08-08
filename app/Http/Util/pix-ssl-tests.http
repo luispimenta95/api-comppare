@@ -73,6 +73,54 @@ Authorization: Bearer {{token}}
 #   "error": "URL do webhook não atende aos requisitos da EFI. Requisitos: HTTPS obrigatório, TLS mútuo configurado, URL acessível externamente."
 # }
 
+### TESTE ESPECÍFICO: Resolver "self-signed certificate in certificate chain"
+### 
+### Este teste ajuda a resolver o erro que você está enfrentando
+
+### 1. Primeiro, verifique o status atual do SSL
+GET {{baseUrl}}/pix/ssl-status
+Authorization: Bearer {{token}}
+
+### 2. Configure o ambiente para desenvolvimento (se ainda não configurado)
+### Adicione estas linhas no seu .env:
+# APP_ENV=local
+# SSL_VERIFY_DISABLED=true
+# WEBHOOK_PIX_URL=http://localhost:8000/api/pix/atualizar
+
+### 3. Teste a configuração do webhook com SSL desabilitado
+PUT {{baseUrl}}/pix/webhook
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{}
+
+### 4. Se ainda der erro, tente com URL HTTP (apenas para teste local)
+PUT {{baseUrl}}/pix/webhook
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "webhookUrl": "http://localhost:8000/api/pix/atualizar"
+}
+
+### 5. Para usar HTTPS válido em desenvolvimento, use ngrok:
+### - Instale ngrok: https://ngrok.com/download
+### - Execute: ngrok http 8000
+### - Use a URL HTTPS gerada:
+PUT {{baseUrl}}/pix/webhook
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+    "webhookUrl": "https://sua-url-ngrok.ngrok.io/api/pix/atualizar"
+}
+
+### COMANDOS ÚTEIS:
+### - Diagnóstico completo: php artisan pix:diagnose-ssl
+### - Diagnóstico com correções: php artisan pix:diagnose-ssl --fix
+### - Script de configuração: ./configure-ssl-dev.sh
+### - Verificar rotas: php artisan route:list | grep pix
+
 ### CONFIGURAÇÕES NECESSÁRIAS NO .env PARA TESTE:
 
 # APP_ENV=local

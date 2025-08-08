@@ -23,6 +23,6 @@ Route::prefix('pix')->group(function () {
     // Configura webhook PIX
     Route::put('/webhook', [PixController::class, 'configurarWebhook']);
     
-    // Verifica status das configurações SSL
+    // Verifica status SSL e certificados (endpoint de diagnóstico)
     Route::get('/ssl-status', [PixController::class, 'sslStatus']);
 });
