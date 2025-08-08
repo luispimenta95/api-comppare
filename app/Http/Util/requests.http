@@ -418,29 +418,46 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL
     "image": ['image1.png', 'image2.png']
 }
 
-###configurar webhook PIX
+###configurar webhook PIX (com URL customizada)
 PUT {{baseUrl}}/pix/webhook
 Content-Type: application/json
 
 {
-  "webhookUrl": "https://usuario.recebedor.com/api/webhookcobr/"
+  "webhookUrl": "https://seu-dominio.com/api/webhookcobr/"
 }
+
+###configurar webhook PIX (usando URL do .env)
+PUT {{baseUrl}}/pix/webhook
+Content-Type: application/json
+
+{}
+
+### IMPORTANTE: Para configurar webhook PIX
+# 1. A URL deve ter HTTPS obrigatoriamente
+# 2. Deve estar configurada com autenticação TLS mútuo
+# 3. Configure no .env: WEBHOOK_PIX_URL=https://seu-dominio-com-tls-mutuo.com/api/pix/atualizar
+# 4. Consulte a documentação da EFI sobre como configurar TLS mútuo
 
 ### Response de sucesso:
 # {
 #   "codRetorno": 200,
 #   "message": "Webhook configurado com sucesso",
 #   "data": {
-#     "webhookUrl": "https://usuario.recebedor.com/api/webhookcobr/",
-#     "configurado_em": "2024-08-08 15:30:00"
+#     "webhookUrl": "https://seu-dominio.com/api/webhookcobr/",
+#     "configurado_em": "2024-08-08 15:30:00",
+#     "observacao": "Webhook configurado com autenticação TLS mútuo"
 #   }
 # }
 
-### Response de erro (URL inválida):
+### Response de erro (TLS mútuo não configurado):
 # {
-#   "codRetorno": 400,
-#   "message": "Dados inválidos",
-#   "errors": {
-#     "webhookUrl": ["O campo webhook url deve ser uma URL válida."]
-#   }
+#   "codRetorno": 500,
+#   "message": "Erro ao configurar webhook",
+#   "error": "Autenticação TLS mútuo não está configurada na URL informada. Configure um certificado SSL com autenticação mútua.",
+#   "sugestoes": [
+#     "Verifique se a URL possui certificado SSL válido",
+#     "Confirme se a autenticação TLS mútuo está configurada",
+#     "Teste se a URL está acessível externamente",
+#     "Consulte a documentação da EFI sobre configuração de webhooks"
+#   ]
 # }

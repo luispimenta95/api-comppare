@@ -573,12 +573,39 @@ class PixController extends Controller
      * @param Request $request
      * @return JsonResponse
      */
-    public function configurarWebhook(): JsonResponse
+    public function configurarWebhook(Request $request): JsonResponse
     {
         try {
-            // Validar se a URL do webhook foi fornecida
-      
-            $webhookUrl = env('APP_URL') . '/api/pix/atualizar';
+            // Verificar se foi fornecida uma URL customizada ou usar a padrão configurada
+            $webhookUrl = $request->input('webhookUrl');
+            
+            if (!$webhookUrl) {
+                // Usar URL configurada no .env para webhook com TLS mútuo
+                    $webhookUrl = env('APP_URL') . '/api/pix/atualizar';
+
+                
+                if (!$webhookUrl) {
+                    return response()->json([
+                        'codRetorno' => 400,
+                        'message' => 'URL do webhook não configurada. Configure WEBHOOK_PIX_URL no .env ou forneça webhookUrl na requisição.',
+                        'observacao' => 'A URL deve estar configurada com autenticação TLS mútuo conforme documentação da EFI'
+                    ], 400);
+                }
+            }
+
+            // Validar se a URL é válida
+            if (!filter_var($webhookUrl, FILTER_VALIDATE_URL)) {
+                return response()->json([
+                    'codRetorno' => 400,
+                    'message' => 'URL do webhook inválida',
+                    'webhookUrl' => $webhookUrl
+                ], 400);
+            }
+
+            Log::info('Tentando configurar webhook PIX', [
+                'webhook_url' => $webhookUrl,
+                'origem' => $request->input('webhookUrl') ? 'requisicao' : 'env'
+            ]);
 
             // Configurar webhook na API EFI
             $webhookResponse = $this->configurarWebhookEfi($webhookUrl);
@@ -595,34 +622,39 @@ class PixController extends Controller
                     'data' => [
                         'response' => $webhookResponse['data'],
                         'webhookUrl' => $webhookUrl,
-                        'configurado_em' => now()->toDateTimeString()
+                        'configurado_em' => now()->toDateTimeString(),
+                        'observacao' => 'Webhook configurado com autenticação TLS mútuo'
                     ]
                 ]);
             } else {
+                $errorMessage = $this->interpretarErroWebhook($webhookResponse);
+                
                 Log::error('Erro ao configurar webhook PIX', [
                     'webhook_url' => $webhookUrl,
-                    'error_response' => $webhookResponse
+                    'error_response' => $webhookResponse,
+                    'interpreted_error' => $errorMessage
                 ]);
 
                 return response()->json([
                     'codRetorno' => 500,
                     'message' => 'Erro ao configurar webhook',
-                    'error' => $webhookResponse['error'] ?? 'Erro desconhecido'
+                    'error' => $errorMessage,
+                    'detalhes' => $webhookResponse['data'] ?? null,
+                    'sugestoes' => [
+                        'Verifique se a URL possui certificado SSL válido',
+                        'Confirme se a autenticação TLS mútuo está configurada',
+                        'Teste se a URL está acessível externamente',
+                        'Consulte a documentação da EFI sobre configuração de webhooks'
+                    ]
                 ], 500);
             }
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'codRetorno' => 400,
-                'message' => 'Dados inválidos',
-                'errors' => $e->errors()
-            ], 400);
 
         } catch (\Exception $e) {
             Log::error('Erro geral ao configurar webhook PIX', [
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
-                'line' => $e->getLine()
+                'line' => $e->getLine(),
+                'request_data' => $request->all()
             ]);
 
             return response()->json([
@@ -630,6 +662,48 @@ class PixController extends Controller
                 'message' => 'Erro interno ao configurar webhook',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Interpreta erros comuns de configuração de webhook
+     */
+    private function interpretarErroWebhook(array $webhookResponse): string
+    {
+        $httpCode = $webhookResponse['http_code'] ?? 0;
+        $responseData = $webhookResponse['data'] ?? [];
+        
+        // Verificar códigos de erro conhecidos
+        switch ($httpCode) {
+            case 400:
+                if (isset($responseData['detail']) && strpos($responseData['detail'], 'TLS') !== false) {
+                    return 'Autenticação TLS mútuo não está configurada na URL informada. Configure um certificado SSL com autenticação mútua.';
+                }
+                return 'Dados da requisição inválidos ou URL malformada';
+                
+            case 401:
+                return 'Credenciais de autenticação inválidas para a API EFI';
+                
+            case 403:
+                return 'Acesso negado. Verifique as permissões da conta EFI';
+                
+            case 404:
+                return 'Endpoint de configuração de webhook não encontrado';
+                
+            case 422:
+                return 'URL do webhook não atende aos requisitos da EFI (deve ter HTTPS com TLS mútuo)';
+                
+            case 500:
+                return 'Erro interno da API EFI';
+                
+            default:
+                if (isset($responseData['detail'])) {
+                    return $responseData['detail'];
+                }
+                if (isset($responseData['message'])) {
+                    return $responseData['message'];
+                }
+                return $webhookResponse['error'] ?? 'Erro desconhecido ao configurar webhook';
         }
     }
 

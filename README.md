@@ -156,20 +156,42 @@ npm run dev
 ### Configuração de Webhook
 Configure a URL que receberá notificações sobre mudanças de status:
 
+⚠️ **IMPORTANTE**: A URL do webhook deve ter:
+- HTTPS obrigatoriamente
+- Autenticação TLS mútuo configurada
+- Certificado SSL válido e acessível externamente
+
 ```bash
+# Configure no .env
+WEBHOOK_PIX_URL=https://seu-dominio-com-tls-mutuo.com/api/pix/atualizar
+
+# Ou envie na requisição
 PUT /api/pix/webhook
 {
-  "webhookUrl": "https://usuario.recebedor.com/api/webhookcobr/"
+  "webhookUrl": "https://seu-dominio.com/api/webhookcobr/"
 }
 
-# Response
+# Response de sucesso
 {
   "codRetorno": 200,
   "message": "Webhook configurado com sucesso",
   "data": {
-    "webhookUrl": "https://usuario.recebedor.com/api/webhookcobr/",
-    "configurado_em": "2024-08-08 15:30:00"
+    "webhookUrl": "https://seu-dominio.com/api/webhookcobr/",
+    "configurado_em": "2024-08-08 15:30:00",
+    "observacao": "Webhook configurado com autenticação TLS mútuo"
   }
+}
+
+# Response de erro (TLS não configurado)
+{
+  "codRetorno": 500,
+  "message": "Erro ao configurar webhook",
+  "error": "Autenticação TLS mútuo não está configurada na URL informada",
+  "sugestoes": [
+    "Verifique se a URL possui certificado SSL válido",
+    "Confirme se a autenticação TLS mútuo está configurada",
+    "Consulte a documentação da EFI sobre configuração de webhooks"
+  ]
 }
 ```
 

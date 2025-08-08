@@ -485,23 +485,29 @@ paths:
   /pix/webhook:
     put:
       summary: Configura webhook para notificações de cobrança PIX
-      description: Configura a URL do webhook que receberá notificações sobre mudanças de status das cobranças PIX
+      description: |
+        Configura a URL do webhook que receberá notificações sobre mudanças de status das cobranças PIX.
+        
+        **REQUISITOS OBRIGATÓRIOS:**
+        - URL deve usar HTTPS
+        - Autenticação TLS mútuo deve estar configurada
+        - Certificado SSL válido e acessível externamente
+        
+        **Configuração:** Configure WEBHOOK_PIX_URL no .env ou forneça webhookUrl na requisição.
       tags:
         - Pagamentos
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
               type: object
-              required:
-                - webhookUrl
               properties:
                 webhookUrl:
                   type: string
                   format: uri
-                  example: "https://usuario.recebedor.com/api/webhookcobr/"
-                  description: "URL que receberá as notificações do webhook"
+                  example: "https://seu-dominio-com-tls-mutuo.com/api/webhookcobr/"
+                  description: "URL que receberá as notificações (opcional, usa WEBHOOK_PIX_URL do .env se não fornecida)"
       responses:
         '200':
           description: Webhook configurado com sucesso
@@ -521,13 +527,16 @@ paths:
                     properties:
                       webhookUrl:
                         type: string
-                        example: "https://usuario.recebedor.com/api/webhookcobr/"
+                        example: "https://seu-dominio.com/api/webhookcobr/"
                       configurado_em:
                         type: string
                         format: date-time
                         example: "2024-08-08 15:30:00"
+                      observacao:
+                        type: string
+                        example: "Webhook configurado com autenticação TLS mútuo"
         '400':
-          description: Dados inválidos
+          description: Dados inválidos ou URL não configurada
           content:
             application/json:
               schema:
@@ -538,17 +547,36 @@ paths:
                     example: 400
                   message:
                     type: string
-                    example: "Dados inválidos"
-                  errors:
-                    type: object
-                    properties:
-                      webhookUrl:
-                        type: array
-                        items:
-                          type: string
-                        example: ["O campo webhook url deve ser uma URL válida."]
+                    example: "URL do webhook não configurada. Configure WEBHOOK_PIX_URL no .env ou forneça webhookUrl na requisição."
+                  observacao:
+                    type: string
+                    example: "A URL deve estar configurada com autenticação TLS mútuo conforme documentação da EFI"
         '500':
-          description: Erro interno do servidor
+          description: Erro ao configurar webhook (TLS mútuo não configurado)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codRetorno:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Erro ao configurar webhook"
+                  error:
+                    type: string
+                    example: "Autenticação TLS mútuo não está configurada na URL informada. Configure um certificado SSL com autenticação mútua."
+                  sugestoes:
+                    type: array
+                    items:
+                      type: string
+                    example: [
+                      "Verifique se a URL possui certificado SSL válido",
+                      "Confirme se a autenticação TLS mútuo está configurada",
+                      "Teste se a URL está acessível externamente",
+                      "Consulte a documentação da EFI sobre configuração de webhooks"
+                    ]
 
   /tags/cadastrar:
     post:
