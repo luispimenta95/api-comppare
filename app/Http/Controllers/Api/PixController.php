@@ -482,6 +482,15 @@ class PixController extends Controller
             $resultados = [];
 
             // Processar cada REC da requisição
+            if (!is_array($recs)) {
+                Log::warning('Campo "recs" ausente ou inválido na requisição', ['recs' => $recs]);
+                $recs = [];
+                return response()->json([
+                    'codRetorno' => 200,
+                    'message' => 'Nenhum REC fornecido para atualização',
+                ]);     
+            }
+
             foreach ($recs as $rec) {
                 if (!isset($rec['idRec']) || !isset($rec['status'])) {
                     Log::warning('REC inválido recebido - faltando idRec ou status', ['rec' => $rec]);
