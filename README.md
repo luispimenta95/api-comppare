@@ -161,6 +161,23 @@ Configure a URL que receberá notificações sobre mudanças de status:
 - Autenticação TLS mútuo configurada
 - Certificado SSL válido e acessível externamente
 
+📁 **Certificados Necessários**:
+```bash
+# Estrutura de certificados no storage/app/certificates/
+storage/
+  app/
+    certificates/
+      # Certificados principais EFI
+      hml.pem          # Certificado homologação
+      prd.pem          # Certificado produção
+      
+      # Certificados TLS mútuo para webhook
+      cliente.pem      # Certificado cliente (homologação)
+      cliente.key      # Chave privada cliente (homologação)
+      cliente_prd.pem  # Certificado cliente (produção)
+      cliente_prd.key  # Chave privada cliente (produção)
+```
+
 ```bash
 # Configure no .env
 WEBHOOK_PIX_URL=https://seu-dominio-com-tls-mutuo.com/api/pix/atualizar

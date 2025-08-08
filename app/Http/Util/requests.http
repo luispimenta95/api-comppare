@@ -436,7 +436,12 @@ Content-Type: application/json
 # 1. A URL deve ter HTTPS obrigatoriamente
 # 2. Deve estar configurada com autenticação TLS mútuo
 # 3. Configure no .env: WEBHOOK_PIX_URL=https://seu-dominio-com-tls-mutuo.com/api/pix/atualizar
-# 4. Consulte a documentação da EFI sobre como configurar TLS mútuo
+# 4. Certificados necessários em storage/app/certificates/:
+#    - cliente.pem (certificado cliente homologação)
+#    - cliente.key (chave privada cliente homologação)  
+#    - cliente_prd.pem (certificado cliente produção)
+#    - cliente_prd.key (chave privada cliente produção)
+# 5. Consulte a documentação da EFI sobre como configurar TLS mútuo
 
 ### Response de sucesso:
 # {

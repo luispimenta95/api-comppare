@@ -436,7 +436,7 @@ class PixController extends Controller
     /**
      * Executa requisição para API EFI
      */
-    private function executeApiRequest(string $url, ?string $method = 'POST', ?string $body = null): array
+    private function executeApiRequest(string $url, ?string $method = 'POST', ?string $body = null, bool $isWebhookConfig = false): array
     {
         $curl = curl_init();
         
@@ -452,6 +452,40 @@ class PixController extends Controller
                 "Content-Type: application/json"
             ],
         ];
+
+        // Para configuração de webhook, adicionar certificados TLS mútuo
+        if ($isWebhookConfig) {
+            $clientCertPath = $this->enviroment === 'local' 
+                ? storage_path('app/certificates/cliente.pem')
+                : storage_path('app/certificates/cliente_prd.pem');
+                
+            $clientKeyPath = $this->enviroment === 'local' 
+                ? storage_path('app/certificates/cliente.key')
+                : storage_path('app/certificates/cliente_prd.key');
+
+            if (file_exists($clientCertPath)) {
+                $curlOptions[CURLOPT_SSLCERT] = $clientCertPath;
+                
+                Log::info('Usando certificado cliente para webhook', [
+                    'cert_path' => $clientCertPath,
+                    'environment' => $this->enviroment
+                ]);
+            }
+
+            if (file_exists($clientKeyPath)) {
+                $curlOptions[CURLOPT_SSLKEY] = $clientKeyPath;
+                
+                Log::info('Usando chave cliente para webhook', [
+                    'key_path' => $clientKeyPath,
+                    'environment' => $this->enviroment
+                ]);
+            }
+
+            // Configurações adicionais para TLS mútuo
+            $curlOptions[CURLOPT_SSL_VERIFYPEER] = true;
+            $curlOptions[CURLOPT_SSL_VERIFYHOST] = 2;
+            $curlOptions[CURLOPT_CAINFO] = $this->certificadoPath;
+        }
 
         if ($body) {
             $curlOptions[CURLOPT_POSTFIELDS] = $body;
@@ -718,7 +752,8 @@ class PixController extends Controller
             "webhookUrl" => $webhookUrl
         ]);
 
-        return $this->executeApiRequest($url, 'PUT', $body);
+        // Usar certificados TLS mútuo para configuração de webhook
+        return $this->executeApiRequest($url, 'PUT', $body, true);
     }
 
 }
