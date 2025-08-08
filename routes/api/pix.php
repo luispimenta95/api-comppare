@@ -19,7 +19,4 @@ Route::prefix('pix')->group(function () {
 
     // Atualiza cobrança PIX existente
     Route::post('/atualizar', [PixController::class, 'atualizarCobranca']);
-
-    // Configura webhook para notificações de cobrança
-    Route::get('/webhook', [PixController::class, 'configurarWebhook']);
 });
