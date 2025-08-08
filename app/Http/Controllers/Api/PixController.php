@@ -577,6 +577,7 @@ class PixController extends Controller
             // Validar se a URL do webhook foi fornecida
       
             $webhookUrl = env('APP_URL') . '/api/pix/atualizar';
+            dd($webhookUrl);
 
             // Configurar webhook na API EFI
             $webhookResponse = $this->configurarWebhookEfi($webhookUrl);
