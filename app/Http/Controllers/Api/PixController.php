@@ -474,5 +474,175 @@ class PixController extends Controller
         ];
     }
 
+    public function atualizarCobranca(Request $request): JsonResponse
+    {
+        try {
+            // Validar se existe o campo 'recs' na requisição
+            if (!$request->has('recs') || !is_array($request->recs)) {
+                return response()->json([
+                    'codRetorno' => 400,
+                    'message' => 'Campo "recs" é obrigatório e deve ser um array',
+                ], 400);
+            }
+
+            $recs = $request->recs;
+            $resultados = [];
+
+            // Processar cada REC da requisição
+            foreach ($recs as $rec) {
+                if (!isset($rec['idRec']) || !isset($rec['status'])) {
+                    Log::warning('REC inválido recebido - faltando idRec ou status', ['rec' => $rec]);
+                    continue;
+                }
+
+                $idRec = $rec['idRec'];
+                $status = $rec['status'];
+
+                // Buscar o pagamento PIX no banco de dados pelo recId
+                $pagamentoPix = PagamentoPix::where('recId', $idRec)->first();
+
+                if ($pagamentoPix) {
+                    // Atualizar status no banco de dados
+                    $statusAnterior = $pagamentoPix->status;
+                    $pagamentoPix->status = $status;
+                    $pagamentoPix->dataPagamento = now(); // Atualiza a data de pagamento
+                    $pagamentoPix->save();
+
+                    Log::info('Status da cobrança PIX atualizado', [
+                        'idRec' => $idRec,
+                        'status_anterior' => $statusAnterior,
+                        'status_novo' => $status,
+                        'pagamento_id' => $pagamentoPix->id
+                    ]);
+
+                    $resultados[] = [
+                        'idRec' => $idRec,
+                        'status' => $status,
+                        'status_anterior' => $statusAnterior,
+                        'atualizado' => true
+                    ];
+
+                $usuario = Usuarios::find($pagamentoPix->idUsuario);
+                    if ($usuario) {
+                        // Enviar email de notificação
+                      $usuario->status = 1;
+                      $usuario->dataUltimoPagamento = now();
+                      $usuario->idUltimaCobranca = $idRec;
+                      $usuario->save();
+                    }
+                } else {
+                    Log::warning('Pagamento PIX não encontrado para o idRec', ['idRec' => $idRec]);
+                    
+                    $resultados[] = [
+                        'idRec' => $idRec,
+                        'status' => $status,
+                        'atualizado' => false,
+                        'motivo' => 'Pagamento não encontrado no sistema'
+                    ];
+                }
+            }
+
+            return response()->json([
+                'codRetorno' => 200,
+                'message' => 'Atualização de cobranças processada',
+                'total_processados' => count($resultados),
+                'resultados' => $resultados
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao atualizar cobrança PIX', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'codRetorno' => 500,
+                'message' => 'Erro interno ao processar atualização de cobranças',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Configura webhook para notificações de cobrança PIX
+     * 
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function configurarWebhook(): JsonResponse
+    {
+        try {
+            // Validar se a URL do webhook foi fornecida
+      
+            $webhookUrl = env('APP_URL') . '/api/pix/atualizar';
+
+            // Configurar webhook na API EFI
+            $webhookResponse = $this->configurarWebhookEfi($webhookUrl);
+            
+            if ($webhookResponse['success']) {
+                Log::info('Webhook PIX configurado com sucesso', [
+                    'webhook_url' => $webhookUrl,
+                    'response' => $webhookResponse['data']
+                ]);
+
+                return response()->json([
+                    'codRetorno' => 200,
+                    'message' => 'Webhook configurado com sucesso',
+                    'data' => [
+                        'response' => $webhookResponse['data'],
+                        'webhookUrl' => $webhookUrl,
+                        'configurado_em' => now()->toDateTimeString()
+                    ]
+                ]);
+            } else {
+                Log::error('Erro ao configurar webhook PIX', [
+                    'webhook_url' => $webhookUrl,
+                    'error_response' => $webhookResponse
+                ]);
+
+                return response()->json([
+                    'codRetorno' => 500,
+                    'message' => 'Erro ao configurar webhook',
+                    'error' => $webhookResponse['error'] ?? 'Erro desconhecido'
+                ], 500);
+            }
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'codRetorno' => 400,
+                'message' => 'Dados inválidos',
+                'errors' => $e->errors()
+            ], 400);
+
+        } catch (\Exception $e) {
+            Log::error('Erro geral ao configurar webhook PIX', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'codRetorno' => 500,
+                'message' => 'Erro interno ao configurar webhook',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Configura webhook na API EFI - PUT /v2/webhookcobr
+     */
+    private function configurarWebhookEfi(string $webhookUrl): array
+    {
+        $url = $this->buildApiUrl("/v2/webhookcobr");
+        
+        $body = json_encode([
+            "webhookUrl" => $webhookUrl
+        ]);
+
+        return $this->executeApiRequest($url, 'PUT', $body);
+    }
 
 }

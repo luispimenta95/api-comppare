@@ -264,6 +264,65 @@ Content-Type: application/json
     "plano": 3
 }
 
+###atualizar cobrança PIX (webhook EFI)
+POST {{baseUrl}}/pix/atualizar
+Content-Type: application/json
+
+{
+  "recs": [
+    {
+      "idRec": "RR1026652320240821lab77511abf",
+      "status": "APROVADA",
+      "atualizacao": [
+        {
+          "status": "CRIADA",
+          "data": "2024-08-20T10:12:07.567Z"
+        },
+        {
+          "status": "APROVADA",
+          "data": "2024-08-22T12:43:53.337Z"
+        }
+      ],
+      "ativacao": {
+        "tipoJornada": "JORNADA_3",
+        "dadosJornada": {
+          "txid": "r9eFIFmwcZ55Nm4RsKZAAtIvvCrlcNN6"
+        }
+      }
+    }
+  ]
+}
+
+### Response de sucesso:
+# {
+#   "codRetorno": 200,
+#   "message": "Atualização de cobranças processada",
+#   "total_processados": 1,
+#   "resultados": [
+#     {
+#       "idRec": "RR1026652320240821lab77511abf",
+#       "status": "APROVADA",
+#       "status_anterior": "ATIVA",
+#       "atualizado": true
+#     }
+#   ]
+# }
+
+### Response de erro (REC não encontrado):
+# {
+#   "codRetorno": 200,
+#   "message": "Atualização de cobranças processada",
+#   "total_processados": 1,
+#   "resultados": [
+#     {
+#       "idRec": "RR1026652320240821lab77511abf",
+#       "status": "APROVADA",
+#       "atualizado": false,
+#       "motivo": "Pagamento não encontrado no sistema"
+#     }
+#   ]
+# }
+
 ###Tags
 ###cadastrar tag (com verificação de limite do plano)
 POST {{baseUrl}}/tags/cadastrar
@@ -358,3 +417,30 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL
     "idPasta": 2,
     "image": ['image1.png', 'image2.png']
 }
+
+###configurar webhook PIX
+PUT {{baseUrl}}/pix/webhook
+Content-Type: application/json
+
+{
+  "webhookUrl": "https://usuario.recebedor.com/api/webhookcobr/"
+}
+
+### Response de sucesso:
+# {
+#   "codRetorno": 200,
+#   "message": "Webhook configurado com sucesso",
+#   "data": {
+#     "webhookUrl": "https://usuario.recebedor.com/api/webhookcobr/",
+#     "configurado_em": "2024-08-08 15:30:00"
+#   }
+# }
+
+### Response de erro (URL inválida):
+# {
+#   "codRetorno": 400,
+#   "message": "Dados inválidos",
+#   "errors": {
+#     "webhookUrl": ["O campo webhook url deve ser uma URL válida."]
+#   }
+# }

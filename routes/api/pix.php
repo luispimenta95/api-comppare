@@ -16,4 +16,10 @@ Route::prefix('pix')->group(function () {
 
     // Cria cobrança PIX usando o método criarCobranca
     Route::post('/enviar', [PixController::class, 'criarCobranca']);
+
+    // Atualiza cobrança PIX existente
+    Route::post('/atualizar', [PixController::class, 'atualizarCobranca']);
+
+    // Configura webhook para notificações de cobrança
+    Route::put('/webhook', [PixController::class, 'configurarWebhook']);
 });

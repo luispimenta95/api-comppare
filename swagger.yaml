@@ -387,6 +387,169 @@ paths:
         '200':
           description: Cobrança criada com sucesso
 
+  /pix/atualizar:
+    post:
+      summary: Atualiza status de cobranças PIX (webhook EFI)
+      description: Endpoint utilizado pela EFI para notificar mudanças de status nas cobranças PIX recorrentes
+      tags:
+        - Pagamentos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - recs
+              properties:
+                recs:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - idRec
+                      - status
+                    properties:
+                      idRec:
+                        type: string
+                        example: "RR1026652320240821lab77511abf"
+                        description: "ID único da cobrança recorrente"
+                      status:
+                        type: string
+                        enum: [CRIADA, APROVADA, REJEITADA, CANCELADA]
+                        example: "APROVADA"
+                        description: "Novo status da cobrança"
+                      atualizacao:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            status:
+                              type: string
+                            data:
+                              type: string
+                              format: date-time
+                      ativacao:
+                        type: object
+                        properties:
+                          tipoJornada:
+                            type: string
+                          dadosJornada:
+                            type: object
+                            properties:
+                              txid:
+                                type: string
+      responses:
+        '200':
+          description: Atualização processada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codRetorno:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Atualização de cobranças processada"
+                  total_processados:
+                    type: integer
+                    example: 1
+                  resultados:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        idRec:
+                          type: string
+                          example: "RR1026652320240821lab77511abf"
+                        status:
+                          type: string
+                          example: "APROVADA"
+                        status_anterior:
+                          type: string
+                          example: "ATIVA"
+                        atualizado:
+                          type: boolean
+                          example: true
+                        motivo:
+                          type: string
+                          example: "Pagamento não encontrado no sistema"
+                          description: "Motivo quando atualizado=false"
+        '400':
+          description: Dados inválidos
+        '500':
+          description: Erro interno do servidor
+
+  /pix/webhook:
+    put:
+      summary: Configura webhook para notificações de cobrança PIX
+      description: Configura a URL do webhook que receberá notificações sobre mudanças de status das cobranças PIX
+      tags:
+        - Pagamentos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - webhookUrl
+              properties:
+                webhookUrl:
+                  type: string
+                  format: uri
+                  example: "https://usuario.recebedor.com/api/webhookcobr/"
+                  description: "URL que receberá as notificações do webhook"
+      responses:
+        '200':
+          description: Webhook configurado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codRetorno:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Webhook configurado com sucesso"
+                  data:
+                    type: object
+                    properties:
+                      webhookUrl:
+                        type: string
+                        example: "https://usuario.recebedor.com/api/webhookcobr/"
+                      configurado_em:
+                        type: string
+                        format: date-time
+                        example: "2024-08-08 15:30:00"
+        '400':
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codRetorno:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Dados inválidos"
+                  errors:
+                    type: object
+                    properties:
+                      webhookUrl:
+                        type: array
+                        items:
+                          type: string
+                        example: ["O campo webhook url deve ser uma URL válida."]
+        '500':
+          description: Erro interno do servidor
+
   /tags/cadastrar:
     post:
       summary: Cadastra uma nova tag pessoal

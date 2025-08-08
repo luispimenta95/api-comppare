@@ -147,6 +147,81 @@ npm run dev
 | `POST` | `/api/photos/upload` | Upload de imagem |
 | `GET` | `/api/planos` | Listar planos |
 | `POST` | `/api/cupons/aplicar` | Aplicar cupom |
+| `POST` | `/api/pix/enviar` | Criar cobrança PIX recorrente |
+| `POST` | `/api/pix/atualizar` | Atualizar status cobrança (webhook) |
+| `PUT` | `/api/pix/webhook` | Configurar webhook de notificações |
+
+## 💳 Sistema de Pagamentos PIX
+
+### Configuração de Webhook
+Configure a URL que receberá notificações sobre mudanças de status:
+
+```bash
+PUT /api/pix/webhook
+{
+  "webhookUrl": "https://usuario.recebedor.com/api/webhookcobr/"
+}
+
+# Response
+{
+  "codRetorno": 200,
+  "message": "Webhook configurado com sucesso",
+  "data": {
+    "webhookUrl": "https://usuario.recebedor.com/api/webhookcobr/",
+    "configurado_em": "2024-08-08 15:30:00"
+  }
+}
+```
+
+### Criação de Cobrança PIX
+A API oferece integração completa com PIX recorrente da EFI:
+
+```bash
+POST /api/pix/enviar
+{
+  "usuario": 2,
+  "plano": 3
+}
+
+# Response
+{
+  "codRetorno": 200,
+  "message": "Cobrança PIX criada com sucesso",
+  "data": {
+    "pix": "00020101021226580014br.gov.bcb.pix..."
+  }
+}
+```
+
+### Webhook de Atualização
+Endpoint para receber notificações da EFI sobre mudanças de status:
+
+```bash
+POST /api/pix/atualizar
+{
+  "recs": [
+    {
+      "idRec": "RR1026652320240821lab77511abf",
+      "status": "APROVADA"
+    }
+  ]
+}
+
+# Response
+{
+  "codRetorno": 200,
+  "message": "Atualização de cobranças processada",
+  "total_processados": 1,
+  "resultados": [
+    {
+      "idRec": "RR1026652320240821lab77511abf",
+      "status": "APROVADA",
+      "status_anterior": "ATIVA",
+      "atualizado": true
+    }
+  ]
+}
+```
 
 ## 🏷️ Sistema de Tags
 
