@@ -477,13 +477,6 @@ class PixController extends Controller
     public function atualizarCobranca(Request $request): JsonResponse
     {
         try {
-            // Validar se existe o campo 'recs' na requisição
-            if (!$request->has('recs') || !is_array($request->recs)) {
-                return response()->json([
-                    'codRetorno' => 400,
-                    'message' => 'Campo "recs" é obrigatório e deve ser um array',
-                ], 400);
-            }
 
             $recs = $request->recs;
             $resultados = [];
