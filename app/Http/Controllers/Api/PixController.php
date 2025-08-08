@@ -453,6 +453,30 @@ class PixController extends Controller
             ],
         ];
 
+        // Configurações SSL baseadas no ambiente
+        $sslVerifyDisabled = config('app.ssl_verify_disabled', false) || env('SSL_VERIFY_DISABLED', false);
+        
+        if ($this->enviroment === 'local' || $sslVerifyDisabled) {
+            // Em ambiente local ou com SSL verification desabilitada, permitir certificados auto-assinados
+            $curlOptions[CURLOPT_SSL_VERIFYPEER] = false;
+            $curlOptions[CURLOPT_SSL_VERIFYHOST] = false;
+            
+            Log::info('SSL verification desabilitada', [
+                'url' => $url,
+                'environment' => $this->enviroment,
+                'ssl_verify_disabled' => $sslVerifyDisabled
+            ]);
+        } else {
+            // Em produção, manter verificação SSL ativa
+            $curlOptions[CURLOPT_SSL_VERIFYPEER] = true;
+            $curlOptions[CURLOPT_SSL_VERIFYHOST] = 2;
+            
+            Log::info('SSL verification ativa', [
+                'url' => $url,
+                'environment' => $this->enviroment
+            ]);
+        }
+
         // Para configuração de webhook, adicionar certificados TLS mútuo
         if ($isWebhookConfig) {
             $clientCertPath = $this->enviroment === 'local' 
@@ -481,10 +505,10 @@ class PixController extends Controller
                 ]);
             }
 
-            // Configurações adicionais para TLS mútuo
-            $curlOptions[CURLOPT_SSL_VERIFYPEER] = true;
-            $curlOptions[CURLOPT_SSL_VERIFYHOST] = 2;
-            $curlOptions[CURLOPT_CAINFO] = $this->certificadoPath;
+            // Para webhook em produção, usar CA info se disponível
+            if ($this->enviroment !== 'local' && file_exists($this->certificadoPath)) {
+                $curlOptions[CURLOPT_CAINFO] = $this->certificadoPath;
+            }
         }
 
         if ($body) {
@@ -497,6 +521,17 @@ class PixController extends Controller
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         $error = curl_error($curl);
         curl_close($curl);
+
+        // Log adicional para debug de SSL
+        if ($error && strpos($error, 'SSL') !== false) {
+            Log::warning('Erro SSL detectado na requisição', [
+                'url' => $url,
+                'error' => $error,
+                'environment' => $this->enviroment,
+                'is_webhook_config' => $isWebhookConfig,
+                'cert_path' => $this->certificadoPath
+            ]);
+        }
 
         return [
             'success' => !$error && ($httpCode >= 200 && $httpCode < 300),
@@ -706,29 +741,65 @@ class PixController extends Controller
     {
         $httpCode = $webhookResponse['http_code'] ?? 0;
         $responseData = $webhookResponse['data'] ?? [];
+        $error = $webhookResponse['error'] ?? '';
+        
+        // Verificar erros SSL específicos
+        if (strpos($error, 'SSL certificate problem') !== false) {
+            if (strpos($error, 'self-signed certificate') !== false) {
+                $ambiente = config('app.env');
+                if ($ambiente === 'local' || $ambiente === 'development') {
+                    return 'SSL certificate problem: self-signed certificate in certificate chain. SOLUÇÃO PARA DESENVOLVIMENTO: Configure SSL_VERIFY_DISABLED=true no arquivo .env para desabilitar verificação SSL em ambiente local.';
+                } else {
+                    return 'SSL certificate problem: self-signed certificate in certificate chain. SOLUÇÃO PARA PRODUÇÃO: Use certificados SSL válidos emitidos por autoridade certificadora confiável.';
+                }
+            }
+            
+            if (strpos($error, 'unable to get local issuer certificate') !== false) {
+                return 'SSL certificate problem: unable to get local issuer certificate. SOLUÇÃO: Atualize os certificados CA do sistema ou configure SSL_VERIFY_DISABLED=true para desenvolvimento.';
+            }
+            
+            return 'Problema com certificado SSL. Verifique se os certificados estão corretos e acessíveis. Para desenvolvimento: configure SSL_VERIFY_DISABLED=true no .env';
+        }
+        
+        if (strpos($error, 'SSL connect error') !== false || strpos($error, 'TLS handshake') !== false) {
+            return 'Erro de conexão SSL/TLS. Verifique: 1) URL suporta HTTPS, 2) Certificados cliente em storage/app/certificates/, 3) TLS mútuo configurado no servidor de destino.';
+        }
         
         // Verificar códigos de erro conhecidos
         switch ($httpCode) {
+            case 0:
+                if (!empty($error)) {
+                    // Analisar erro mais detalhadamente
+                    if (strpos($error, 'Could not resolve host') !== false) {
+                        return "Erro de DNS: {$error}. Verifique se a URL do webhook está correta e acessível.";
+                    }
+                    if (strpos($error, 'Connection timed out') !== false) {
+                        return "Timeout de conexão: {$error}. Verifique conectividade de rede e firewall.";
+                    }
+                    return "Erro de conexão: {$error}";
+                }
+                return 'Falha na conexão com a API EFI. Verifique a conectividade de rede e URL do webhook.';
+                
             case 400:
                 if (isset($responseData['detail']) && strpos($responseData['detail'], 'TLS') !== false) {
-                    return 'Autenticação TLS mútuo não está configurada na URL informada. Configure um certificado SSL com autenticação mútua.';
+                    return 'Autenticação TLS mútuo não está configurada na URL informada. Configure um certificado SSL com autenticação mútua no servidor de destino.';
                 }
-                return 'Dados da requisição inválidos ou URL malformada';
+                return 'Dados da requisição inválidos ou URL malformada. Verifique se a URL do webhook está correta.';
                 
             case 401:
-                return 'Credenciais de autenticação inválidas para a API EFI';
+                return 'Credenciais de autenticação inválidas para a API EFI. Verifique CLIENT_ID e CLIENT_SECRET no .env.';
                 
             case 403:
-                return 'Acesso negado. Verifique as permissões da conta EFI';
+                return 'Acesso negado. Verifique as permissões da conta EFI e se os certificados estão corretos.';
                 
             case 404:
-                return 'Endpoint de configuração de webhook não encontrado';
+                return 'Endpoint de configuração de webhook não encontrado na API EFI.';
                 
             case 422:
-                return 'URL do webhook não atende aos requisitos da EFI (deve ter HTTPS com TLS mútuo)';
+                return 'URL do webhook não atende aos requisitos da EFI. Requisitos: HTTPS obrigatório, TLS mútuo configurado, URL acessível externamente.';
                 
             case 500:
-                return 'Erro interno da API EFI';
+                return 'Erro interno da API EFI. Tente novamente em alguns minutos.';
                 
             default:
                 if (isset($responseData['detail'])) {
@@ -737,7 +808,7 @@ class PixController extends Controller
                 if (isset($responseData['message'])) {
                     return $responseData['message'];
                 }
-                return $webhookResponse['error'] ?? 'Erro desconhecido ao configurar webhook';
+                return $error ?: 'Erro desconhecido ao configurar webhook. Verifique logs do sistema para mais detalhes.';
         }
     }
 
@@ -754,6 +825,57 @@ class PixController extends Controller
 
         // Usar certificados TLS mútuo para configuração de webhook
         return $this->executeApiRequest($url, 'PUT', $body, true);
+    }
+
+    /**
+     * Verifica status das configurações SSL e certificados
+     * GET /api/pix/ssl-status
+     */
+    public function sslStatus(): JsonResponse
+    {
+        try {
+            $sslVerifyDisabled = config('app.ssl_verify_disabled', false) || env('SSL_VERIFY_DISABLED', false);
+            $environment = config('app.env');
+            
+            // Verificar certificados disponíveis
+            $certificates = [
+                'cliente_homologacao' => file_exists(storage_path('app/certificates/cliente.pem')) ? 'presente' : 'ausente',
+                'cliente_key_homologacao' => file_exists(storage_path('app/certificates/cliente.key')) ? 'presente' : 'ausente',
+                'cliente_producao' => file_exists(storage_path('app/certificates/cliente_prd.pem')) ? 'presente' : 'ausente',
+                'cliente_key_producao' => file_exists(storage_path('app/certificates/cliente_prd.key')) ? 'presente' : 'ausente',
+                'efi_homologacao' => file_exists(storage_path('app/certificates/hml.pem')) ? 'presente' : 'ausente',
+                'efi_producao' => file_exists(storage_path('app/certificates/prd.pem')) ? 'presente' : 'ausente'
+            ];
+            
+            $webhookUrl = env('WEBHOOK_PIX_URL');
+            
+            return response()->json([
+                'codRetorno' => 200,
+                'dados' => [
+                    'environment' => $environment,
+                    'ssl_verify_disabled' => $sslVerifyDisabled,
+                    'webhook_url' => $webhookUrl,
+                    'certificates' => $certificates,
+                    'configuracao_ssl' => [
+                        'verificacao_ssl' => $sslVerifyDisabled ? 'desabilitada' : 'ativa',
+                        'tls_mutuo' => 'configurado_automaticamente',
+                        'certificados_cliente' => $environment === 'local' ? 'homologacao' : 'producao'
+                    ]
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Erro ao verificar status SSL', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'codRetorno' => 500,
+                'message' => 'Erro ao verificar status SSL',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
 }

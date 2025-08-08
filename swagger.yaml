@@ -890,6 +890,106 @@ paths:
         '404':
           description: Tag não encontrada
 
+  /pix/ssl-status:
+    get:
+      summary: Verifica status das configurações SSL e certificados
+      description: |
+        Endpoint de diagnóstico para verificar:
+        - Status da verificação SSL (habilitada/desabilitada)
+        - Ambiente atual (local/produção)
+        - Presença de certificados necessários
+        - Configurações do webhook PIX
+        
+        **Útil para debugging de problemas SSL** como "self-signed certificate in certificate chain"
+      tags:
+        - Pagamentos
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Status das configurações SSL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codRetorno:
+                    type: integer
+                    example: 200
+                  dados:
+                    type: object
+                    properties:
+                      environment:
+                        type: string
+                        example: "local"
+                        description: "Ambiente atual (local/production)"
+                      ssl_verify_disabled:
+                        type: boolean
+                        example: true
+                        description: "Se verificação SSL está desabilitada"
+                      webhook_url:
+                        type: string
+                        example: "https://localhost:8000/api/pix/atualizar"
+                        description: "URL configurada para webhook PIX"
+                      certificates:
+                        type: object
+                        properties:
+                          cliente_homologacao:
+                            type: string
+                            example: "presente"
+                            description: "Status do certificado cliente homologação"
+                          cliente_key_homologacao:
+                            type: string
+                            example: "presente"
+                            description: "Status da chave privada homologação"
+                          cliente_producao:
+                            type: string
+                            example: "ausente"
+                            description: "Status do certificado cliente produção"
+                          cliente_key_producao:
+                            type: string
+                            example: "ausente"
+                            description: "Status da chave privada produção"
+                          efi_homologacao:
+                            type: string
+                            example: "presente"
+                            description: "Status do certificado EFI homologação"
+                          efi_producao:
+                            type: string
+                            example: "ausente"
+                            description: "Status do certificado EFI produção"
+                      configuracao_ssl:
+                        type: object
+                        properties:
+                          verificacao_ssl:
+                            type: string
+                            example: "desabilitada"
+                            description: "Status da verificação SSL"
+                          tls_mutuo:
+                            type: string
+                            example: "configurado_automaticamente"
+                            description: "Status do TLS mútuo"
+                          certificados_cliente:
+                            type: string
+                            example: "homologacao"
+                            description: "Tipo de certificados cliente em uso"
+        '500':
+          description: Erro ao verificar status SSL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codRetorno:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Erro ao verificar status SSL"
+                  error:
+                    type: string
+                    example: "Detalhes do erro"
+
 components:
   securitySchemes:
     BearerAuth:

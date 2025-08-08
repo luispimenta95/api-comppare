@@ -19,4 +19,10 @@ Route::prefix('pix')->group(function () {
 
     // Atualiza cobrança PIX existente
     Route::post('/atualizar', [PixController::class, 'atualizarCobranca']);
+    
+    // Configura webhook PIX
+    Route::put('/webhook', [PixController::class, 'configurarWebhook']);
+    
+    // Verifica status das configurações SSL
+    Route::get('/ssl-status', [PixController::class, 'sslStatus']);
 });

@@ -178,6 +178,71 @@ storage/
       cliente_prd.key  # Chave privada cliente (produção)
 ```
 
+🔧 **Configurações SSL por Ambiente**:
+- **Local**: SSL verification desabilitada (permite certificados auto-assinados)
+- **Produção**: SSL verification obrigatória (certificados válidos da EFI)
+- **Webhook**: TLS mútuo configurado automaticamente
+
+## 🔧 Troubleshooting SSL/TLS
+
+### Problemas Comuns com Certificados
+
+#### 1. "SSL certificate problem: self-signed certificate in certificate chain"
+**Causa**: Certificado auto-assinado ou cadeia de certificados inválida
+
+**Soluções**:
+```bash
+# DESENVOLVIMENTO: Configure no .env
+SSL_VERIFY_DISABLED=true
+APP_ENV=local
+
+# PRODUÇÃO: Use certificados SSL válidos
+# - Obtenha certificados da EFI (homologação/produção)
+# - Configure domínio com SSL válido
+# - Verifique se certificados estão em storage/app/certificates/
+```
+
+#### 2. "SSL certificate problem: unable to get local issuer certificate"
+**Causa**: Certificado raiz não encontrado na cadeia de confiança
+
+**Soluções**:
+```bash
+# Atualize certificados CA do sistema
+sudo apt-get update && sudo apt-get install ca-certificates
+
+# Ou para desenvolvimento
+SSL_VERIFY_DISABLED=true
+```
+
+#### 3. "TLS handshake failed"
+**Causa**: Problemas com TLS mútuo ou certificados cliente
+
+**Soluções**:
+```bash
+# Verifique certificados em storage/app/certificates/
+ls -la storage/app/certificates/
+# Deve conter: cliente.pem, cliente.key (homologação)
+#             cliente_prd.pem, cliente_prd.key (produção)
+
+# Configure ambiente corretamente
+APP_ENV=production  # Para usar certificados de produção
+APP_ENV=local       # Para usar certificados de homologação
+```
+
+#### 4. Teste de SSL/Webhook sem Certificados
+Para desenvolvimento sem SSL válido:
+```bash
+# Configure no .env
+SSL_VERIFY_DISABLED=true
+WEBHOOK_PIX_URL=http://localhost:8000/api/pix/atualizar
+
+# Ou use ngrok para HTTPS válido
+ngrok http 8000
+# Use a URL HTTPS gerada pelo ngrok como WEBHOOK_PIX_URL
+```
+
+⚠️ **IMPORTANTE**: Em produção, NUNCA desabilite verificação SSL!
+
 ```bash
 # Configure no .env
 WEBHOOK_PIX_URL=https://seu-dominio-com-tls-mutuo.com/api/pix/atualizar
