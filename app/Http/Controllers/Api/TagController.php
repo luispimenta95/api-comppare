@@ -276,4 +276,80 @@ class TagController extends Controller
 }
         return response()->json($response);
     }
+
+    /**
+     * Excluir uma tag (soft delete).
+     * 
+     * Permite que apenas o criador da tag possa excluí-la.
+     * Decrementa o contador de tags pessoais do usuário.
+     * 
+     * Exemplo de request:
+     * {
+     *   "idTag": 1,
+     *   "usuario": 1
+     * }
+     */
+    public function excluirTag(Request $request): JsonResponse
+    {
+        $request->validate([
+            'idTag' => 'required|integer|exists:tag,id',
+            'usuario' => 'required|integer|exists:usuarios,id'
+        ]);
+
+        // Buscar a tag
+        $tag = Tag::find($request->idTag);
+        
+        if (!$tag) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => 'Tag não encontrada.',
+            ], HttpCodesEnum::NotFound->value);
+        }
+
+        // Verificar se a tag já está inativa
+        if ($tag->status == 0) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => 'Tag já está excluída.',
+            ], HttpCodesEnum::BadRequest->value);
+        }
+
+        // Verificar se o usuário é o criador da tag
+        if ($tag->idUsuarioCriador != $request->usuario) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::Forbidden->value,
+                'message' => 'Você só pode excluir tags criadas por você.',
+            ], HttpCodesEnum::Forbidden->value);
+        }
+
+        // Buscar o usuário e seu plano para retornar informações atualizadas
+        $usuario = Usuarios::with('plano')->find($request->usuario);
+        $plano = Planos::find($usuario->idPlano);
+
+        // Realizar soft delete (marcar como inativo)
+        $tag->status = 0;
+        $tag->save();
+
+        // Contar tags pessoais ativas restantes
+        $tagsPersonaisRestantes = Tag::where('idUsuarioCriador', $request->usuario)
+            ->where('status', 1)
+            ->count();
+
+        $response = [
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => 'Tag excluída com sucesso.',
+            'tag_excluida' => [
+                'id' => $tag->id,
+                'nome' => $tag->nomeTag,
+                'excluida_em' => now()->format('Y-m-d H:i:s')
+            ],
+            'limites' => [
+                'usado' => $tagsPersonaisRestantes,
+                'limite' => $plano->quantidadeTags,
+                'restante' => $plano->quantidadeTags - $tagsPersonaisRestantes
+            ]
+        ];
+
+        return response()->json($response, HttpCodesEnum::OK->value);
+    }
 }

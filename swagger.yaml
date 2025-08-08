@@ -567,6 +567,138 @@ paths:
                     items:
                       $ref: '#/components/schemas/Tag'
 
+  /tags/excluir:
+    delete:
+      summary: Exclui uma tag pessoal
+      description: Remove uma tag pessoal do usuário (apenas o criador pode excluir)
+      tags:
+        - Tags
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - idTag
+                - usuario
+              properties:
+                idTag:
+                  type: integer
+                  example: 1
+                  description: "ID da tag a ser excluída"
+                usuario:
+                  type: integer
+                  example: 1
+                  description: "ID do usuário que está excluindo a tag"
+      responses:
+        '200':
+          description: Tag excluída com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codRetorno:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Tag excluída com sucesso."
+                  tag_excluida:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      nome:
+                        type: string
+                        example: "Família"
+                      criada_em:
+                        type: string
+                        format: date-time
+                        example: "2024-01-15 10:30:00"
+                      excluida_em:
+                        type: string
+                        format: date-time
+                        example: "2024-01-16 14:20:00"
+                  limites_atualizados:
+                    type: object
+                    properties:
+                      tags_antes:
+                        type: integer
+                        example: 5
+                        description: "Número de tags antes da exclusão"
+                      tags_depois:
+                        type: integer
+                        example: 4
+                        description: "Número de tags após a exclusão"
+                      limite_plano:
+                        type: integer
+                        example: 10
+                        description: "Limite máximo de tags do plano"
+                      disponivel_criar:
+                        type: integer
+                        example: 6
+                        description: "Quantidade de tags que ainda podem ser criadas"
+        '400':
+          description: Tag já foi excluída anteriormente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codRetorno:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Esta tag já foi excluída anteriormente."
+                  tag:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      nome:
+                        type: string
+                        example: "Família"
+                      status:
+                        type: string
+                        example: "inativa"
+        '403':
+          description: Usuário não tem permissão para excluir a tag
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  codRetorno:
+                    type: integer
+                    example: 403
+                  message:
+                    type: string
+                    example: "Você só pode excluir suas próprias tags."
+                  detalhes:
+                    type: object
+                    properties:
+                      tag_id:
+                        type: integer
+                        example: 1
+                      tag_nome:
+                        type: string
+                        example: "Família"
+                      criador_tag:
+                        type: integer
+                        example: 2
+                      usuario_solicitante:
+                        type: integer
+                        example: 1
+        '404':
+          description: Tag não encontrada
+
 components:
   securitySchemes:
     BearerAuth:

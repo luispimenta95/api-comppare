@@ -14,6 +14,7 @@ Route::prefix('tags')->group(
             Route::post('/atualizar-status', [TagController::class, 'atualizarStatus']);
             Route::post('/atualizar-dados', [TagController::class, 'atualizarDados']);
             Route::post('/recuperar-tags-usuario', [TagController::class, 'getTagsByUsuario']);
+            Route::delete('/excluir', [TagController::class, 'excluirTag']);
         });
     });
 

@@ -186,12 +186,16 @@ Ao realizar autenticação, o usuário recebe automaticamente suas tags:
 |--------|----------|-----------|
 | `GET` | `/api/tags/usuario?usuario={id}` | Lista tags do usuário |
 | `POST` | `/api/tags/cadastrar` | Cria nova tag (com validação de limite) |
+| `DELETE` | `/api/tags/excluir` | Exclui tag pessoal (apenas criador) |
 | `PUT` | `/api/tags/atualizar-status` | Atualiza status da tag |
 
 ### Validações e Limites
 - **Limite por Plano**: Cada plano possui um limite de tags pessoais
 - **Validação de Duplicatas**: Não permite tags com nomes iguais para o mesmo usuário
 - **Controle de Status**: Apenas tags ativas são consideradas no limite
+- **Exclusão Segura**: Apenas o criador pode excluir tags pessoais
+- **Soft Delete**: Tags excluídas são mantidas no banco com status inativo
+- **Decremento Automático**: Contador de tags é atualizado automaticamente na exclusão
 - **Mensagens Detalhadas**: Retorna informações específicas sobre limites e sugestões
 
 ### Exemplo de Criação com Limite
@@ -221,6 +225,41 @@ POST /api/tags/cadastrar
     "tags_criadas": 10,
     "plano_atual": "Plano Básico",
     "sugestao": "Faça upgrade do seu plano para criar mais tags."
+  }
+}
+```
+
+### Exemplo de Exclusão
+```bash
+DELETE /api/tags/excluir
+{
+  "idTag": 1,
+  "usuario": 1
+}
+
+# Sucesso (200)
+{
+  "message": "Tag excluída com sucesso.",
+  "tag_excluida": {
+    "id": 1,
+    "nome": "Família",
+    "criada_em": "2024-01-15 10:30:00",
+    "excluida_em": "2024-01-16 14:20:00"
+  },
+  "limites_atualizados": {
+    "tags_antes": 5,
+    "tags_depois": 4,
+    "limite_plano": 10,
+    "disponivel_criar": 6
+  }
+}
+
+# Erro - Não é o criador (403)
+{
+  "message": "Você só pode excluir suas próprias tags.",
+  "detalhes": {
+    "criador_tag": 2,
+    "usuario_solicitante": 1
   }
 }
 ```
