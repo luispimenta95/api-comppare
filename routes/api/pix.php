@@ -20,10 +20,16 @@ Route::prefix('pix')->group(function () {
     // Atualiza cobrança PIX existente (webhook da EFI - requer TLS mútuo)
     Route::post('/atualizar', [PixController::class, 'atualizarCobranca'])->middleware('tls.mutual');
     
-    // Configura webhook PIX
+    // Webhook PIX simples (resposta "200" conforme especificação EFI)
+    Route::post('/webhook-simple', [PixController::class, 'webhookSimple'])->middleware('tls.mutual');
+    
+    // Configura webhook PIX (suporte a mTLS e skip-mTLS)
     Route::put('/webhook', [PixController::class, 'configurarWebhook']);
     
-    // Verifica status SSL e certificados (endpoint de diagnóstico)
+    // Status do webhook PIX e certificados
+    Route::get('/webhook-status', [PixController::class, 'webhookStatus']);
+    
+    // Verifica status SSL detalhado e certificados
     Route::get('/ssl-status', [PixController::class, 'sslStatus']);
     
     // Teste de validação TLS mútuo
