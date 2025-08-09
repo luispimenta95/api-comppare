@@ -17,12 +17,15 @@ Route::prefix('pix')->group(function () {
     // Cria cobrança PIX usando o método criarCobranca
     Route::post('/enviar', [PixController::class, 'criarCobranca']);
 
-    // Atualiza cobrança PIX existente
-    Route::post('/atualizar', [PixController::class, 'atualizarCobranca']);
+    // Atualiza cobrança PIX existente (webhook da EFI - requer TLS mútuo)
+    Route::post('/atualizar', [PixController::class, 'atualizarCobranca'])->middleware('tls.mutual');
     
     // Configura webhook PIX
     Route::put('/webhook', [PixController::class, 'configurarWebhook']);
     
     // Verifica status SSL e certificados (endpoint de diagnóstico)
     Route::get('/ssl-status', [PixController::class, 'sslStatus']);
+    
+    // Teste de validação TLS mútuo
+    Route::get('/test-tls', [PixController::class, 'testTlsMutual']);
 });

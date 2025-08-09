@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
             except: ['api/*']
         );
         
+        // Registrar middleware personalizado
+        $middleware->alias([
+            'tls.mutual' => \App\Http\Middleware\ValidateTlsMutual::class,
+        ]);
+        
         // Configuração CORS personalizada para APIs
         $middleware->api(prepend: [
             \App\Http\Middleware\CorsMiddleware::class,

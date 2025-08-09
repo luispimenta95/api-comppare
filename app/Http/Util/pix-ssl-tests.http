@@ -152,3 +152,69 @@ Authorization: Bearer {{token}}
 #    - Execute: ngrok http 8000
 #    - Use URL HTTPS gerada como WEBHOOK_PIX_URL
 #    - ngrok fornece certificado SSL válido automaticamente
+
+### TESTE TLS MÚTUO: Validação de certificados cliente
+
+### 1. Testar endpoint de validação TLS
+GET {{baseUrl}}/pix/test-tls
+Authorization: Bearer {{token}}
+
+### Response esperado (desenvolvimento - sem TLS mútuo):
+# {
+#   "codRetorno": 200,
+#   "message": "Teste de TLS mútuo executado",
+#   "dados": {
+#     "tls_mutuo_valido": true,
+#     "ambiente": "local",
+#     "ssl_verify_disabled": true,
+#     "ssl_info": {
+#       "ssl_client_cert": "ausente",
+#       "ssl_client_verify": "não verificado"
+#     },
+#     "observacao": "Requisição passaria na validação TLS mútuo"
+#   }
+# }
+
+### 2. Testar webhook PIX (agora com validação TLS mútuo)
+POST {{baseUrl}}/pix/atualizar
+Content-Type: application/json
+
+{
+  "recs": [
+    {
+      "idRec": "RR1026652320240821lab77511abf",
+      "status": "APROVADA"
+    }
+  ]
+}
+
+### Response esperado (desenvolvimento):
+# {
+#   "codRetorno": 200,
+#   "message": "Atualização de cobranças processada",
+#   "total_processados": 1,
+#   "resultados": [...]
+# }
+
+### Response esperado (produção sem certificado válido):
+# {
+#   "codRetorno": 403,
+#   "message": "Acesso negado. Este endpoint requer autenticação TLS mútuo válida.",
+#   "error": "CLIENT_CERTIFICATE_REQUIRED",
+#   "observacao": "Apresente um certificado cliente válido da EFI Pay."
+# }
+
+### 3. Simulação de acesso sem TLS mútuo (em produção)
+### Configure no .env:
+# APP_ENV=production
+# SSL_VERIFY_DISABLED=false
+
+### Então teste:
+POST {{baseUrl}}/pix/atualizar
+Content-Type: application/json
+
+{
+  "teste": "acesso_sem_certificado"
+}
+
+### Deve retornar 403 Forbidden

@@ -546,6 +546,21 @@ class PixController extends Controller
     public function atualizarCobranca(Request $request): JsonResponse
     {
         try {
+            // Validar autenticação TLS mútuo (apenas EFI deve acessar este endpoint)
+            if (!$this->validarTlsMutuo($request)) {
+                Log::warning('Tentativa de acesso ao webhook sem TLS mútuo válido', [
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'headers' => $request->headers->all(),
+                    'ssl_client_cert' => $_SERVER['SSL_CLIENT_CERT'] ?? 'não presente'
+                ]);
+                
+                return response()->json([
+                    'codRetorno' => 403,
+                    'message' => 'Acesso negado. Este endpoint requer autenticação TLS mútuo válida.',
+                    'observacao' => 'Apenas a EFI Pay pode acessar este webhook com certificados válidos.'
+                ], 403);
+            }
 
             $recs = $request->recs;
             $resultados = [];
@@ -879,6 +894,175 @@ class PixController extends Controller
                 'message' => 'Erro ao verificar status SSL',
                 'error' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Endpoint de teste para validação de TLS mútuo
+     * GET /api/pix/test-tls
+     */
+    public function testTlsMutual(Request $request): JsonResponse
+    {
+        try {
+            // Informações sobre o certificado cliente
+            $sslInfo = [
+                'ssl_client_cert' => !empty($_SERVER['SSL_CLIENT_CERT']) ? 'presente' : 'ausente',
+                'ssl_client_verify' => $_SERVER['SSL_CLIENT_VERIFY'] ?? 'não verificado',
+                'ssl_client_subject' => $_SERVER['SSL_CLIENT_S_DN'] ?? 'não disponível',
+                'ssl_client_issuer' => $_SERVER['SSL_CLIENT_I_DN'] ?? 'não disponível',
+                'ssl_protocol' => $_SERVER['SSL_PROTOCOL'] ?? 'não disponível',
+                'ssl_cipher' => $_SERVER['SSL_CIPHER'] ?? 'não disponível'
+            ];
+            
+            // Informações da requisição
+            $requestInfo = [
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'remote_addr' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+                'http_host' => $_SERVER['HTTP_HOST'] ?? 'unknown',
+                'request_method' => $_SERVER['REQUEST_METHOD'] ?? 'unknown'
+            ];
+            
+            // Verificar se passaria na validação TLS
+            $tlsValid = $this->validarTlsMutuo($request);
+            
+            return response()->json([
+                'codRetorno' => 200,
+                'message' => 'Teste de TLS mútuo executado',
+                'dados' => [
+                    'tls_mutuo_valido' => $tlsValid,
+                    'ambiente' => config('app.env'),
+                    'ssl_verify_disabled' => env('SSL_VERIFY_DISABLED', false),
+                    'ssl_info' => $sslInfo,
+                    'request_info' => $requestInfo,
+                    'observacao' => $tlsValid 
+                        ? 'Requisição passaria na validação TLS mútuo' 
+                        : 'Requisição seria rejeitada por TLS mútuo inválido'
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'codRetorno' => 500,
+                'message' => 'Erro ao testar TLS mútuo',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Valida se a requisição possui autenticação TLS mútuo válida
+     * Verifica certificados cliente para garantir que apenas a EFI acesse o webhook
+     */
+    private function validarTlsMutuo(Request $request): bool
+    {
+        // Em ambiente de desenvolvimento, permitir testes sem TLS mútuo
+        if ($this->enviroment === 'local' && env('SSL_VERIFY_DISABLED', false)) {
+            Log::info('TLS mútuo desabilitado em ambiente de desenvolvimento', [
+                'environment' => $this->enviroment,
+                'ssl_verify_disabled' => env('SSL_VERIFY_DISABLED', false)
+            ]);
+            return true;
+        }
+        
+        // Verificar se o certificado cliente está presente
+        $clientCert = $_SERVER['SSL_CLIENT_CERT'] ?? null;
+        $clientCertVerify = $_SERVER['SSL_CLIENT_VERIFY'] ?? null;
+        
+        if (!$clientCert) {
+            Log::warning('Certificado cliente não apresentado na requisição TLS', [
+                'ssl_client_verify' => $clientCertVerify,
+                'remote_addr' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+            ]);
+            return false;
+        }
+        
+        // Verificar se o certificado foi verificado com sucesso
+        if ($clientCertVerify !== 'SUCCESS') {
+            Log::warning('Certificado cliente falhou na verificação', [
+                'ssl_client_verify' => $clientCertVerify,
+                'ssl_client_cert_subject' => $_SERVER['SSL_CLIENT_S_DN'] ?? 'unknown'
+            ]);
+            return false;
+        }
+        
+        // Validar se é um certificado da EFI
+        return $this->validarCertificadoEfi($clientCert);
+    }
+    
+    /**
+     * Valida se o certificado apresentado é válido da EFI
+     */
+    private function validarCertificadoEfi(string $clientCert): bool
+    {
+        try {
+            // Parse do certificado
+            $certInfo = openssl_x509_parse($clientCert);
+            
+            if (!$certInfo) {
+                Log::error('Erro ao fazer parse do certificado cliente');
+                return false;
+            }
+            
+            // Verificar se é um certificado da EFI
+            $subject = $certInfo['subject'] ?? [];
+            $issuer = $certInfo['issuer'] ?? [];
+            
+            // Verificar domínios/organizações conhecidas da EFI
+            $efiDomains = [
+                'efipay.com.br',
+                'gerencianet.com.br',
+                'efi.com.br'
+            ];
+            
+            $efiOrganizations = [
+                'EFI Pay',
+                'Gerencianet',
+                'EFI S.A.'
+            ];
+            
+            // Verificar subject
+            $commonName = $subject['CN'] ?? '';
+            $organization = $subject['O'] ?? '';
+            
+            // Verificar se o CN contém domínio da EFI
+            foreach ($efiDomains as $domain) {
+                if (strpos($commonName, $domain) !== false) {
+                    Log::info('Certificado EFI válido - domínio reconhecido', [
+                        'common_name' => $commonName,
+                        'domain_matched' => $domain
+                    ]);
+                    return true;
+                }
+            }
+            
+            // Verificar se a organização é da EFI
+            foreach ($efiOrganizations as $org) {
+                if (strpos($organization, $org) !== false) {
+                    Log::info('Certificado EFI válido - organização reconhecida', [
+                        'organization' => $organization,
+                        'org_matched' => $org
+                    ]);
+                    return true;
+                }
+            }
+            
+            // Log para debug em desenvolvimento
+            Log::warning('Certificado não reconhecido como EFI', [
+                'subject' => $subject,
+                'issuer' => $issuer,
+                'valid_from' => date('Y-m-d H:i:s', $certInfo['validFrom_time_t'] ?? 0),
+                'valid_to' => date('Y-m-d H:i:s', $certInfo['validTo_time_t'] ?? 0)
+            ]);
+            
+            return false;
+            
+        } catch (\Exception $e) {
+            Log::error('Erro ao validar certificado EFI', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
         }
     }
 
