@@ -26,6 +26,9 @@ Route::prefix('pix')->group(function () {
     // Configura webhook PIX (suporte a mTLS e skip-mTLS)
     Route::put('/webhook', [PixController::class, 'configurarWebhook']);
     
+    // Configura webhook automaticamente com skip-mTLS
+    Route::get('/configurar-webhook-skip-mtls', [PixController::class, 'configurarWebhookSkipMtls']);
+    
     // Status do webhook PIX e certificados
     Route::get('/webhook-status', [PixController::class, 'webhookStatus']);
     

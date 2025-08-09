@@ -591,7 +591,7 @@ class PixController extends Controller
     {
         try {
             $webhookUrl = $request->input('webhookUrl') ?: env('WEBHOOK_PIX_URL');
-            $skipMtls = $request->input('skip_mtls', false);
+            $skipMtls = $request->input('skip_mtls', true); // ALTERADO: padrão é TRUE
             
             if (!$webhookUrl) {
                 // Usar endpoint principal conforme especificação EFI
@@ -690,19 +690,146 @@ class PixController extends Controller
                 Log::error('Erro HTTP ao configurar webhook', [
                     'http_code' => $httpCode,
                     'response' => $responseData,
-                    'url' => $url
+                    'url' => $url,
+                    'headers' => $headers
                 ]);
+
+                // Análise do erro específico
+                $errorAnalysis = $this->analisarErroWebhook($httpCode, $responseData);
 
                 return response()->json([
                     'codRetorno' => $httpCode,
                     'message' => 'Erro ao configurar webhook na EFI',
-                    'error' => $responseData['detail'] ?? 'Erro desconhecido',
-                    'detalhes' => $responseData
+                    'error' => $responseData['mensagem'] ?? $responseData['detail'] ?? 'Erro desconhecido',
+                    'detalhes' => $responseData,
+                    'analise' => $errorAnalysis,
+                    'solucao_recomendada' => $errorAnalysis['solucao'] ?? 'Verificar logs da EFI'
                 ], $httpCode >= 400 ? $httpCode : 500);
             }
 
         } catch (\Exception $e) {
             Log::error('Erro geral ao configurar webhook PIX', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'codRetorno' => 500,
+                'message' => 'Erro interno ao configurar webhook',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Configura webhook automaticamente com skip-mTLS
+     * GET /api/pix/configurar-webhook-skip-mtls
+     */
+    public function configurarWebhookSkipMtls(Request $request): JsonResponse
+    {
+        try {
+            $webhookUrl = $request->input('webhookUrl') ?: env('WEBHOOK_PIX_URL') ?: env('APP_URL') . '/api/pix';
+            
+            Log::info('Configurando webhook PIX com skip-mTLS automático', [
+                'webhook_url' => $webhookUrl,
+                'environment' => $this->enviroment
+            ]);
+
+            // Fazer requisição para API EFI com skip-mTLS obrigatório
+            $url = $this->buildApiUrl("/v2/webhook/{$this->chavePix}");
+            
+            $headers = [
+                "Authorization: Bearer " . $this->apiEfi->getToken(),
+                "Content-Type: application/json",
+                "x-skip-mtls-checking: true"  // SEMPRE usar skip-mTLS
+            ];
+
+            $body = json_encode([
+                "webhookUrl" => $webhookUrl
+            ]);
+
+            $curl = curl_init();
+            
+            $curlOptions = [
+                CURLOPT_URL => $url,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => self::TIMEOUT_REQUEST,
+                CURLOPT_CUSTOMREQUEST => 'PUT',
+                CURLOPT_POSTFIELDS => $body,
+                CURLOPT_HTTPHEADER => $headers,
+                CURLOPT_SSLCERT => $this->certificadoPath,
+                CURLOPT_SSLCERTPASSWD => "",
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_SSL_VERIFYHOST => 2
+            ];
+
+            curl_setopt_array($curl, $curlOptions);
+
+            $response = curl_exec($curl);
+            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            $error = curl_error($curl);
+            curl_close($curl);
+
+            if ($error) {
+                Log::error('Erro cURL ao configurar webhook com skip-mTLS', [
+                    'error' => $error,
+                    'url' => $url
+                ]);
+
+                return response()->json([
+                    'codRetorno' => 500,
+                    'message' => 'Erro de conectividade',
+                    'error' => $error,
+                    'solucao' => 'Verificar conectividade com API EFI e certificado cliente'
+                ], 500);
+            }
+
+            $responseData = $response ? json_decode($response, true) : null;
+
+            if ($httpCode >= 200 && $httpCode < 300) {
+                Log::info('Webhook PIX configurado com sucesso (skip-mTLS)', [
+                    'webhook_url' => $webhookUrl,
+                    'http_code' => $httpCode,
+                    'response' => $responseData
+                ]);
+
+                return response()->json([
+                    'codRetorno' => 200,
+                    'message' => 'Webhook configurado com sucesso usando skip-mTLS',
+                    'data' => [
+                        'webhookUrl' => $webhookUrl,
+                        'skip_mtls' => true,
+                        'configurado_em' => now()->toDateTimeString(),
+                        'observacao' => 'mTLS foi ignorado - EFI não validará certificados no servidor',
+                        'próximos_passos' => [
+                            '1. Testar webhook: curl -X POST ' . $webhookUrl,
+                            '2. Configurar Nginx para mTLS completo (opcional)',
+                            '3. Monitorar logs: tail -f storage/logs/laravel.log'
+                        ],
+                        'response' => $responseData
+                    ]
+                ]);
+            } else {
+                $errorAnalysis = $this->analisarErroWebhook($httpCode, $responseData);
+                
+                return response()->json([
+                    'codRetorno' => $httpCode,
+                    'message' => 'Erro ao configurar webhook mesmo com skip-mTLS',
+                    'error' => $responseData['mensagem'] ?? $responseData['detail'] ?? 'Erro desconhecido',
+                    'detalhes' => $responseData,
+                    'analise' => $errorAnalysis,
+                    'debug_info' => [
+                        'chave_pix' => $this->chavePix,
+                        'url_api' => $url,
+                        'certificado_path' => $this->certificadoPath,
+                        'certificado_exists' => file_exists($this->certificadoPath)
+                    ]
+                ], $httpCode >= 400 ? $httpCode : 500);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Erro geral ao configurar webhook com skip-mTLS', [
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine()
@@ -1016,5 +1143,71 @@ class PixController extends Controller
                 ]
             ]
         ]);
+    }
+
+    /**
+     * Analisa erros específicos do webhook para dar soluções direcionadas
+     */
+    private function analisarErroWebhook(int $httpCode, ?array $responseData): array
+    {
+        $errorName = $responseData['nome'] ?? $responseData['error'] ?? '';
+        $errorMessage = $responseData['mensagem'] ?? $responseData['detail'] ?? '';
+
+        switch ($errorName) {
+            case 'webhook_invalido':
+                if (strpos($errorMessage, 'autenticação de TLS mútuo') !== false) {
+                    return [
+                        'problema' => 'EFI não conseguiu validar mTLS no seu servidor',
+                        'causa' => 'Servidor não tem mTLS configurado ou certificado EFI não está instalado',
+                        'solucao' => 'Use skip_mtls: true na requisição ou configure mTLS no servidor',
+                        'comando_teste' => 'curl -X PUT localhost:8000/api/pix/webhook -d \'{"skip_mtls": true}\''
+                    ];
+                }
+                break;
+                
+            case 'webhook_url_invalida':
+                return [
+                    'problema' => 'URL do webhook é inválida ou inacessível',
+                    'causa' => 'URL não responde ou não é HTTPS válido',
+                    'solucao' => 'Verifique se a URL é acessível publicamente via HTTPS'
+                ];
+                
+            case 'chave_invalida':
+                return [
+                    'problema' => 'Chave PIX inválida ou não encontrada',
+                    'causa' => 'CHAVE_PIX no .env está incorreta',
+                    'solucao' => 'Verificar se CHAVE_PIX corresponde a uma chave cadastrada na EFI'
+                ];
+        }
+
+        if ($httpCode === 400) {
+            return [
+                'problema' => 'Dados da requisição inválidos',
+                'causa' => 'Parâmetros incorretos ou chave PIX inválida',
+                'solucao' => 'Verificar CHAVE_PIX e URL do webhook'
+            ];
+        }
+
+        if ($httpCode === 401) {
+            return [
+                'problema' => 'Token de acesso inválido',
+                'causa' => 'Certificado cliente EFI expirado ou inválido',
+                'solucao' => 'Renovar certificado cliente da EFI'
+            ];
+        }
+
+        if ($httpCode === 422) {
+            return [
+                'problema' => 'Validação de mTLS falhou',
+                'causa' => 'EFI não conseguiu validar seu servidor via mTLS',
+                'solucao' => 'Configurar skip_mtls: true ou instalar mTLS corretamente'
+            ];
+        }
+
+        return [
+            'problema' => 'Erro não identificado',
+            'causa' => "HTTP $httpCode - $errorMessage",
+            'solucao' => 'Verificar logs da EFI ou contatar suporte'
+        ];
     }
 }
