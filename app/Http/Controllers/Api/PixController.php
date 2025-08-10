@@ -163,39 +163,23 @@ class PixController extends Controller
             throw new \RuntimeException('ID do Location Rec não encontrado');
         }
 
-        // Passo 3.5: Verificar status do COB antes de criar REC
+        // Passo 3.5: Verificar status do COB antes de criar REC com retry robusto
         Log::info('Verificando status do COB antes de criar REC', [
             'txid' => $txid,
             'aguardando_ativacao' => true
         ]);
 
-        // Pequeno delay para garantir que o COB está ativo
-        sleep(2);
-
-        $cobStatusResponse = $this->verificarStatusCob($txid);
-        if (!$cobStatusResponse['success'] || ($cobStatusResponse['data']['status'] ?? '') !== 'ATIVA') {
-            Log::warning('COB não está ativa para criação de REC', [
-                'txid' => $txid,
-                'cob_status' => $cobStatusResponse['data']['status'] ?? 'DESCONHECIDO',
-                'cob_response' => $cobStatusResponse
-            ]);
-
-            // Tentar novamente após delay adicional
-            sleep(3);
-            $cobStatusResponse = $this->verificarStatusCob($txid);
-
-            if (!$cobStatusResponse['success'] || ($cobStatusResponse['data']['status'] ?? '') !== 'ATIVA') {
-                throw new \RuntimeException('COB não está ativa para criação de recorrência. Status: ' . ($cobStatusResponse['data']['status'] ?? 'DESCONHECIDO'));
-            }
+        $cobAtiva = $this->aguardarCobAtiva($txid);
+        if (!$cobAtiva) {
+            throw new \RuntimeException('COB não ficou ativa após múltiplas tentativas. Tente novamente em alguns minutos.');
         }
 
         Log::info('COB confirmada como ativa, prosseguindo com criação de REC', [
-            'txid' => $txid,
-            'cob_status' => $cobStatusResponse['data']['status'] ?? 'ATIVA'
+            'txid' => $txid
         ]);
 
-        // Passo 4: Criar REC
-        $recResponse = $this->criarRec($txid, $locrecId);
+        // Passo 4: Criar REC com retry automático
+        $recResponse = $this->criarRecComRetry($txid, $locrecId);
         $this->validateResponse($recResponse, 'REC');
 
         $recId = $recResponse['data']['idRec'] ?? null;
@@ -448,6 +432,78 @@ class PixController extends Controller
     }
 
     /**
+     * Cria REC com retry automático em caso de COB não ativa
+     */
+    private function criarRecComRetry(string $txid, $locrecId, int $maxTentativas = 3): array
+    {
+        $delays = [5, 10, 15]; // Delays entre tentativas em segundos
+
+        for ($tentativa = 1; $tentativa <= $maxTentativas; $tentativa++) {
+            Log::info("Tentativa {$tentativa}/{$maxTentativas} - Criando REC", [
+                'txid' => $txid,
+                'locrecId' => $locrecId
+            ]);
+
+            $recResponse = $this->criarRec($txid, $locrecId);
+
+            // Se sucesso, retornar imediatamente
+            if ($recResponse['success']) {
+                Log::info("REC criado com sucesso na tentativa {$tentativa}", [
+                    'txid' => $txid,
+                    'tentativas_necessarias' => $tentativa
+                ]);
+                return $recResponse;
+            }
+
+            // Verificar se é erro de COB não ativa
+            $isCobNaoAtiva = false;
+            if (isset($recResponse['data']['violacoes'])) {
+                foreach ($recResponse['data']['violacoes'] as $violacao) {
+                    if (isset($violacao['razao']) && strpos($violacao['razao'], 'não está ativa') !== false) {
+                        $isCobNaoAtiva = true;
+                        break;
+                    }
+                }
+            }
+
+            // Se não é erro de COB não ativa, não tentar novamente
+            if (!$isCobNaoAtiva) {
+                Log::warning("Erro na criação de REC não relacionado a COB inativa, não tentando novamente", [
+                    'tentativa' => $tentativa,
+                    'error_response' => $recResponse
+                ]);
+                return $recResponse;
+            }
+
+            // Se ainda há tentativas restantes, aguardar e tentar novamente
+            if ($tentativa < $maxTentativas) {
+                $delay = $delays[$tentativa - 1];
+                Log::info("COB ainda não está ativa, aguardando {$delay} segundos para nova tentativa", [
+                    'txid' => $txid,
+                    'tentativa' => $tentativa,
+                    'delay' => $delay
+                ]);
+                sleep($delay);
+
+                // Verificar status do COB novamente
+                $cobStatus = $this->verificarStatusCob($txid);
+                Log::info("Status do COB antes da próxima tentativa", [
+                    'txid' => $txid,
+                    'status' => $cobStatus['data']['status'] ?? 'DESCONHECIDO'
+                ]);
+            }
+        }
+
+        Log::error("Falha na criação de REC após {$maxTentativas} tentativas", [
+            'txid' => $txid,
+            'locrecId' => $locrecId,
+            'ultimo_response' => $recResponse
+        ]);
+
+        return $recResponse;
+    }
+
+    /**
      * Passo 4: Criar REC - POST /v2/rec
      */
     private function criarRec(string $txid, $locrecId): array
@@ -489,6 +545,67 @@ class PixController extends Controller
     {
         $url = $this->buildApiUrl("/v2/rec/{$recId}?txid={$txid}");
         return $this->executeApiRequest($url, 'GET');
+    }
+
+    /**
+     * Aguarda o COB ficar ativo com múltiplas tentativas
+     */
+    private function aguardarCobAtiva(string $txid, int $maxTentativas = 5): bool
+    {
+        $delays = [3, 5, 8, 12, 20]; // Delays progressivos em segundos
+
+        for ($tentativa = 1; $tentativa <= $maxTentativas; $tentativa++) {
+            Log::info("Tentativa {$tentativa}/{$maxTentativas} - Verificando status do COB", [
+                'txid' => $txid,
+                'delay_anterior' => $tentativa > 1 ? $delays[$tentativa - 2] : 0
+            ]);
+
+            if ($tentativa > 1) {
+                $delay = $delays[$tentativa - 2];
+                Log::info("Aguardando {$delay} segundos antes da próxima verificação");
+                sleep($delay);
+            }
+
+            $cobStatusResponse = $this->verificarStatusCob($txid);
+
+            if ($cobStatusResponse['success'] && isset($cobStatusResponse['data']['status'])) {
+                $status = $cobStatusResponse['data']['status'];
+
+                Log::info("Status do COB na tentativa {$tentativa}", [
+                    'txid' => $txid,
+                    'status' => $status,
+                    'response_completa' => $cobStatusResponse['data']
+                ]);
+
+                if ($status === 'ATIVA') {
+                    Log::info("COB está ativa na tentativa {$tentativa}", [
+                        'txid' => $txid,
+                        'tentativas_necessarias' => $tentativa
+                    ]);
+                    return true;
+                }
+
+                // Se status for diferente de ATIVA, continuar tentando
+                Log::warning("COB ainda não está ativa", [
+                    'txid' => $txid,
+                    'status_atual' => $status,
+                    'tentativa' => $tentativa,
+                    'tentativas_restantes' => $maxTentativas - $tentativa
+                ]);
+            } else {
+                Log::error("Erro ao verificar status do COB na tentativa {$tentativa}", [
+                    'txid' => $txid,
+                    'response' => $cobStatusResponse
+                ]);
+            }
+        }
+
+        Log::error("COB não ficou ativa após {$maxTentativas} tentativas", [
+            'txid' => $txid,
+            'tempo_total_espera' => array_sum($delays) . ' segundos'
+        ]);
+
+        return false;
     }
 
     /**
