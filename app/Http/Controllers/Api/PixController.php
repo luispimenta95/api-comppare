@@ -163,6 +163,37 @@ class PixController extends Controller
             throw new \RuntimeException('ID do Location Rec não encontrado');
         }
 
+        // Passo 3.5: Verificar status do COB antes de criar REC
+        Log::info('Verificando status do COB antes de criar REC', [
+            'txid' => $txid,
+            'aguardando_ativacao' => true
+        ]);
+
+        // Pequeno delay para garantir que o COB está ativo
+        sleep(2);
+
+        $cobStatusResponse = $this->verificarStatusCob($txid);
+        if (!$cobStatusResponse['success'] || ($cobStatusResponse['data']['status'] ?? '') !== 'ATIVA') {
+            Log::warning('COB não está ativa para criação de REC', [
+                'txid' => $txid,
+                'cob_status' => $cobStatusResponse['data']['status'] ?? 'DESCONHECIDO',
+                'cob_response' => $cobStatusResponse
+            ]);
+
+            // Tentar novamente após delay adicional
+            sleep(3);
+            $cobStatusResponse = $this->verificarStatusCob($txid);
+
+            if (!$cobStatusResponse['success'] || ($cobStatusResponse['data']['status'] ?? '') !== 'ATIVA') {
+                throw new \RuntimeException('COB não está ativa para criação de recorrência. Status: ' . ($cobStatusResponse['data']['status'] ?? 'DESCONHECIDO'));
+            }
+        }
+
+        Log::info('COB confirmada como ativa, prosseguindo com criação de REC', [
+            'txid' => $txid,
+            'cob_status' => $cobStatusResponse['data']['status'] ?? 'ATIVA'
+        ]);
+
         // Passo 4: Criar REC
         $recResponse = $this->criarRec($txid, $locrecId);
         $this->validateResponse($recResponse, 'REC');
@@ -211,15 +242,59 @@ class PixController extends Controller
     private function validateResponse(array $response, string $step): void
     {
         if (!$response['success']) {
-            Log::error("Erro na validação da resposta da API - Passo {$step}", [
+            // Extrair informações detalhadas do erro
+            $errorDetails = [
                 'step' => $step,
                 'response' => $response,
                 'http_code' => $response['http_code'] ?? null,
                 'error' => $response['error'] ?? 'Erro desconhecido',
                 'url' => $response['url'] ?? null,
                 'body' => $response['body'] ?? null
-            ]);
-            throw new \RuntimeException("Erro no passo {$step}: " . ($response['error'] ?? 'Erro desconhecido'));
+            ];
+
+            // Analisar erros específicos da API EFI
+            $errorMessage = "Erro no passo {$step}";
+
+            if (isset($response['data']) && is_array($response['data'])) {
+                // Erros específicos do REC
+                if ($step === 'REC' && isset($response['data']['violacoes'])) {
+                    $violacoes = $response['data']['violacoes'];
+                    foreach ($violacoes as $violacao) {
+                        if (isset($violacao['razao'])) {
+                            if (strpos($violacao['razao'], 'não está ativa') !== false) {
+                                $errorMessage = "Erro no passo REC: COB não está ativa para criação de recorrência. Aguarde alguns segundos e tente novamente.";
+
+                                Log::warning('Problema de timing entre COB e REC', [
+                                    'violacao' => $violacao,
+                                    'sugestao' => 'Implementar retry com delay maior ou verificar status do COB'
+                                ]);
+                                break;
+                            } else {
+                                $errorMessage = "Erro no passo REC: " . $violacao['razao'];
+                            }
+                        }
+                    }
+                }
+                // Outros erros da API
+                elseif (isset($response['data']['detail'])) {
+                    $errorMessage .= ": " . $response['data']['detail'];
+                } elseif (isset($response['data']['mensagem'])) {
+                    $errorMessage .= ": " . $response['data']['mensagem'];
+                } elseif (isset($response['data']['error'])) {
+                    $errorMessage .= ": " . $response['data']['error'];
+                }
+            }
+            // Erro de cURL ou conectividade
+            elseif (!empty($response['error'])) {
+                $errorMessage .= ": " . $response['error'];
+            }
+            // Erro HTTP sem detalhes
+            else {
+                $errorMessage .= ": Erro HTTP " . ($response['http_code'] ?? 'desconhecido');
+            }
+
+            Log::error("Erro na validação da resposta da API - Passo {$step}", $errorDetails);
+            throw new \RuntimeException($errorMessage);
         }
     }
 
@@ -413,6 +488,21 @@ class PixController extends Controller
     private function resgatarQRCode(string $recId, string $txid): array
     {
         $url = $this->buildApiUrl("/v2/rec/{$recId}?txid={$txid}");
+        return $this->executeApiRequest($url, 'GET');
+    }
+
+    /**
+     * Verifica o status de um COB específico
+     */
+    private function verificarStatusCob(string $txid): array
+    {
+        $url = $this->buildApiUrl("/v2/cob/{$txid}");
+
+        Log::info('Verificando status do COB', [
+            'txid' => $txid,
+            'url' => $url
+        ]);
+
         return $this->executeApiRequest($url, 'GET');
     }
 
