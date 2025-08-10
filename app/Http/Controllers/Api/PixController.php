@@ -85,7 +85,8 @@ class PixController extends Controller
             Log::error('Erro geral no fluxo PIX', [
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
-                'line' => $e->getLine()
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
@@ -547,6 +548,55 @@ class PixController extends Controller
      */
     private function executeApiRequest(string $url, ?string $method = 'POST', ?string $body = null): array
     {
+        // Validar certificado antes de fazer a requisição
+        if (!file_exists($this->certificadoPath)) {
+            Log::error('Certificado EFI não encontrado', [
+                'certificate_path' => $this->certificadoPath,
+                'environment' => $this->enviroment
+            ]);
+
+            return [
+                'success' => false,
+                'http_code' => 0,
+                'error' => "Certificado EFI não encontrado: {$this->certificadoPath}",
+                'data' => null,
+                'url' => $url,
+                'body' => $body
+            ];
+        }
+
+        if (!is_readable($this->certificadoPath)) {
+            Log::error('Certificado EFI não pode ser lido', [
+                'certificate_path' => $this->certificadoPath,
+                'environment' => $this->enviroment
+            ]);
+
+            return [
+                'success' => false,
+                'http_code' => 0,
+                'error' => "Certificado EFI não pode ser lido: {$this->certificadoPath}",
+                'data' => null,
+                'url' => $url,
+                'body' => $body
+            ];
+        }
+
+        if (filesize($this->certificadoPath) === 0) {
+            Log::error('Certificado EFI está vazio', [
+                'certificate_path' => $this->certificadoPath,
+                'environment' => $this->enviroment
+            ]);
+
+            return [
+                'success' => false,
+                'http_code' => 0,
+                'error' => "Certificado EFI está vazio: {$this->certificadoPath}",
+                'data' => null,
+                'url' => $url,
+                'body' => $body
+            ];
+        }
+
         $curl = curl_init();
 
         $curlOptions = [
@@ -560,11 +610,10 @@ class PixController extends Controller
                 "Authorization: Bearer " . $this->apiEfi->getToken(),
                 "Content-Type: application/json"
             ],
-            // Adicionar opções para debug SSL/TLS
-            CURLOPT_VERBOSE => true,
-            CURLOPT_SSL_VERIFYHOST => 2,
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_CAINFO => null, // Usar CA padrão do sistema
+            // Opções SSL/TLS para ambiente local
+            CURLOPT_SSL_VERIFYHOST => $this->enviroment === 'local' ? 0 : 2,
+            CURLOPT_SSL_VERIFYPEER => $this->enviroment === 'local' ? false : true,
+            CURLOPT_VERBOSE => false, // Desativar verbose para reduzir logs
         ];
 
         if ($body) {
@@ -580,6 +629,7 @@ class PixController extends Controller
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         $curlInfo = curl_getinfo($curl);
         $error = curl_error($curl);
+        $curlErrno = curl_errno($curl);
         curl_close($curl);
 
         // Log detalhado da requisição
@@ -591,25 +641,38 @@ class PixController extends Controller
             'execution_time' => round($executionTime, 3) . 's',
             'http_code' => $httpCode,
             'has_curl_error' => !empty($error),
-            'curl_error' => $error,
-            'response_size' => strlen($response),
+            'curl_errno' => $curlErrno,
+            'response_size' => $response ? strlen($response) : 0,
             'ssl_verify_result' => $curlInfo['ssl_verify_result'] ?? null,
             'cert_info' => [
                 'exists' => file_exists($this->certificadoPath),
                 'path' => $this->certificadoPath,
-                'readable' => is_readable($this->certificadoPath)
+                'readable' => is_readable($this->certificadoPath),
+                'size' => file_exists($this->certificadoPath) ? filesize($this->certificadoPath) : 0
             ]
         ]);
 
         // Se houve erro de cURL, logar detalhes adicionais
         if (!empty($error)) {
-            Log::error('Erro de cURL na requisição para API EFI', [
+            $errorDetails = [
                 'curl_error' => $error,
-                'curl_errno' => curl_errno($curl),
+                'curl_errno' => $curlErrno,
                 'url' => $url,
                 'method' => $method,
-                'curl_info' => $curlInfo
-            ]);
+                'environment' => $this->enviroment
+            ];
+
+            // Análise específica de erros de certificado
+            if (strpos($error, 'certificate') !== false || $curlErrno === CURLE_SSL_CERTPROBLEM) {
+                $errorDetails['analysis'] = 'Problema com certificado SSL/TLS';
+                $errorDetails['suggestions'] = [
+                    'Verificar se o certificado existe e pode ser lido',
+                    'Verificar se o certificado não está expirado',
+                    'Para ambiente local, considerar desabilitar verificação SSL'
+                ];
+            }
+
+            Log::error('Erro de cURL na requisição para API EFI', $errorDetails);
         }
 
         // Se response vazio mas sem erro de cURL, pode ser problema de rede/SSL
@@ -639,6 +702,7 @@ class PixController extends Controller
             'success' => !$error && ($httpCode >= 200 && $httpCode < 300),
             'http_code' => $httpCode,
             'error' => $error,
+            'curl_errno' => $curlErrno,
             'data' => $decodedResponse,
             'raw_response' => $response,
             'url' => $url,
@@ -976,7 +1040,9 @@ class PixController extends Controller
                         'webhookUrl' => $webhookUrl,
                         'skip_mtls' => true,
                         'configurado_em' => now()->toDateTimeString(),
-                        'observacao' => 'mTLS foi ignorado - EFI não validará certificados no servidor',
+                        'observacao' => $httpCode < 400 ?
+                            'mTLS foi ignorado - EFI não validará certificados no servidor' :
+                            'Erro ao configurar webhook mesmo com skip-mTLS',
                         'próximos_passos' => [
                             '1. Testar webhook: curl -X POST ' . $webhookUrl,
                             '2. Configurar Nginx para mTLS completo (opcional)',
@@ -1468,6 +1534,131 @@ class PixController extends Controller
                 'api_instance_created' => false,
                 'environment' => $this->enviroment
             ];
+        }
+    }
+
+    /**
+     * Cria certificado de teste para ambiente local (método auxiliar para desenvolvimento)
+     * Endpoint: POST /api/pix/create-test-certificate
+     */
+    public function createTestCertificate(Request $request): JsonResponse
+    {
+        try {
+            // Permitir em ambiente local ou se forçado via parâmetro
+            $forceCreate = $request->input('force', false);
+            
+            if ($this->enviroment !== 'local' && !$forceCreate) {
+                return response()->json([
+                    'status' => 403,
+                    'mensagem' => 'Este endpoint só está disponível em ambiente local. Use force=true se necessário.',
+                    'environment' => $this->enviroment,
+                    'suggestion' => 'Adicione {"force": true} no body da requisição para forçar criação'
+                ], 403);
+            }
+
+            $certificateDir = storage_path('app/certificates');
+
+            // Criar diretório se não existir
+            if (!is_dir($certificateDir)) {
+                mkdir($certificateDir, 0755, true);
+                Log::info('Diretório de certificados criado', ['path' => $certificateDir]);
+            }
+
+            $certPath = storage_path('app/certificates/hml.pem');
+
+            // Verificar se já existe
+            if (file_exists($certPath)) {
+                $fileSize = filesize($certPath);
+                if ($fileSize > 0) {
+                    return response()->json([
+                        'status' => 200,
+                        'mensagem' => 'Certificado já existe e não está vazio',
+                        'dados' => [
+                            'certificate_path' => $certPath,
+                            'certificate_size' => $fileSize,
+                            'certificate_readable' => is_readable($certPath),
+                            'action' => 'nenhuma - certificado já configurado'
+                        ]
+                    ]);
+                }
+            }
+
+            // Criar certificado auto-assinado para teste
+            $config = [
+                "digest_alg" => "sha256",
+                "private_key_bits" => 2048,
+                "private_key_type" => OPENSSL_KEYTYPE_RSA,
+            ];
+
+            // Criar chave privada
+            $privateKey = openssl_pkey_new($config);
+
+            // Criar CSR (Certificate Signing Request)
+            $dn = [
+                "countryName" => "BR",
+                "stateOrProvinceName" => "State",
+                "localityName" => "City",
+                "organizationName" => "Test Organization",
+                "organizationalUnitName" => "IT Department",
+                "commonName" => "localhost",
+                "emailAddress" => "test@example.com"
+            ];
+
+            $csr = openssl_csr_new($dn, $privateKey, $config);
+
+            // Criar certificado auto-assinado
+            $x509 = openssl_csr_sign($csr, null, $privateKey, 365, $config);
+
+            // Exportar certificado e chave privada
+            openssl_x509_export($x509, $certOut);
+            openssl_pkey_export($privateKey, $keyOut);
+
+            // Combinar certificado e chave privada em um arquivo PEM
+            $pemContent = $certOut . $keyOut;
+
+            // Salvar no arquivo
+            $result = file_put_contents($certPath, $pemContent);
+
+            if ($result === false) {
+                throw new \RuntimeException('Falha ao salvar certificado no arquivo');
+            }
+
+            // Definir permissões apropriadas
+            chmod($certPath, 0600);
+
+            Log::info('Certificado de teste criado com sucesso', [
+                'certificate_path' => $certPath,
+                'certificate_size' => filesize($certPath)
+            ]);
+
+            return response()->json([
+                'status' => 200,
+                'mensagem' => 'Certificado de teste criado com sucesso',
+                'dados' => [
+                    'certificate_path' => $certPath,
+                    'certificate_size' => filesize($certPath),
+                    'certificate_readable' => is_readable($certPath),
+                    'action' => 'certificado auto-assinado criado para desenvolvimento',
+                    'warning' => 'Este é um certificado de TESTE. Para produção, use o certificado fornecido pela EFI.',
+                    'next_steps' => [
+                        '1. Configure as variáveis de ambiente necessárias no .env',
+                        '2. Teste a conectividade com: GET /api/pix/test-config',
+                        '3. Para produção, substitua por certificado oficial da EFI'
+                    ]
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao criar certificado de teste', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'status' => 500,
+                'mensagem' => 'Erro ao criar certificado de teste',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
