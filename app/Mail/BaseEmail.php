@@ -1,5 +1,5 @@
 <?php
-
+// Versao master
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
