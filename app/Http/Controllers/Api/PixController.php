@@ -14,13 +14,14 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Util\Helper;
+
 class PixController extends Controller
 {
     // Constantes
     private const TIMEOUT_REQUEST = 30;
     private const EXPIRACAO_COB = 3600;
     private const POLITICA_RETENTATIVA = "NAO_PERMITE";
-    
+
     // Propriedades da classe
     private ApiEfi $apiEfi;
     private string $enviroment;
@@ -70,24 +71,23 @@ class PixController extends Controller
         try {
             // Validar e inicializar dados
             $this->initializeRequestData($request);
-            
+
             // Executar fluxo PIX recorrente
             $pixData = $this->executarFluxoPixRecorrente();
-            
+
             $this->salvarPagamentoPix($pixData);
-            
+
             // Enviar email
             $this->enviarEmailPix($pixData['pixCopiaECola'], $pixData['txid']);
-            
+
             return $this->buildSuccessResponse($pixData);
-            
         } catch (\Exception $e) {
             Log::error('Erro geral no fluxo PIX', [
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine()
             ]);
-            
+
             return response()->json([
                 'codRetorno' => 500,
                 'message' => 'Erro interno no processamento PIX',
@@ -103,7 +103,7 @@ class PixController extends Controller
     {
         $this->usuario = Usuarios::find($request->usuario);
         $this->plano = Planos::find($request->plano);
-        
+
         if (!$this->usuario || !$this->plano) {
             Log::error('Usuário ou plano não encontrado na inicialização dos dados', [
                 'usuario_id_solicitado' => $request->usuario,
@@ -114,7 +114,7 @@ class PixController extends Controller
             ]);
             throw new \InvalidArgumentException('Usuário ou plano não encontrado');
         }
-        
+
         $this->numeroContrato = $this->generateNumeroContrato();
         $this->dataInicial = now()->addDay()->toDateString();
         $this->frequencia = $this->determineFrequencia();
@@ -133,8 +133,8 @@ class PixController extends Controller
      */
     private function determineFrequencia(): string
     {
-        return $this->plano->frequenciaCobranca == 12 
-            ? Helper::PERIODICIDADE_ANUAL 
+        return $this->plano->frequenciaCobranca == 12
+            ? Helper::PERIODICIDADE_ANUAL
             : Helper::PERIODICIDADE_MENSAL;
     }
 
@@ -145,15 +145,15 @@ class PixController extends Controller
     {
         // Passo 1: Definir TXID
         $txid = $this->definirTxid();
-        
+
         // Passo 2: Criar COB
         $cobResponse = $this->criarCob($txid);
         $this->validateResponse($cobResponse, 'COB');
-        
+
         // Passo 3: Criar Location Rec
         $locrecResponse = $this->criarLocationRec();
         $this->validateResponse($locrecResponse, 'LOCREC');
-        
+
         $locrecId = $locrecResponse['data']['id'] ?? null;
         if (!$locrecId) {
             Log::error('ID do Location Rec não encontrado na resposta da API', [
@@ -163,11 +163,11 @@ class PixController extends Controller
             ]);
             throw new \RuntimeException('ID do Location Rec não encontrado');
         }
-        
+
         // Passo 4: Criar REC
         $recResponse = $this->criarRec($txid, $locrecId);
         $this->validateResponse($recResponse, 'REC');
-        
+
         $recId = $recResponse['data']['idRec'] ?? null;
         if (!$recId) {
             Log::error('ID do REC não encontrado na resposta da API', [
@@ -178,11 +178,11 @@ class PixController extends Controller
             ]);
             throw new \RuntimeException('ID do REC não encontrado');
         }
-        
+
         // Passo 5: Resgatar QR Code
         $qrcodeResponse = $this->resgatarQRCode($recId, $txid);
         $this->validateResponse($qrcodeResponse, 'QRCODE');
-        
+
         $pixCopiaECola = $qrcodeResponse['data']['dadosQR']['pixCopiaECola'] ?? null;
         if (!$pixCopiaECola) {
             Log::error('Código PIX não gerado na resposta da API', [
@@ -193,7 +193,7 @@ class PixController extends Controller
             ]);
             throw new \RuntimeException('Código PIX não gerado');
         }
-        
+
         return [
             'txid' => $txid,
             'pixCopiaECola' => $pixCopiaECola,
@@ -211,17 +211,103 @@ class PixController extends Controller
      */
     private function validateResponse(array $response, string $step): void
     {
+        // Log detalhado para cada passo
+        Log::info("Validando resposta da API - Passo {$step}", [
+            'step' => $step,
+            'success' => $response['success'] ?? false,
+            'http_code' => $response['http_code'] ?? null,
+            'has_error' => !empty($response['error']),
+            'error' => $response['error'] ?? null,
+            'has_data' => isset($response['data']),
+            'data_keys' => isset($response['data']) ? array_keys($response['data']) : [],
+            'url' => $response['url'] ?? null,
+            'environment' => $this->enviroment
+        ]);
+
         if (!$response['success']) {
-            Log::error("Erro na validação da resposta da API - Passo {$step}", [
+            // Logs específicos para diferentes tipos de erro
+            $errorDetails = [
                 'step' => $step,
                 'response' => $response,
                 'http_code' => $response['http_code'] ?? null,
                 'error' => $response['error'] ?? 'Erro desconhecido',
                 'url' => $response['url'] ?? null,
-                'body' => $response['body'] ?? null
-            ]);
-            throw new \RuntimeException("Erro no passo {$step}: " . ($response['error'] ?? 'Erro desconhecido'));
+                'body' => $response['body'] ?? null,
+                'usuario_id' => $this->usuario->id ?? null,
+                'plano_id' => $this->plano->id ?? null,
+                'environment' => $this->enviroment
+            ];
+
+            // Análise específica por código HTTP
+            if (isset($response['http_code'])) {
+                switch ($response['http_code']) {
+                    case 400:
+                        $errorDetails['error_type'] = 'BAD_REQUEST';
+                        $errorDetails['suggestion'] = 'Verificar dados enviados na requisição';
+                        break;
+                    case 401:
+                        $errorDetails['error_type'] = 'UNAUTHORIZED';
+                        $errorDetails['suggestion'] = 'Verificar token de autenticação';
+                        break;
+                    case 403:
+                        $errorDetails['error_type'] = 'FORBIDDEN';
+                        $errorDetails['suggestion'] = 'Verificar permissões e certificados';
+                        break;
+                    case 404:
+                        $errorDetails['error_type'] = 'NOT_FOUND';
+                        $errorDetails['suggestion'] = 'Verificar URL da API e endpoints';
+                        break;
+                    case 422:
+                        $errorDetails['error_type'] = 'UNPROCESSABLE_ENTITY';
+                        $errorDetails['suggestion'] = 'Verificar validação dos dados enviados';
+                        break;
+                    case 500:
+                        $errorDetails['error_type'] = 'INTERNAL_SERVER_ERROR';
+                        $errorDetails['suggestion'] = 'Erro no servidor da API EFI';
+                        break;
+                    default:
+                        $errorDetails['error_type'] = 'UNKNOWN_HTTP_ERROR';
+                        $errorDetails['suggestion'] = 'Verificar documentação da API EFI';
+                }
+            }
+
+            // Tentar analisar response body para mais detalhes
+            if (isset($response['data']) && is_array($response['data'])) {
+                $errorDetails['api_error_details'] = $response['data'];
+
+                // Extrair mensagens de erro específicas da API EFI
+                if (isset($response['data']['error'])) {
+                    $errorDetails['api_error_message'] = $response['data']['error'];
+                }
+                if (isset($response['data']['error_description'])) {
+                    $errorDetails['api_error_description'] = $response['data']['error_description'];
+                }
+                if (isset($response['data']['violacoes'])) {
+                    $errorDetails['api_violations'] = $response['data']['violacoes'];
+                }
+            }
+
+            Log::error("Erro na validação da resposta da API - Passo {$step}", $errorDetails);
+
+            // Criar mensagem de erro mais específica
+            $errorMessage = "Erro no passo {$step}";
+            if (isset($errorDetails['api_error_message'])) {
+                $errorMessage .= ": " . $errorDetails['api_error_message'];
+            } elseif (isset($response['error']) && !empty($response['error'])) {
+                $errorMessage .= ": " . $response['error'];
+            } else {
+                $errorMessage .= ": Erro desconhecido (HTTP " . ($response['http_code'] ?? 'N/A') . ")";
+            }
+
+            throw new \RuntimeException($errorMessage);
         }
+
+        // Log de sucesso também é útil para debug
+        Log::info("Passo {$step} executado com sucesso", [
+            'step' => $step,
+            'http_code' => $response['http_code'] ?? null,
+            'data_keys' => isset($response['data']) ? array_keys($response['data']) : []
+        ]);
     }
 
     /**
@@ -256,7 +342,6 @@ class PixController extends Controller
 
             Log::info('Pagamento PIX salvo no banco', ['id' => $pagamentoPix->id]);
             return $pagamentoPix;
-            
         } catch (\Exception $e) {
             Log::error('Erro ao salvar pagamento PIX', [
                 'error' => $e->getMessage(),
@@ -279,14 +364,13 @@ class PixController extends Controller
             ]);
 
             $dadosParaEmail = $this->buildEmailData($pixCopiaECola, $txid);
-            
+
             Mail::to($this->usuario->email)->send(new EmailPix($dadosParaEmail));
-            
+
             Log::info('Email PIX enviado com sucesso', [
                 'email' => $this->usuario->email,
                 'txid' => $txid
             ]);
-
         } catch (\Exception $e) {
             Log::error('Erro ao enviar email PIX', [
                 'error_message' => $e->getMessage(),
@@ -348,7 +432,7 @@ class PixController extends Controller
     private function criarCob(string $txid): array
     {
         $url = $this->buildApiUrl("/v2/cob/{$txid}");
-        
+
         $body = json_encode([
             "calendario" => [
                 "expiracao" => self::EXPIRACAO_COB
@@ -381,7 +465,7 @@ class PixController extends Controller
     private function criarRec(string $txid, $locrecId): array
     {
         $url = $this->buildApiUrl("/v2/rec");
-        
+
         $body = json_encode([
             "vinculo" => [
                 "contrato" => $this->numeroContrato,
@@ -407,7 +491,31 @@ class PixController extends Controller
             ]
         ]);
 
-        return $this->executeApiRequest($url, null, $body);
+        // Log detalhado antes da requisição REC
+        Log::info('Iniciando criação REC', [
+            'txid' => $txid,
+            'locrecId' => $locrecId,
+            'url' => $url,
+            'body_data' => json_decode($body, true),
+            'usuario_id' => $this->usuario->id,
+            'plano_id' => $this->plano->id,
+            'environment' => $this->enviroment
+        ]);
+
+        $response = $this->executeApiRequest($url, null, $body);
+
+        // Log detalhado da resposta REC
+        Log::info('Resposta da criação REC', [
+            'txid' => $txid,
+            'locrecId' => $locrecId,
+            'response' => $response,
+            'success' => $response['success'],
+            'http_code' => $response['http_code'],
+            'has_data' => isset($response['data']),
+            'data_content' => $response['data'] ?? null
+        ]);
+
+        return $response;
     }
 
     /**
@@ -427,10 +535,10 @@ class PixController extends Controller
         // Adicione as variáveis abaixo no seu arquivo .env:
 
 
-        $baseUrl = $this->enviroment === 'local' 
+        $baseUrl = $this->enviroment === 'local'
             ? env('URL_API_PIX_LOCAL')
             : env('URL_API_PIX_PRODUCAO');
-            
+
         return $baseUrl . $endpoint;
     }
 
@@ -440,7 +548,7 @@ class PixController extends Controller
     private function executeApiRequest(string $url, ?string $method = 'POST', ?string $body = null): array
     {
         $curl = curl_init();
-        
+
         $curlOptions = [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
@@ -452,6 +560,11 @@ class PixController extends Controller
                 "Authorization: Bearer " . $this->apiEfi->getToken(),
                 "Content-Type: application/json"
             ],
+            // Adicionar opções para debug SSL/TLS
+            CURLOPT_VERBOSE => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_CAINFO => null, // Usar CA padrão do sistema
         ];
 
         if ($body) {
@@ -460,18 +573,78 @@ class PixController extends Controller
 
         curl_setopt_array($curl, $curlOptions);
 
+        $startTime = microtime(true);
         $response = curl_exec($curl);
+        $executionTime = microtime(true) - $startTime;
+
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curlInfo = curl_getinfo($curl);
         $error = curl_error($curl);
         curl_close($curl);
+
+        // Log detalhado da requisição
+        Log::info('Execução de requisição para API EFI', [
+            'url' => $url,
+            'method' => $method,
+            'has_body' => !empty($body),
+            'body_length' => $body ? strlen($body) : 0,
+            'execution_time' => round($executionTime, 3) . 's',
+            'http_code' => $httpCode,
+            'has_curl_error' => !empty($error),
+            'curl_error' => $error,
+            'response_size' => strlen($response),
+            'ssl_verify_result' => $curlInfo['ssl_verify_result'] ?? null,
+            'cert_info' => [
+                'exists' => file_exists($this->certificadoPath),
+                'path' => $this->certificadoPath,
+                'readable' => is_readable($this->certificadoPath)
+            ]
+        ]);
+
+        // Se houve erro de cURL, logar detalhes adicionais
+        if (!empty($error)) {
+            Log::error('Erro de cURL na requisição para API EFI', [
+                'curl_error' => $error,
+                'curl_errno' => curl_errno($curl),
+                'url' => $url,
+                'method' => $method,
+                'curl_info' => $curlInfo
+            ]);
+        }
+
+        // Se response vazio mas sem erro de cURL, pode ser problema de rede/SSL
+        if (empty($response) && empty($error) && $httpCode === 0) {
+            Log::warning('Resposta vazia sem erro de cURL - possível problema de conectividade', [
+                'url' => $url,
+                'curl_info' => $curlInfo,
+                'certificate_path' => $this->certificadoPath,
+                'certificate_exists' => file_exists($this->certificadoPath)
+            ]);
+        }
+
+        $decodedResponse = null;
+        if ($response) {
+            $decodedResponse = json_decode($response, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::warning('Erro ao decodificar JSON da resposta da API', [
+                    'json_error' => json_last_error_msg(),
+                    'response_length' => strlen($response),
+                    'response_preview' => substr($response, 0, 500),
+                    'url' => $url
+                ]);
+            }
+        }
 
         return [
             'success' => !$error && ($httpCode >= 200 && $httpCode < 300),
             'http_code' => $httpCode,
             'error' => $error,
-            'data' => $response ? json_decode($response, true) : null,
+            'data' => $decodedResponse,
+            'raw_response' => $response,
             'url' => $url,
-            'body' => $body
+            'body' => $body,
+            'execution_time' => $executionTime,
+            'curl_info' => $curlInfo
         ];
     }
 
@@ -481,6 +654,10 @@ class PixController extends Controller
      */
     public function atualizarCobranca(Request $request): JsonResponse
     {
+        Log::info(
+            'Webhook PIX recebido - Início do processamento'
+        );
+        die;
         try {
             // Log da requisição recebida
             Log::info('Webhook PIX recebido', [
@@ -496,7 +673,7 @@ class PixController extends Controller
                     'ip' => $request->ip(),
                     'user_agent' => $request->userAgent()
                 ]);
-                
+
                 return response()->json([
                     'status' => 403,
                     'mensagem' => 'Acesso negado. Certificado EFI inválido.',
@@ -568,7 +745,6 @@ class PixController extends Controller
                 'mensagem' => 'Requisição realizada com sucesso!',
                 'dados' => $resultados
             ]);
-
         } catch (\Exception $e) {
             Log::error('Erro ao processar webhook PIX', [
                 'error' => $e->getMessage(),
@@ -592,7 +768,7 @@ class PixController extends Controller
         try {
             $webhookUrl = $request->input('webhookUrl') ?: env('WEBHOOK_PIX_URL');
             $skipMtls = $request->input('skip_mtls', true); // ALTERADO: padrão é TRUE
-            
+
             if (!$webhookUrl) {
                 // Usar endpoint principal conforme especificação EFI
                 $webhookUrl = env('APP_URL') . '/api/pix';
@@ -614,7 +790,7 @@ class PixController extends Controller
 
             // Fazer requisição para API EFI
             $url = $this->buildApiUrl("/v2/webhook/{$this->chavePix}");
-            
+
             $headers = [
                 "Authorization: Bearer " . $this->apiEfi->getToken(),
                 "Content-Type: application/json"
@@ -630,7 +806,7 @@ class PixController extends Controller
             ]);
 
             $curl = curl_init();
-            
+
             $curlOptions = [
                 CURLOPT_URL => $url,
                 CURLOPT_RETURNTRANSFER => true,
@@ -679,8 +855,8 @@ class PixController extends Controller
                     'data' => [
                         'webhookUrl' => $webhookUrl,
                         'skip_mtls' => $skipMtls,
-                        'mtls_info' => $skipMtls ? 
-                            'mTLS desabilitado - validação manual necessária' : 
+                        'mtls_info' => $skipMtls ?
+                            'mTLS desabilitado - validação manual necessária' :
                             'mTLS habilitado - certificado EFI será validado automaticamente',
                         'configurado_em' => now()->toDateTimeString(),
                         'response' => $responseData
@@ -706,7 +882,6 @@ class PixController extends Controller
                     'solucao_recomendada' => $errorAnalysis['solucao'] ?? 'Verificar logs da EFI'
                 ], $httpCode >= 400 ? $httpCode : 500);
             }
-
         } catch (\Exception $e) {
             Log::error('Erro geral ao configurar webhook PIX', [
                 'error' => $e->getMessage(),
@@ -730,7 +905,7 @@ class PixController extends Controller
     {
         try {
             $webhookUrl = $request->input('webhookUrl') ?: env('WEBHOOK_PIX_URL') ?: env('APP_URL') . '/api/pix';
-            
+
             Log::info('Configurando webhook PIX com skip-mTLS automático', [
                 'webhook_url' => $webhookUrl,
                 'environment' => $this->enviroment
@@ -738,7 +913,7 @@ class PixController extends Controller
 
             // Fazer requisição para API EFI com skip-mTLS obrigatório
             $url = $this->buildApiUrl("/v2/webhook/{$this->chavePix}");
-            
+
             $headers = [
                 "Authorization: Bearer " . $this->apiEfi->getToken(),
                 "Content-Type: application/json",
@@ -750,7 +925,7 @@ class PixController extends Controller
             ]);
 
             $curl = curl_init();
-            
+
             $curlOptions = [
                 CURLOPT_URL => $url,
                 CURLOPT_RETURNTRANSFER => true,
@@ -812,7 +987,7 @@ class PixController extends Controller
                 ]);
             } else {
                 $errorAnalysis = $this->analisarErroWebhook($httpCode, $responseData);
-                
+
                 return response()->json([
                     'codRetorno' => $httpCode,
                     'message' => 'Erro ao configurar webhook mesmo com skip-mTLS',
@@ -827,7 +1002,6 @@ class PixController extends Controller
                     ]
                 ], $httpCode >= 400 ? $httpCode : 500);
             }
-
         } catch (\Exception $e) {
             Log::error('Erro geral ao configurar webhook com skip-mTLS', [
                 'error' => $e->getMessage(),
@@ -862,7 +1036,7 @@ class PixController extends Controller
                 Log::warning('Tentativa de acesso ao webhook simples sem certificado EFI válido', [
                     'ip' => $request->ip()
                 ]);
-                
+
                 // Retornar 403 sem corpo JSON para tentar manter compatibilidade
                 return response('Forbidden', 403);
             }
@@ -873,7 +1047,6 @@ class PixController extends Controller
 
             // Resposta simples "200" conforme especificação EFI
             return response('200', 200);
-
         } catch (\Exception $e) {
             Log::error('Erro no webhook PIX simples', [
                 'error' => $e->getMessage(),
@@ -893,7 +1066,7 @@ class PixController extends Controller
         // Implementação assíncrona seria através de Jobs/Queues
         // Por enquanto, só registra no log para processamento posterior
         Log::info('Dados PIX para processamento assíncrono', $data);
-        
+
         // TODO: Implementar Job para processar os dados do webhook
         // dispatch(new ProcessarWebhookPixJob($data));
     }
@@ -906,7 +1079,7 @@ class PixController extends Controller
         // Verificar IP da EFI primeiro (recomendação para skip-mTLS)
         $efiIp = '34.193.116.226';
         $clientIp = $request->ip();
-        
+
         if ($clientIp === $efiIp) {
             Log::info('IP da EFI reconhecido', ['ip' => $clientIp]);
             return true;
@@ -915,7 +1088,7 @@ class PixController extends Controller
         // Verificar certificado SSL/TLS via $_SERVER ou headers Nginx
         $clientCert = $_SERVER['SSL_CLIENT_CERT'] ?? $request->header('SSL-Client-Cert');
         $clientCertVerify = $_SERVER['SSL_CLIENT_VERIFY'] ?? $request->header('SSL-Client-Verify');
-        
+
         if (!$clientCert) {
             Log::debug('Certificado cliente não encontrado', [
                 'server_ssl_client_cert' => isset($_SERVER['SSL_CLIENT_CERT']) ? 'presente' : 'ausente',
@@ -938,9 +1111,9 @@ class PixController extends Controller
             $cleanCert = str_replace(['-----BEGIN CERTIFICATE-----', '-----END CERTIFICATE-----'], '', $clientCert);
             $cleanCert = str_replace(["\n", "\r", " "], '', $cleanCert);
             $cleanCert = "-----BEGIN CERTIFICATE-----\n" . chunk_split($cleanCert, 64, "\n") . "-----END CERTIFICATE-----";
-            
+
             $certInfo = openssl_x509_parse($cleanCert);
-            
+
             if (!$certInfo) {
                 Log::warning('Falha ao fazer parse do certificado cliente');
                 return false;
@@ -948,7 +1121,7 @@ class PixController extends Controller
 
             $subject = $certInfo['subject'] ?? [];
             $issuer = $certInfo['issuer'] ?? [];
-            
+
             $commonName = $subject['CN'] ?? '';
             $organization = $subject['O'] ?? '';
 
@@ -985,7 +1158,6 @@ class PixController extends Controller
             ]);
 
             return false;
-
         } catch (\Exception $e) {
             Log::error('Erro ao validar certificado EFI', [
                 'error' => $e->getMessage(),
@@ -1021,8 +1193,8 @@ class PixController extends Controller
             'dados' => [
                 'mtls_valido' => $mtlsValid,
                 'ssl_info' => $sslInfo,
-                'observacao' => $mtlsValid ? 
-                    'Certificado EFI válido ou IP reconhecido' : 
+                'observacao' => $mtlsValid ?
+                    'Certificado EFI válido ou IP reconhecido' :
                     'Certificado inválido - acesso seria negado',
                 'configuracao_nginx' => 'Verifique se ssl_verify_client está configurado',
                 'efi_ip_oficial' => '34.193.116.226'
@@ -1135,7 +1307,7 @@ class PixController extends Controller
                 'mtls_info' => $mtlsInfo,
                 'endpoints' => [
                     'webhook_principal' => env('APP_URL') . '/api/pix',
-                    'webhook_detalhado' => env('APP_URL') . '/api/pix/atualizar', 
+                    'webhook_detalhado' => env('APP_URL') . '/api/pix/atualizar',
                     'webhook_simples' => env('APP_URL') . '/api/pix/webhook-simple',
                     'configurar_webhook' => env('APP_URL') . '/api/pix/webhook',
                     'teste_tls' => env('APP_URL') . '/api/pix/test-tls',
@@ -1143,6 +1315,160 @@ class PixController extends Controller
                 ]
             ]
         ]);
+    }
+
+    /**
+     * Testa a conectividade e configuração PIX (método para debug)
+     * Endpoint: GET /api/pix/test-config
+     */
+    public function testPixConfig(Request $request): JsonResponse
+    {
+        try {
+            Log::info('Iniciando teste de configuração PIX');
+
+            // Validar dados básicos
+            $this->enviroment = $request->input('environment', 'local');
+            $this->initializeCertificadoPath();
+            $this->initializeChavePix();
+
+            $results = [
+                'environment' => $this->enviroment,
+                'certificates' => $this->testCertificates(),
+                'api_connection' => $this->testApiConnection(),
+                'token_generation' => $this->testTokenGeneration(),
+                'timestamp' => now()->toDateTimeString()
+            ];
+
+            return response()->json([
+                'status' => 200,
+                'mensagem' => 'Teste de configuração PIX executado',
+                'dados' => $results
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao testar configuração PIX', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'status' => 500,
+                'mensagem' => 'Erro ao testar configuração PIX',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Testa certificados
+     */
+    private function testCertificates(): array
+    {
+        $results = [
+            'certificado_path' => $this->certificadoPath,
+            'certificado_exists' => file_exists($this->certificadoPath),
+            'certificado_readable' => is_readable($this->certificadoPath),
+            'certificado_size' => file_exists($this->certificadoPath) ? filesize($this->certificadoPath) : 0
+        ];
+
+        if (file_exists($this->certificadoPath)) {
+            // Tentar ler informações do certificado
+            try {
+                $certData = openssl_x509_parse(file_get_contents($this->certificadoPath));
+                $results['certificado_info'] = [
+                    'subject' => $certData['subject'] ?? null,
+                    'issuer' => $certData['issuer'] ?? null,
+                    'valid_from' => isset($certData['validFrom_time_t']) ? date('Y-m-d H:i:s', $certData['validFrom_time_t']) : null,
+                    'valid_to' => isset($certData['validTo_time_t']) ? date('Y-m-d H:i:s', $certData['validTo_time_t']) : null,
+                    'is_expired' => isset($certData['validTo_time_t']) ? time() > $certData['validTo_time_t'] : null
+                ];
+            } catch (\Exception $e) {
+                $results['certificado_error'] = $e->getMessage();
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Testa conexão com a API
+     */
+    private function testApiConnection(): array
+    {
+        try {
+            $baseUrl = $this->enviroment === 'local'
+                ? env('URL_API_PIX_LOCAL')
+                : env('URL_API_PIX_PRODUCAO');
+
+            $results = [
+                'base_url' => $baseUrl,
+                'url_configured' => !empty($baseUrl)
+            ];
+
+            if (empty($baseUrl)) {
+                $results['error'] = 'URL da API não configurada no .env';
+                return $results;
+            }
+
+            // Teste simples de conectividade
+            $curl = curl_init();
+            curl_setopt_array($curl, [
+                CURLOPT_URL => $baseUrl,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => 10,
+                CURLOPT_NOBODY => true, // HEAD request
+                CURLOPT_SSL_VERIFYPEER => false, // Para teste inicial
+            ]);
+
+            $response = curl_exec($curl);
+            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            $error = curl_error($curl);
+            curl_close($curl);
+
+            $results['connectivity_test'] = [
+                'http_code' => $httpCode,
+                'curl_error' => $error,
+                'can_connect' => empty($error) && $httpCode > 0
+            ];
+
+            return $results;
+        } catch (\Exception $e) {
+            return [
+                'error' => $e->getMessage(),
+                'base_url' => $baseUrl ?? null
+            ];
+        }
+    }
+
+    /**
+     * Testa geração de token
+     */
+    private function testTokenGeneration(): array
+    {
+        try {
+            // Criar instância da ApiEfi usando a classe do projeto
+            $apiEfi = new \App\Http\Util\Payments\ApiEfi();
+
+            $token = $apiEfi->getToken();
+
+            return [
+                'client_id_configured' => !empty(env('ID_EFI_HML')) || !empty(env('ID_EFI_PRD')),
+                'client_secret_configured' => !empty(env('SECRET_EFI_HML')) || !empty(env('SECRET_EFI_PRD')),
+                'token_generated' => !empty($token),
+                'token_length' => strlen($token ?? ''),
+                'api_instance_created' => true,
+                'environment' => $this->enviroment
+            ];
+        } catch (\Exception $e) {
+            return [
+                'client_id_configured' => !empty(env('ID_EFI_HML')) || !empty(env('ID_EFI_PRD')),
+                'client_secret_configured' => !empty(env('SECRET_EFI_HML')) || !empty(env('SECRET_EFI_PRD')),
+                'token_generated' => false,
+                'error' => $e->getMessage(),
+                'api_instance_created' => false,
+                'environment' => $this->enviroment
+            ];
+        }
     }
 
     /**
@@ -1164,14 +1490,14 @@ class PixController extends Controller
                     ];
                 }
                 break;
-                
+
             case 'webhook_url_invalida':
                 return [
                     'problema' => 'URL do webhook é inválida ou inacessível',
                     'causa' => 'URL não responde ou não é HTTPS válido',
                     'solucao' => 'Verifique se a URL é acessível publicamente via HTTPS'
                 ];
-                
+
             case 'chave_invalida':
                 return [
                     'problema' => 'Chave PIX inválida ou não encontrada',
