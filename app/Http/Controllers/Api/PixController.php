@@ -192,7 +192,7 @@ class PixController extends Controller
                 'txid' => $txid,
                 'usuario_id' => $this->usuario->id
             ]);
-            throw new \RuntimeException('Código PIX não gerado');
+            throw new \RuntimeException('Código PIX não gerado por falta de dados');
         }
 
         return [
@@ -1546,7 +1546,7 @@ class PixController extends Controller
         try {
             // Permitir em ambiente local ou se forçado via parâmetro
             $forceCreate = $request->input('force', false);
-            
+
             if ($this->enviroment !== 'local' && !$forceCreate) {
                 return response()->json([
                     'status' => 403,
