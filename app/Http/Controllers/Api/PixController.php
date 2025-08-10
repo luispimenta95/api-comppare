@@ -436,6 +436,38 @@ class PixController extends Controller
      */
     private function executeApiRequest(string $url, ?string $method = 'POST', ?string $body = null): array
     {
+        // Verificar se o certificado existe
+        if (!file_exists($this->certificadoPath)) {
+            Log::error('Certificado não encontrado', [
+                'path' => $this->certificadoPath,
+                'environment' => $this->enviroment
+            ]);
+            return [
+                'success' => false,
+                'http_code' => 0,
+                'error' => "Certificado não encontrado: {$this->certificadoPath}",
+                'data' => null,
+                'url' => $url,
+                'body' => $body
+            ];
+        }
+
+        // Verificar se o certificado é legível
+        if (!is_readable($this->certificadoPath)) {
+            Log::error('Certificado não é legível', [
+                'path' => $this->certificadoPath,
+                'permissions' => substr(sprintf('%o', fileperms($this->certificadoPath)), -4)
+            ]);
+            return [
+                'success' => false,
+                'http_code' => 0,
+                'error' => "Certificado não é legível: {$this->certificadoPath}",
+                'data' => null,
+                'url' => $url,
+                'body' => $body
+            ];
+        }
+
         $curl = curl_init();
 
         $curlOptions = [
@@ -445,11 +477,22 @@ class PixController extends Controller
             CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_SSLCERT => $this->certificadoPath,
             CURLOPT_SSLCERTPASSWD => "",
+            CURLOPT_SSLCERTTYPE => "PEM",
             CURLOPT_HTTPHEADER => [
                 "Authorization: Bearer " . $this->apiEfi->getToken(),
                 "Content-Type: application/json"
             ],
         ];
+
+        // Configurações SSL específicas para desenvolvimento
+        if ($this->enviroment === 'local') {
+            $curlOptions[CURLOPT_SSL_VERIFYHOST] = 0;
+            $curlOptions[CURLOPT_SSL_VERIFYPEER] = false;
+            Log::info('Configuração SSL relaxada para desenvolvimento');
+        } else {
+            $curlOptions[CURLOPT_SSL_VERIFYHOST] = 2;
+            $curlOptions[CURLOPT_SSL_VERIFYPEER] = true;
+        }
 
         if ($body) {
             $curlOptions[CURLOPT_POSTFIELDS] = $body;
@@ -457,18 +500,67 @@ class PixController extends Controller
 
         curl_setopt_array($curl, $curlOptions);
 
+        $startTime = microtime(true);
         $response = curl_exec($curl);
+        $executionTime = microtime(true) - $startTime;
+
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curlInfo = curl_getinfo($curl);
         $error = curl_error($curl);
         curl_close($curl);
+
+        // Log detalhado da requisição
+        Log::info('Execução de requisição para API EFI', [
+            'url' => $url,
+            'method' => $method,
+            'has_body' => !empty($body),
+            'body_length' => $body ? strlen($body) : 0,
+            'execution_time' => round($executionTime, 3) . 's',
+            'http_code' => $httpCode,
+            'has_curl_error' => !empty($error),
+            'curl_error' => $error,
+            'response_size' => strlen($response),
+            'cert_info' => [
+                'exists' => file_exists($this->certificadoPath),
+                'path' => $this->certificadoPath,
+                'readable' => is_readable($this->certificadoPath)
+            ]
+        ]);
+
+        // Se houve erro de cURL, logar detalhes adicionais
+        if (!empty($error)) {
+            Log::error('Erro de cURL na requisição para API EFI', [
+                'curl_error' => $error,
+                'curl_errno' => curl_errno($curl),
+                'url' => $url,
+                'method' => $method,
+                'curl_info' => $curlInfo
+            ]);
+        }
+
+        $decodedResponse = null;
+        if ($response) {
+            $decodedResponse = json_decode($response, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::warning('Erro ao decodificar JSON da resposta da API', [
+                    'json_error' => json_last_error_msg(),
+                    'response_length' => strlen($response),
+                    'response_preview' => substr($response, 0, 500),
+                    'url' => $url
+                ]);
+            }
+        }
 
         return [
             'success' => !$error && ($httpCode >= 200 && $httpCode < 300),
             'http_code' => $httpCode,
             'error' => $error,
-            'data' => $response ? json_decode($response, true) : null,
+            'data' => $decodedResponse,
+            'raw_response' => $response,
             'url' => $url,
-            'body' => $body
+            'body' => $body,
+            'execution_time' => $executionTime,
+            'curl_info' => $curlInfo
         ];
     }
 
