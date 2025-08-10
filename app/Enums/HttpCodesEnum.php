@@ -85,6 +85,7 @@ enum HttpCodesEnum: int
     case UserNotFound = -17;
     case PlanNotFoundForUser = -18;
     case SubscriptionCanceled = -19;
+    case InvalidPassword = -20;
 
 
     public function description(): string
@@ -150,25 +151,27 @@ enum HttpCodesEnum: int
             self::LoopDetected => 'Loop Detected',
             self::NotExtended => 'Not Extended',
             self::NetworkAuthenticationRequired => 'Network Authentication Required',
-            self::UnknownError => 'Error: Erro desconhecido',
-            self::InvalidCPF => 'Error: Erro ao validar CPF',
-            self::InvalidCNPJ => 'Error: Erro ao validar CNPJ',
-            self::InvalidEmail => 'Error: Erro ao validar Email',
-            self::InvalidPhone => 'Error: Erro ao validar Telefone',
-            self::CPFAlreadyRegistered => 'Error: CPF já cadastrado no banco de dados',
-            self::ExpiredFreePeriod => 'Error: Período de gratuidade expirado. Por favor, atualize sua assinatura adquirindo um novo plano.',
-            self::ExpiredSubscription => 'Error: Assinatura expirada. Por favor, atualize sua assinatura adquirindo um novo plano.',
-            self::MissingRequiredFields => 'Error: A request possui campos obrigatórios não preenchidos ou inválidos.',
-            self::PaymentPending => 'Error: O pagamento ainda não foi realizado.',
-            self::MonthlyFolderLimitReached => 'Error: Limite de criação de pastas mensal atingido.',
-            self::SubscriptionPurchaseError => 'Error: Erro ao realizar venda do plano de assinatura.',
-            self::UserBlockedDueToInactivity => 'Error: Usuário bloqueado por inatividade superior a 180 dias.',
-            self::InactiveTicket => 'Error: Cupom inativo.',
-            self::SendInviteError => 'Error: Erro ao enviar o convite.',
-            self::InvitesLimit => 'Error: Numero de convites permitidos atingido.',
+            self::UnknownError => 'Erro desconhecido',
+            self::InvalidCPF => 'Erro ao validar CPF',
+            self::InvalidCNPJ => 'Erro ao validar CNPJ',
+            self::InvalidEmail => 'Erro ao validar Email',
+            self::InvalidPhone => 'Erro ao validar Telefone',
+            self::CPFAlreadyRegistered => 'Dados sensíveis do usuário cadastrado no banco de dados',
+            self::ExpiredFreePeriod => 'Período de gratuidade expirado. Por favor, atualize sua assinatura adquirindo um novo plano.',
+            self::ExpiredSubscription => 'Assinatura expirada. Por favor, atualize sua assinatura adquirindo um novo plano.',
+            self::MissingRequiredFields => 'A request possui campos obrigatórios não preenchidos ou inválidos.',
+            self::PaymentPending => 'O pagamento ainda não foi realizado.',
+            self::MonthlyFolderLimitReached => 'Limite de criação de pastas mensal atingido.',
+            self::SubscriptionPurchaseError => 'Erro ao realizar venda do plano de assinatura.',
+            self::UserBlockedDueToInactivity => 'Usuário bloqueado por inatividade superior a 180 dias.',
+            self::InactiveTicket => 'Cupom inativo.',
+            self::SendInviteError => 'Erro ao enviar o convite.',
+            self::InvitesLimit => 'Numero de convites permitidos atingido.',
             self::UserNotFound => 'Error : Usuário não encontrado',
-            self::PlanNotFoundForUser => 'Error: Usuário sem plano associado',
-            self::SubscriptionCanceled => 'Assinatura cancelada com sucesso!'
+            self::PlanNotFoundForUser => 'Usuário sem plano associado',
+            self::SubscriptionCanceled => 'Assinatura cancelada com sucesso!',
+            self::InvalidPassword => 'Senha fora do padrão. A senha deve conter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.',
+            default => 'Unknown HTTP Status Code'
         };
     }
 }

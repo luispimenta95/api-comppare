@@ -12,26 +12,39 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Job para bloqueio automático de usuários inativos
+ * 
+ * Verifica todos os usuários e bloqueia aqueles que não acessaram
+ * o sistema dentro do período de renovação semestral definido.
+ * Executado automaticamente pela fila de jobs.
+ */
 class BlockUser implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     /**
-     * The name and signature of the console command.
+     * Nome e assinatura do comando de console
      *
      * @var string
      */
     protected $signature = 'resetPastasCounter';
 
     /**
-     * The console command description.
+     * Descrição do comando de console
      *
      * @var string
      */
     protected $description = 'Command description';
 
     /**
-     * Execute the console command.
+     * Executa o job de bloqueio de usuários inativos
+     * 
+     * Percorre todos os usuários e verifica se o último acesso
+     * excedeu o período limite. Se sim, bloqueia o usuário
+     * alterando seu status para 0 (inativo).
+     * 
+     * @return void
      */
     public function handle()
     {
@@ -47,11 +60,9 @@ class BlockUser implements ShouldQueue
                     $usuario->status = 0;
                     $usuario->save();
                 }
-
             }
 
             Log::info('Processo finalizado.');
-
         } catch (\Exception $e) {
             Log::error('Erro ao resetar contador de pastas: ' . $e->getMessage());
         }

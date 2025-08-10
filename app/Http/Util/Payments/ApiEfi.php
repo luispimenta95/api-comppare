@@ -16,25 +16,44 @@ class ApiEfi
     private string $enviroment;
     private EfiPay $efiPay;
     private string $url;
+    private string $certificadoPath;
+    
     public function __construct()
-    {
-        $this->enviroment =   env('APP_ENV');
-        $this->url = $this->enviroment == "local" ?
-            env("APP_URL") . 'api/notification?sandbox=true' :
-            env("APP_URL") . "api/notification";
+{
+    $this->enviroment = env('APP_ENV');
+    $this->url = $this->enviroment == "local" ?
+        env("APP_URL") . '/api/notification?sandbox=true' :
+        env("APP_URL") . "/api/notification";
 
-        $this->options = [
-            "clientId" =>  $this->enviroment == "local" ? env('ID_EFI_HML') : env('ID_EFI_PRD'),
-            "clientSecret" => $this->enviroment == "local" ? env('SECRET_EFI_HML') : env('SECRET_EFI_PRD'),
-            "sandbox" => $this->enviroment == "local" ? true : false,  // False = PRD | TRUE = DEV
-            "debug" => false, // Opcional | Padrão = false | Ativa/desativa os logs de requisições do Guzzle
-            "timeout" => 30, // Opcional | Padrão = 30 | Define o tempo máximo de resposta das requisições
-            "responseHeaders" => false,
-        ];
+    $this->options = [
+        "clientId" => $this->enviroment == "local" ? env('ID_EFI_HML') : env('ID_EFI_PRD'),
+        "clientSecret" => $this->enviroment == "local" ? env('SECRET_EFI_HML') : env('SECRET_EFI_PRD'),
+        "sandbox" => $this->enviroment == "local" ? true : false,
+        "debug" => false, // Ativar debug para ver requisições
+        "timeout" => 30, // Aumentar timeout
+        "responseHeaders" => true
+    ];
+    
+    $this->certificadoPath = $this->enviroment == "local"
+        ? storage_path('app/certificates/hml.pem')
+        : storage_path('app/certificates/prd.pem');
 
-
+    // Inicializar o EfiPay
+    try {
         $this->efiPay = new EfiPay($this->options);
+        Log::info('ApiEfi - EfiPay inicializado com sucesso');
+    } catch (\Exception $e) {
+        Log::error('ApiEfi - Falha na inicialização do EfiPay', [
+            'error_message' => $e->getMessage(),
+            'error_file' => $e->getFile(),
+            'error_line' => $e->getLine(),
+            'options' => $this->options,
+            'ambiente' => $this->enviroment
+        ]);
+        throw new \Exception('Falha na inicialização do EfiPay: ' . $e->getMessage());
     }
+}
+
 
     public function createPlan(string $name, int $frequencia): mixed
     {
@@ -62,8 +81,7 @@ class ApiEfi
         $params = [
             "id" => $dados["idPlano"],
         ];
-        //dd($dados['cardToken']);
-          $dados['produto']['value'] = (int) round($dados["produto"]['value']);
+        $dados['produto']['value'] = (int) round($dados["produto"]['value']);
         $body = [
             "items" =>  [$dados['produto']],
             "metadata" =>  ["notification_url" =>  $this->url],
@@ -75,7 +93,7 @@ class ApiEfi
                 ]
             ]
         ];
-        Log::info("Value:" .$body['items'][0]['value']);//
+        Log::info("Value:" . $body['items'][0]['value']); //
         try {
             return json_encode($this->efiPay->createOneStepSubscription($params, $body));
         } catch (EfiException $e) {
@@ -123,6 +141,219 @@ class ApiEfi
                     "description" => $e->errorDescription
                 ]
             );
+        }
+    }
+
+    public function createPixCharge(array $dados): mixed
+    {
+        try {
+            $body = [
+                "items" =>  [$dados['produto']],
+                "metadata" =>  ["notification_url" =>  $this->url],
+                "payment" => [
+                    "pix" => [
+                        "customer" =>  $dados['usuario']
+                    ]
+                ]
+            ];
+            return json_encode($this->efiPay->pixCreateCharge($this->params, $body));
+        } catch (EfiException $e) {
+            return json_encode(
+                [
+                    "code" => $e->code,
+                    "Erro" => $e->error,
+                    "description" => $e->errorDescription
+                ]
+            );
+        }
+    }
+
+    /**
+     * Cria uma cobrança PIX recorrente baseada no modelo de vínculo
+     * 
+     * @param array $dados - Dados da cobrança recorrente
+     * @return mixed
+     */
+ 
+    /*
+   * Obtém token de autenticação da API EFI Pay usando cURL direto
+ * Baseado no exemplo oficial da EFI Pay
+ * 
+ * @return mixed
+ */
+    public function getToken(): mixed
+    {
+        try {
+            Log::info('ApiEfi - Solicitando token de autenticação via cURL');
+
+            // Configurações baseadas no ambiente
+            $clientId = $this->enviroment == "local" ? env('ID_EFI_HML') : env('ID_EFI_PRD');
+            $clientSecret = $this->enviroment == "local" ? env('SECRET_EFI_HML') : env('SECRET_EFI_PRD');
+            $baseUrl = $this->enviroment == "local" ?
+                "https://pix-h.api.efipay.com.br" :
+                "https://pix.api.efipay.com.br";
+
+            Log::info('ApiEfi - Verificando certificado', [
+                'certificado_path' => $this->certificadoPath,
+                'arquivo_existe' => file_exists($this->certificadoPath),
+                'ambiente' => $this->enviroment
+            ]);
+
+            // Validar credenciais
+            if (empty($clientId) || empty($clientSecret)) {
+                Log::error('ApiEfi - Credenciais EFI Pay não configuradas', [
+                    'ambiente' => $this->enviroment,
+                    'client_id_vazio' => empty($clientId),
+                    'client_secret_vazio' => empty($clientSecret),
+                    'variaveis_env_verificadas' => [
+                        'ID_EFI_HML' => !empty(env('ID_EFI_HML')),
+                        'SECRET_EFI_HML' => !empty(env('SECRET_EFI_HML')),
+                        'ID_EFI_PRD' => !empty(env('ID_EFI_PRD')),
+                        'SECRET_EFI_PRD' => !empty(env('SECRET_EFI_PRD'))
+                    ]
+                ]);
+                throw new \Exception('Credenciais EFI Pay não configuradas');
+            }
+
+            // Codificação da autorização
+            $autorizacao = base64_encode($clientId . ":" . $clientSecret);
+
+            // Inicializar cURL
+            $curl = curl_init();
+
+            $curlOptions = [
+                CURLOPT_URL => $baseUrl . "/oauth/token",
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => "",
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 60,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => "POST",
+                CURLOPT_SSLCERTPASSWD => '',
+                CURLOPT_POSTFIELDS => '{"grant_type": "client_credentials"}',
+                CURLOPT_HTTPHEADER => [
+                    "Authorization: Basic $autorizacao",
+                    "Content-Type: application/json"
+                ],
+            ];
+
+            // Verificar se o certificado existe e adicionar às opções
+            if (file_exists($this->certificadoPath)) {
+                // Verificar se é um arquivo válido e legível
+                if (is_readable($this->certificadoPath)) {
+                    $curlOptions[CURLOPT_SSLCERT] = $this->certificadoPath;
+                    $curlOptions[CURLOPT_SSLCERTPASSWD] = env('EFI_CERTIFICADO_PASSWORD', '');
+                    $curlOptions[CURLOPT_SSL_VERIFYPEER] = true;
+                    $curlOptions[CURLOPT_SSL_VERIFYHOST] = 2;
+
+                    Log::info('ApiEfi - Usando certificado SSL', ['certificado' => $this->certificadoPath]);
+                } else {
+                    Log::warning('ApiEfi - Certificado não é legível, continuando sem SSL client cert', [
+                        'certificado' => $this->certificadoPath
+                    ]);
+                    $curlOptions[CURLOPT_SSL_VERIFYPEER] = false;
+                    $curlOptions[CURLOPT_SSL_VERIFYHOST] = false;
+                }
+            } else {
+                Log::warning('ApiEfi - Certificado não encontrado, continuando sem SSL client cert', [
+                    'certificado_esperado' => $this->certificadoPath
+                ]);
+                // Para testes sem certificado (não recomendado em produção)
+                $curlOptions[CURLOPT_SSL_VERIFYPEER] = false;
+                $curlOptions[CURLOPT_SSL_VERIFYHOST] = false;
+            }
+
+            curl_setopt_array($curl, $curlOptions);
+
+            Log::info('ApiEfi - Executando requisição para obter token', [
+                'url' => $baseUrl . "/oauth/token",
+                'environment' => $this->enviroment,
+                'usando_certificado' => file_exists($this->certificadoPath) && is_readable($this->certificadoPath)
+            ]);
+
+            $response = curl_exec($curl);
+            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            $error = curl_error($curl);
+
+            curl_close($curl);
+
+            // Verificar erros de cURL
+            if ($error) {
+                Log::error('ApiEfi - Erro cURL ao obter token', [
+                    'error' => $error,
+                    'http_code' => $httpCode
+                ]);
+
+                return json_encode([
+                    "code" => 500,
+                    "Erro" => "Erro de conectividade",
+                    "description" => $error
+                ]);
+            }
+
+            // Verificar código HTTP
+            if ($httpCode !== 200) {
+                Log::error('ApiEfi - Código HTTP inválido ao obter token', [
+                    'http_code' => $httpCode,
+                    'response' => $response
+                ]);
+
+                return json_encode([
+                    'MSG' => "Erro ao obter token",
+                    "code" => $httpCode,
+                    "Erro" => "Erro HTTP",
+                    "description" => "Código HTTP: $httpCode",
+                    "response" => $response
+                ]);
+            }
+
+            // Decodificar resposta
+            $responseData = json_decode($response, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::error('ApiEfi - Erro ao decodificar resposta JSON', [
+                    'response' => $response,
+                    'json_error' => json_last_error_msg()
+                ]);
+
+                return json_encode([
+                    "code" => 500,
+                    "Erro" => "Erro de formato",
+                    "description" => "Resposta não é um JSON válido"
+                ]);
+            }
+
+            // Verificar se é um erro da API
+            if (isset($responseData['error'])) {
+                Log::error('ApiEfi - Erro retornado pela API EFI', $responseData);
+
+                return json_encode([
+                    "code" => $responseData['error_code'] ?? 400,
+                    "Erro" => $responseData['error'],
+                    "description" => $responseData['error_description'] ?? 'Erro não especificado'
+                ]);
+            }
+
+            // Sucesso
+            Log::info('ApiEfi - Token obtido com sucesso', [
+                'token_type' => $responseData['token_type'] ?? 'N/A',
+                'expires_in' => $responseData['expires_in'] ?? 'N/A'
+            ]);
+
+            return $responseData['access_token'] ?? null;
+        } catch (\Exception $e) {
+            Log::error('ApiEfi - Erro geral ao obter token', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            return json_encode([
+                "code" => 500,
+                "Erro" => "Erro interno",
+                "description" => $e->getMessage()
+            ]);
         }
     }
 }

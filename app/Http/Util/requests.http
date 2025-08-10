@@ -9,29 +9,75 @@ POST {{baseUrl}}/usuarios/cadastrar
 Content-Type: application/json
 
 {
-    "nome": "Luis Pimenta",
-    "cpf": "78078048076",
-    "senha": "13151319",
+    "primeiroNome": "Luis",
+    "sobrenome": "Pimenta",
+    "apelido": "luispimenta95",
+    "cpf": "02049035055",
+    "senha": "Mp13151319!",
     "telefone": "61998690313",
     "email": "luispimenta.contato@gmail.com",
     "idPlano": 1,
-    "idPerfil": 2,
     "nascimento": "19/09/1995"
 }
 
 
 ###listar
-GET {{baseUrl}}/usuarios/listar
+GET {{baseUrl}}/admin/usuarios/listar
 
 
-###Autenticar
+###Autenticar (login com tags incluídas na resposta)
 POST {{baseUrl}}/usuarios/autenticar
 Content-Type: application/json
 
 {
-    "cpf": "02342288140",
+    "cpf": "02049035055",
     "senha": "13151319"
 }
+
+### Response esperada (com tags):
+# {
+#   "codRetorno": 200,
+#   "message": "OK",
+#   "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+#   "dados": { 
+#     "id": 1,
+#     "primeiroNome": "Luis",
+#     "sobrenome": "Pimenta",
+#     "email": "luispimenta.contato@gmail.com",
+#     ...
+#   },
+#   "pastas": [
+#     {
+#       "id": 1,
+#       "nome": "Pasta Principal",
+#       "path": "https://api.comppare.com.br/pasta/1",
+#       "subpastas": [...]
+#     }
+#   ],
+#   "tags": {
+#     "total": 15,
+#     "pessoais": 10,
+#     "globais": 5,
+#     "lista": [
+#       {
+#         "id": 1,
+#         "nome": "Família",
+#         "tipo": "pessoal",
+#         "criada_em": "2024-01-15 10:30:00"
+#       },
+#       {
+#         "id": 2,
+#         "nome": "Trabalho",
+#         "tipo": "global",
+#         "criada_em": "2024-01-10 09:00:00"
+#       }
+#     ]
+#   },
+#   "regras": {
+#     "pode_criar_nova_pasta": true,
+#     "pode_criar_subpastas": true
+#   }
+# }
 
 ###recuperar
 POST {{baseUrl}}/usuarios/recuperar
@@ -120,7 +166,6 @@ Content-Type: application/json
 {
     "usuario":1,
     "plano": 1,
-    "valor": 39.9,
     "token": "acvvcyt"
 }
 
@@ -139,12 +184,21 @@ Content-Type: application/json
 ###cadastrar
 POST {{baseUrl}}/pasta/create
 Content-Type: application/json
+#Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5jb21wcGFyZS5jb20uYnIvYXBpL3VzdWFyaW9zL2F1dGVudGljYXIiLCJpYXQiOjE3NDgyMTc3MzEsImV4cCI6MTc0ODIyMTMzMSwibmJmIjoxNzQ4MjE3NzMxLCJqdGkiOiJncHhlN2NsRUxNaXRYdVdvIiwic3ViIjoiMiIsInBydiI6IjU1NGM1YWVhNGNiMjU0MDE5ZTEyMDY3YTdjYTU0N2Y2NzVkNTQ0Y2EifQ.m6rWAD_GHVs-GDWIvlH_yBMCI4QO3VSH0BYF09fiZTE
 
 {
-    "idUsuario": 1,
-    "nomePasta": "teste"
-  }
+    "idUsuario": 2,
+    "nomePasta": "pimenta/upload0"
+}
 
+###excluir pasta
+DELETE {{baseUrl}}/pasta/delete
+Content-Type: application/json
+
+{
+    "idUsuario": 2,
+    "idPasta": 40
+}
 
 ###ranking
 ###cadastrar
@@ -152,6 +206,318 @@ POST {{baseUrl}}/ranking/atualizar
 Content-Type: application/json
 
 {
-"pontos": 100,
- "usuario": 2
+"pontos": 10,
+ "usuario": 1
 }
+
+
+###atualizar plano
+POST {{baseUrl}}/api/usuarios/atualizar-plano
+Content-Type: application/json
+Authorization: Bearer 123
+
+{
+    "cpf": "81581828012",
+    "plano": 5
+}
+
+
+###esqueci senha
+POST {{baseUrl}}/usuarios/esqueceu-senha
+Content-Type: application/json  
+
+{
+    "email": "teste@gmail.com"
+}
+
+###imagens
+###excluir imagem
+DELETE {{baseUrl}}/imagens/excluir
+Content-Type: application/json
+
+{
+    "idUsuario": 2,
+    "idPhoto": 15
+}
+
+###excluir pasta
+DELETE {{baseUrl}}/pasta/excluir
+Content-Type: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5jb21wcGFyZS5jb20uYnIvYXBpL3VzdWFyaW9zL2F1dGVudGljYXIiLCJpYXQiOjE3NDgyMTc3MzEsImV4cCI6MTc0ODIyMTMzMSwibmJmIjoxNzQ4MjE3NzMxLCJqdGkiOiJncHhlN2NsRUxNaXRYdVdvIiwic3ViIjoiMiIsInBydiI6IjU1NGM1YWVhNGNiMjU0MDE5ZTEyMDY3YTdjYTU0N2Y2NzVkNTQ0Y2EifQ.m6rWAD_GHVs-GDWIvlH_yBMCI4QO3VSH0BYF09fiZTE
+
+{
+    "idUsuario": 2,
+    "idPasta": 40
+}
+
+###recuperar pasta individual
+GET {{baseUrl}}/pasta/recuperar?idPasta=26
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5jb21wcGFyZS5jb20uYnIvYXBpL3VzdWFyaW9zL2F1dGVudGljYXIiLCJpYXQiOjE3NTI2MTkxMDIsImV4cCI6MTc1MjYyMjcwMiwibmJmIjoxNzUyNjE5MTAyLCJqdGkiOiJqQmdSV0poS2pncE43S29TIiwic3ViIjoiMSIsInBydiI6IjU1NGM1YWVhNGNiMjU0MDE5ZTEyMDY3YTdjYTU0N2Y2NzVkNTQ0Y2EifQ.X36IgXm8avWayQytb4Z2u94NoElPP-s8xbDb8VOccQI
+
+
+#criar cobranca
+POST {{baseUrl}}/pix/enviar
+Content-Type: application/json
+
+{
+    "usuario": 2,
+    "plano": 3
+}
+
+###atualizar cobrança PIX (webhook EFI)
+POST {{baseUrl}}/pix/atualizar
+Content-Type: application/json
+
+{
+  "recs": [
+    {
+      "idRec": "RR1026652320240821lab77511abf",
+      "status": "APROVADA",
+      "atualizacao": [
+        {
+          "status": "CRIADA",
+          "data": "2024-08-20T10:12:07.567Z"
+        },
+        {
+          "status": "APROVADA",
+          "data": "2024-08-22T12:43:53.337Z"
+        }
+      ],
+      "ativacao": {
+        "tipoJornada": "JORNADA_3",
+        "dadosJornada": {
+          "txid": "r9eFIFmwcZ55Nm4RsKZAAtIvvCrlcNN6"
+        }
+      }
+    }
+  ]
+}
+
+### Response de sucesso:
+# {
+#   "codRetorno": 200,
+#   "message": "Atualização de cobranças processada",
+#   "total_processados": 1,
+#   "resultados": [
+#     {
+#       "idRec": "RR1026652320240821lab77511abf",
+#       "status": "APROVADA",
+#       "status_anterior": "ATIVA",
+#       "atualizado": true
+#     }
+#   ]
+# }
+
+### Response de erro (REC não encontrado):
+# {
+#   "codRetorno": 200,
+#   "message": "Atualização de cobranças processada",
+#   "total_processados": 1,
+#   "resultados": [
+#     {
+#       "idRec": "RR1026652320240821lab77511abf",
+#       "status": "APROVADA",
+#       "atualizado": false,
+#       "motivo": "Pagamento não encontrado no sistema"
+#     }
+#   ]
+# }
+
+###Tags
+###cadastrar tag (com verificação de limite do plano)
+POST {{baseUrl}}/tags/cadastrar
+Content-Type: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5jb21wcGFyZS5jb20uYnIvYXBpL3VzdWFyaW9zL2F1dGVudGljYXIiLCJpYXQiOjE3NTI2MTkxMDIsImV4cCI6MTc1MjYyMjcwMiwibmJmIjoxNzUyNjE5MTAyLCJqdGkiOiJqQmdSV0poS2pncE43S29TIiwic3ViIjoiMSIsInBydiI6IjU1NGM1YWVhNGNiMjU0MDE5ZTEyMDY3YTdjYTU0N2Y2NzVkNTQ0Y2EifQ.X36IgXm8avWayQytb4Z2u94NoElPP-s8xbDb8VOccQI
+
+{
+    "nomeTag": "Família",
+    "usuario": 1
+}
+
+### Response de sucesso:
+# {
+#   "codRetorno": 201,
+#   "message": "Tag criada com sucesso.",
+#   "tag": {
+#     "id": 1,
+#     "nome": "Família",
+#     "tipo": "pessoal",
+#     "criada_em": "2024-01-15 10:30:00"
+#   },
+#   "limites": {
+#     "usado": 5,
+#     "limite": 10,
+#     "restante": 5
+#   }
+# }
+
+### Response de erro (limite atingido):
+# {
+#   "codRetorno": 403,
+#   "message": "Limite de tags do plano atingido.",
+#   "detalhes": {
+#     "limite_plano": 10,
+#     "tags_criadas": 10,
+#     "plano_atual": "Plano Básico",
+#     "sugestao": "Faça upgrade do seu plano para criar mais tags."
+#   }
+# }
+
+###listar tags por usuário
+GET {{baseUrl}}/tags/usuario?usuario=1
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5jb21wcGFyZS5jb20uYnIvYXBpL3VzdWFyaW9zL2F1dGVudGljYXIiLCJpYXQiOjE3NTI2MTkxMDIsImV4cCI6MTc1MjYyMjcwMiwibmJmIjoxNzUyNjE5MTAyLCJqdGkiOiJqQmdSV0poS2pncE43S29TIiwic3ViIjoiMSIsInBydiI6IjU1NGM1YWVhNGNiMjU0MDE5ZTEyMDY3YTdjYTU0N2Y2NzVkNTQ0Y2EifQ.X36IgXm8avWayQytb4Z2u94NoElPP-s8xbDb8VOccQI
+
+###excluir tag (com decremento automático)
+DELETE {{baseUrl}}/tags/excluir
+Content-Type: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5jb21wcGFyZS5jb20uYnIvYXBpL3VzdWFyaW9zL2F1dGVudGljYXIiLCJpYXQiOjE3NTI2MTkxMDIsImV4cCI6MTc1MjYyMjcwMiwibmJmIjoxNzUyNjE5MTAyLCJqdGkiOiJqQmdSV0poS2pncE43S29TIiwic3ViIjoiMSIsInBydiI6IjU1NGM1YWVhNGNiMjU0MDE5ZTEyMDY3YTdjYTU0N2Y2NzVkNTQ0Y2EifQ.X36IgXm8avWayQytb4Z2u94NoElPP-s8xbDb8VOccQI
+
+{
+    "idTag": 1,
+    "usuario": 1
+}
+
+### Response de sucesso (exclusão):
+# {
+#   "codRetorno": 200,
+#   "message": "Tag excluída com sucesso.",
+#   "tag_excluida": {
+#     "id": 1,
+#     "nome": "Família",
+#     "criada_em": "2024-01-15 10:30:00",
+#     "excluida_em": "2024-01-16 14:20:00"
+#   },
+#   "limites_atualizados": {
+#     "tags_antes": 5,
+#     "tags_depois": 4,
+#     "limite_plano": 10,
+#     "disponivel_criar": 6
+#   }
+# }
+
+### Response de erro (não é o criador):
+# {
+#   "codRetorno": 403,
+#   "message": "Você só pode excluir suas próprias tags.",
+#   "detalhes": {
+#     "tag_id": 1,
+#     "tag_nome": "Família",
+#     "criador_tag": 2,
+#     "usuario_solicitante": 1
+#   }
+# }
+
+#criar cobranca
+POST {{baseUrl}}/imagens/salvar
+Content-Type: application/json
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5jb21wcGFyZS5jb20uYnIvYXBpL3VzdWFyaW9zL2F1dGVudGljYXIiLCJpYXQiOjE3NTI2MTkxMDIsImV4cCI6MTc1MjYyMjcwMiwibmJmIjoxNzUyNjE5MTAyLCJqdGkiOiJqQmdSV0poS2pncE43S29TIiwic3ViIjoiMSIsInBydiI6IjU1NGM1YWVhNGNiMjU0MDE5ZTEyMDY3YTdjYTU0N2Y2NzVkNTQ0Y2EifQ.X36IgXm8avWayQytb4Z2u94NoElPP-s8xbDb8VOccQI
+
+
+{
+    "idPasta": 2,
+    "image": ['image1.png', 'image2.png']
+}
+
+###configurar webhook PIX (com URL customizada)
+PUT {{baseUrl}}/pix/webhook
+Content-Type: application/json
+
+{
+  "webhookUrl": "https://seu-dominio.com/api/webhookcobr/"
+}
+
+###configurar webhook PIX (usando URL do .env)
+PUT {{baseUrl}}/pix/webhook
+Content-Type: application/json
+
+{}
+
+### IMPORTANTE: Para configurar webhook PIX
+# 1. A URL deve ter HTTPS obrigatoriamente
+# 2. Deve estar configurada com autenticação TLS mútuo
+# 3. Configure no .env: WEBHOOK_PIX_URL=https://seu-dominio-com-tls-mutuo.com/api/pix/atualizar
+# 4. Certificados necessários em storage/app/certificates/:
+#    - cliente.pem (certificado cliente homologação)
+#    - cliente.key (chave privada cliente homologação)  
+#    - cliente_prd.pem (certificado cliente produção)
+#    - cliente_prd.key (chave privada cliente produção)
+# 5. Em ambiente local: SSL verification é desabilitada automaticamente
+# 6. Em produção: SSL verification é obrigatória
+# 7. Consulte a documentação da EFI sobre como configurar TLS mútuo
+
+### Possíveis erros e soluções:
+# Erro: "SSL certificate problem: self-signed certificate in certificate chain"
+# Solução: 
+#   - Em local: erro será ignorado automaticamente
+#   - Em produção: use certificados válidos da EFI
+#   - Configure APP_ENV=local no .env para desenvolvimento
+
+### Response de sucesso:
+# {
+#   "codRetorno": 200,
+#   "message": "Webhook configurado com sucesso",
+#   "data": {
+#     "webhookUrl": "https://seu-dominio.com/api/webhookcobr/",
+#     "configurado_em": "2024-08-08 15:30:00",
+#     "observacao": "Webhook configurado com autenticação TLS mútuo"
+#   }
+# }
+
+### Response de erro (TLS mútuo não configurado):
+# {
+#   "codRetorno": 500,
+#   "message": "Erro ao configurar webhook",
+#   "error": "Autenticação TLS mútuo não está configurada na URL informada. Configure um certificado SSL com autenticação mútua.",
+#   "sugestoes": [
+#     "Verifique se a URL possui certificado SSL válido",
+#     "Confirme se a autenticação TLS mútuo está configurada",
+#     "Teste se a URL está acessível externamente",
+#     "Consulte a documentação da EFI sobre configuração de webhooks"
+#   ]
+# }
+
+### Response de erro (certificado auto-assinado):
+# {
+#   "codRetorno": 500,
+#   "message": "Erro ao configurar webhook",
+#   "error": "SSL certificate problem: self-signed certificate in certificate chain",
+#   "tipo_erro": "SSL_CERTIFICATE_PROBLEM",
+#   "ambiente": "desenvolvimento/homologação",
+#   "solucao": {
+#     "ambiente_local": "Desabilite verificação SSL no .env: SSL_VERIFY_DISABLED=true",
+#     "ambiente_producao": "Use certificados SSL válidos emitidos por CA confiável",
+#     "certificados_efi": "Configure certificados homologação/produção EFI corretamente"
+#   },
+#   "sugestoes": [
+#     "Para ambiente local: Configure SSL_VERIFY_DISABLED=true no .env",
+#     "Para homologação: Use certificados de homologação da EFI",
+#     "Para produção: Use certificados SSL válidos e certificados de produção da EFI",
+#     "Verifique se os certificados cliente.pem e cliente.key estão corretos",
+#     "Confirme se a URL webhook está correta no .env: WEBHOOK_PIX_URL"
+#   ]
+# }
+
+### TROUBLESHOOTING: Problemas comuns com SSL/TLS
+# 
+# 1. ERRO: "SSL certificate problem: self-signed certificate in certificate chain"
+#    CAUSA: Certificado auto-assinado ou cadeia de certificados inválida
+#    SOLUÇÃO DESENVOLVIMENTO: Configure no .env:
+#      SSL_VERIFY_DISABLED=true
+#    SOLUÇÃO PRODUÇÃO: Use certificados SSL válidos de CA confiável
+#
+# 2. ERRO: "SSL certificate problem: unable to get local issuer certificate"
+#    CAUSA: Certificado raiz não encontrado na cadeia de confiança
+#    SOLUÇÃO: Atualize certificados CA do sistema ou use SSL_VERIFY_DISABLED=true para desenvolvimento
+#
+# 3. ERRO: "SSL peer certificate or SSH remote key was not OK"
+#    CAUSA: Certificado não corresponde ao domínio ou expirado
+#    SOLUÇÃO: Verifique se o certificado está válido para o domínio utilizado
+#
+# 4. ERRO: "TLS handshake failed"
+#    CAUSA: Problemas com TLS mútuo ou configuração de certificados cliente
+#    SOLUÇÃO: Verifique certificados cliente (cliente.pem e cliente.key) em storage/app/certificates/
+#
+# 5. Para testar webhook sem SSL (apenas desenvolvimento):
+#    - Configure WEBHOOK_PIX_URL com HTTP (não HTTPS)
+#    - Adicione SSL_VERIFY_DISABLED=true no .env
+#    - Use ngrok ou similar para expor localhost com HTTPS válido

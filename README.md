@@ -1,66 +1,511 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Comppare API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## 📋 Visão Geral
 
-## About Laravel
+Comppare é uma API completa para gerenciamento de usuários, pastas, imagens, planos e pagamentos. Desenvolvida com Laravel 11, oferece autenticação JWT, upload de imagens, controle de planos e integração com gateways de pagamento.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 📚 Documentação da API
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### 🔗 Visualizar Documentação Swagger
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+[![Swagger UI](https://img.shields.io/badge/Swagger%20UI-View%20API%20Docs-brightgreen?style=for-the-badge&logo=swagger)](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/pimentaLuiz/api-comppare/main/swagger.yaml)
 
-## Learning Laravel
+- **[📖 Documentação Interativa (Swagger UI)](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/pimentaLuiz/api-comppare/main/swagger.yaml)**
+- **[📄 Documentação Redoc](https://redocly.github.io/redoc/?url=https://raw.githubusercontent.com/pimentaLuiz/api-comppare/main/swagger.yaml)**
+- **[🌐 GitHub Pages (Auto-Deploy)](https://pimentaLuiz.github.io/api-comppare/)**
+- **[📁 Arquivo Swagger YAML](./swagger.yaml)**
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 🧪 Testes da API
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- **[🔥 Coleção de Requests HTTP](./app/Http/Util/requests.http)** - Para testes com extensões como REST Client
+- **[🌐 Página de Teste PHP](./public/test-auth.php)** - Interface visual para autenticação e navegação
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 🚀 Principais Funcionalidades
 
-## Laravel Sponsors
+- **👥 Gerenciamento de Usuários**: Cadastro, autenticação JWT, perfis
+- **📁 Sistema de Pastas**: Criação hierárquica com limite por plano
+- **🖼️ Upload de Imagens**: Gestão completa de fotos por pasta
+- **💼 Planos de Assinatura**: Controle de recursos e limitações
+- **🎫 Sistema de Cupons**: Descontos e promoções
+- **💳 Processamento de Pagamentos**: Integração com gateways
+- **🏷️ Sistema de Tags**: Tags pessoais e globais para organização
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## ⚡ Início Rápido
 
-### Premium Partners
+### 1. Autenticação
+```bash
+# Login
+POST /api/usuarios/autenticar
+{
+  "cpf": "02049035055",
+  "senha": "senha123"
+}
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+# Resposta (inclui tags do usuário)
+{
+  "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+  "dados": { ... },
+  "pastas": [...],
+  "tags": {
+    "total": 15,
+    "pessoais": 10,
+    "globais": 5,
+    "lista": [
+      {
+        "id": 1,
+        "nome": "Família",
+        "tipo": "pessoal",
+        "criada_em": "2024-01-15 10:30:00"
+      }
+    ]
+  },
+  "regras": { ... }
+}
+```
 
-## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
 
-## Code of Conduct
+### 2. Upload de Imagem
+```bash
+# Upload de foto para uma pasta
+POST /api/imagens/salvar
+Authorization: Bearer {token}
+Content-Type: multipart/form-data
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+{
+  "idPasta": 1,
+  "image": [arquivo]
+}
+```
 
-## Security Vulnerabilities
+## 🛠️ Instalação e Configuração
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Pré-requisitos
+- PHP 8.2+
+- Composer
+- MySQL/PostgreSQL
+- Node.js (para assets front-end)
 
-## License
+### 1. Clone e Instale Dependências
+```bash
+git clone https://github.com/pimentaLuiz/api-comppare.git
+cd api-comppare
+composer install
+npm install
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### 2. Configuração do Ambiente
+```bash
+# Copie o arquivo de ambiente
+cp .env.example .env
+
+# Gere a chave da aplicação
+php artisan key:generate
+
+# Configure o JWT
+php artisan jwt:secret
+```
+
+### 3. Configuração do Banco de Dados
+```bash
+# Configure suas credenciais no .env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=api_comppare
+DB_USERNAME=seu_usuario
+DB_PASSWORD=sua_senha
+
+# Execute as migrações
+php artisan migrate
+
+# Execute os seeders (opcional)
+php artisan db:seed
+```
+
+### 4. Inicie o Servidor
+```bash
+# Desenvolvimento
+php artisan serve
+
+# Build dos assets
+npm run dev
+```
+
+## 📂 Estrutura da API
+
+### Endpoints Principais
+
+| Método | Endpoint | Descrição |
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| `POST` | `/api/usuarios/cadastrar` | Cadastro de usuário |
+| `POST` | `/api/usuarios/autenticar` | Autenticação (inclui tags) |
+| `GET` | `/api/usuarios/dados` | Dados do usuário autenticado |
+| `GET` | `/api/pastas` | Listar pastas |
+| `POST` | `/api/pastas` | Criar pasta |
+| `POST` | `/api/photos/upload` | Upload de imagem |
+| `GET` | `/api/planos` | Listar planos |
+| `POST` | `/api/cupons/aplicar` | Aplicar cupom |
+| `POST` | `/api/pix/enviar` | Criar cobrança PIX recorrente |
+| `POST` | `/api/pix/atualizar` | Atualizar status cobrança (webhook) |
+| `PUT` | `/api/pix/webhook` | Configurar webhook de notificações |
+
+## 💳 Sistema de Pagamentos PIX
+
+### Configuração de Webhook
+Configure a URL que receberá notificações sobre mudanças de status:
+
+⚠️ **IMPORTANTE**: A URL do webhook deve ter:
+- HTTPS obrigatoriamente
+- Autenticação TLS mútuo configurada
+- Certificado SSL válido e acessível externamente
+
+📁 **Certificados Necessários**:
+```bash
+# Estrutura de certificados no storage/app/certificates/
+storage/
+  app/
+    certificates/
+      # Certificados principais EFI
+      hml.pem          # Certificado homologação
+      prd.pem          # Certificado produção
+      
+      # Certificados TLS mútuo para webhook
+      cliente.pem      # Certificado cliente (homologação)
+      cliente.key      # Chave privada cliente (homologação)
+      cliente_prd.pem  # Certificado cliente (produção)
+      cliente_prd.key  # Chave privada cliente (produção)
+```
+
+🔧 **Configurações SSL por Ambiente**:
+- **Local**: SSL verification desabilitada (permite certificados auto-assinados)
+- **Produção**: SSL verification obrigatória (certificados válidos da EFI)
+- **Webhook**: TLS mútuo configurado automaticamente
+
+## 🔧 Troubleshooting SSL/TLS
+
+### Problemas Comuns com Certificados
+
+#### 1. "SSL certificate problem: self-signed certificate in certificate chain"
+**Causa**: Certificado auto-assinado ou cadeia de certificados inválida
+
+**Soluções**:
+```bash
+# DESENVOLVIMENTO: Configure no .env
+SSL_VERIFY_DISABLED=true
+APP_ENV=local
+
+# PRODUÇÃO: Use certificados SSL válidos
+# - Obtenha certificados da EFI (homologação/produção)
+# - Configure domínio com SSL válido
+# - Verifique se certificados estão em storage/app/certificates/
+```
+
+#### 2. "SSL certificate problem: unable to get local issuer certificate"
+**Causa**: Certificado raiz não encontrado na cadeia de confiança
+
+**Soluções**:
+```bash
+# Atualize certificados CA do sistema
+sudo apt-get update && sudo apt-get install ca-certificates
+
+# Ou para desenvolvimento
+SSL_VERIFY_DISABLED=true
+```
+
+#### 3. "TLS handshake failed"
+**Causa**: Problemas com TLS mútuo ou certificados cliente
+
+**Soluções**:
+```bash
+# Verifique certificados em storage/app/certificates/
+ls -la storage/app/certificates/
+# Deve conter: cliente.pem, cliente.key (homologação)
+#             cliente_prd.pem, cliente_prd.key (produção)
+
+# Configure ambiente corretamente
+APP_ENV=production  # Para usar certificados de produção
+APP_ENV=local       # Para usar certificados de homologação
+```
+
+#### 4. Teste de SSL/Webhook sem Certificados
+Para desenvolvimento sem SSL válido:
+```bash
+# Configure no .env
+SSL_VERIFY_DISABLED=true
+WEBHOOK_PIX_URL=http://localhost:8000/api/pix/atualizar
+
+# Ou use ngrok para HTTPS válido
+ngrok http 8000
+# Use a URL HTTPS gerada pelo ngrok como WEBHOOK_PIX_URL
+```
+
+⚠️ **IMPORTANTE**: Em produção, NUNCA desabilite verificação SSL!
+
+```bash
+# Configure no .env
+WEBHOOK_PIX_URL=https://seu-dominio-com-tls-mutuo.com/api/pix/atualizar
+
+# Ou envie na requisição
+PUT /api/pix/webhook
+{
+  "webhookUrl": "https://seu-dominio.com/api/webhookcobr/"
+}
+
+# Response de sucesso
+{
+  "codRetorno": 200,
+  "message": "Webhook configurado com sucesso",
+  "data": {
+    "webhookUrl": "https://seu-dominio.com/api/webhookcobr/",
+    "configurado_em": "2024-08-08 15:30:00",
+    "observacao": "Webhook configurado com autenticação TLS mútuo"
+  }
+}
+
+# Response de erro (TLS não configurado)
+{
+  "codRetorno": 500,
+  "message": "Erro ao configurar webhook",
+  "error": "Autenticação TLS mútuo não está configurada na URL informada",
+  "sugestoes": [
+    "Verifique se a URL possui certificado SSL válido",
+    "Confirme se a autenticação TLS mútuo está configurada",
+    "Consulte a documentação da EFI sobre configuração de webhooks"
+  ]
+}
+```
+
+### Criação de Cobrança PIX
+A API oferece integração completa com PIX recorrente da EFI:
+
+```bash
+POST /api/pix/enviar
+{
+  "usuario": 2,
+  "plano": 3
+}
+
+# Response
+{
+  "codRetorno": 200,
+  "message": "Cobrança PIX criada com sucesso",
+  "data": {
+    "pix": "00020101021226580014br.gov.bcb.pix..."
+  }
+}
+```
+
+### Webhook de Atualização
+Endpoint para receber notificações da EFI sobre mudanças de status:
+
+```bash
+POST /api/pix/atualizar
+{
+  "recs": [
+    {
+      "idRec": "RR1026652320240821lab77511abf",
+      "status": "APROVADA"
+    }
+  ]
+}
+
+# Response
+{
+  "codRetorno": 200,
+  "message": "Atualização de cobranças processada",
+  "total_processados": 1,
+  "resultados": [
+    {
+      "idRec": "RR1026652320240821lab77511abf",
+      "status": "APROVADA",
+      "status_anterior": "ATIVA",
+      "atualizado": true
+    }
+  ]
+}
+```
+
+## 🏷️ Sistema de Tags
+
+### Tags no Login
+Ao realizar autenticação, o usuário recebe automaticamente suas tags:
+
+```json
+{
+  "tags": {
+    "total": 15,
+    "pessoais": 10,
+    "globais": 5,
+    "lista": [
+      {
+        "id": 1,
+        "nome": "Família",
+        "tipo": "pessoal",
+        "criada_em": "2024-01-15 10:30:00"
+      },
+      {
+        "id": 2,
+        "nome": "Trabalho",
+        "tipo": "global",
+        "criada_em": "2024-01-10 09:00:00"
+      }
+    ]
+  }
+}
+```
+
+### Tipos de Tags
+- **Tags Pessoais**: Criadas pelo próprio usuário
+- **Tags Globais**: Criadas por administradores, disponíveis para todos
+
+### Endpoints de Tags
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| `GET` | `/api/tags/usuario?usuario={id}` | Lista tags do usuário |
+| `POST` | `/api/tags/cadastrar` | Cria nova tag (com validação de limite) |
+| `DELETE` | `/api/tags/excluir` | Exclui tag pessoal (apenas criador) |
+| `PUT` | `/api/tags/atualizar-status` | Atualiza status da tag |
+
+### Validações e Limites
+- **Limite por Plano**: Cada plano possui um limite de tags pessoais
+- **Validação de Duplicatas**: Não permite tags com nomes iguais para o mesmo usuário
+- **Controle de Status**: Apenas tags ativas são consideradas no limite
+- **Exclusão Segura**: Apenas o criador pode excluir tags pessoais
+- **Soft Delete**: Tags excluídas são mantidas no banco com status inativo
+- **Decremento Automático**: Contador de tags é atualizado automaticamente na exclusão
+- **Mensagens Detalhadas**: Retorna informações específicas sobre limites e sugestões
+
+### Exemplo de Criação com Limite
+```bash
+POST /api/tags/cadastrar
+{
+  "nomeTag": "Família",
+  "usuario": 1
+}
+
+# Sucesso (201)
+{
+  "message": "Tag criada com sucesso.",
+  "tag": { ... },
+  "limites": {
+    "usado": 5,
+    "limite": 10,
+    "restante": 5
+  }
+}
+
+# Erro - Limite atingido (403)
+{
+  "message": "Limite de tags do plano atingido.",
+  "detalhes": {
+    "limite_plano": 10,
+    "tags_criadas": 10,
+    "plano_atual": "Plano Básico",
+    "sugestao": "Faça upgrade do seu plano para criar mais tags."
+  }
+}
+```
+
+### Exemplo de Exclusão
+```bash
+DELETE /api/tags/excluir
+{
+  "idTag": 1,
+  "usuario": 1
+}
+
+# Sucesso (200)
+{
+  "message": "Tag excluída com sucesso.",
+  "tag_excluida": {
+    "id": 1,
+    "nome": "Família",
+    "criada_em": "2024-01-15 10:30:00",
+    "excluida_em": "2024-01-16 14:20:00"
+  },
+  "limites_atualizados": {
+    "tags_antes": 5,
+    "tags_depois": 4,
+    "limite_plano": 10,
+    "disponivel_criar": 6
+  }
+}
+
+# Erro - Não é o criador (403)
+{
+  "message": "Você só pode excluir suas próprias tags.",
+  "detalhes": {
+    "criador_tag": 2,
+    "usuario_solicitante": 1
+  }
+}
+```
+
+
+### Autenticação
+Todos os endpoints protegidos requerem o header:
+```
+Authorization: Bearer {jwt_token}
+```
+
+## 🔧 Configurações Importantes
+
+### JWT Token
+Configure no `.env`:
+```env
+JWT_SECRET=seu_jwt_secret_aqui
+JWT_TTL=60 # Tempo de vida em minutos
+```
+
+### Upload de Arquivos
+```env
+FILESYSTEM_DISK=public
+# ou para S3:
+FILESYSTEM_DISK=s3
+AWS_ACCESS_KEY_ID=sua_chave
+AWS_SECRET_ACCESS_KEY=sua_chave_secreta
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=seu_bucket
+```
+
+### Gateways de Pagamento
+```env
+# EFI Pay (antigo Gerencianet)
+EFI_CLIENT_ID=seu_client_id
+EFI_CLIENT_SECRET=seu_client_secret
+EFI_SANDBOX=true # false para produção
+```
+
+## 📋 Testes
+
+### Executar Testes
+```bash
+# Todos os testes
+php artisan test
+
+# Testes específicos
+php artisan test --filter UsuarioTest
+```
+
+### Testes Manuais
+1. **REST Client**: Use o arquivo `requests.http` com extensões como REST Client (VS Code)
+2. **Interface Web**: Acesse `public/test-auth.php` para testes visuais
+3. **Swagger UI**: Use a documentação interativa para testes online
+
+## 🤝 Contribuição
+
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+## 📞 Suporte
+
+- **Email**: luisfelipearaujopimenta@gmail.com

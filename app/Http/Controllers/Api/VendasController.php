@@ -8,11 +8,9 @@ use App\Models\Planos;
 use App\Models\Usuarios;
 use App\Http\Util\Helper;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\JsonResponse;
 use App\Http\Util\MailHelper;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Http\JsonResponse;
 use App\Models\TransacaoFinanceira;
-use App\Http\Util\Payments\ApiMercadoPago;
 use Illuminate\Http\Request;
 use App\Enums\HttpCodesEnum;
 
@@ -37,9 +35,8 @@ class VendasController extends Controller
 
     public function createSubscription(Request $request): JsonResponse
     {
-        Log::info("Usuario:" .$request->usuario);
-        Log::info("token:" .$request->token);
-        Log::info("Plano:" .$request->plano);
+        $response = [];
+
 
         $campos = ['usuario', 'plano', 'token'];
         $campos = Helper::validarRequest($request, $campos);
@@ -60,20 +57,18 @@ class VendasController extends Controller
         $plano = Planos::find($request->plano);
 
         $dadosEmail = [
-            'nome' => $usuario->nome,
+            'nome' => $usuario->primeiroNome . " " . $usuario->sobrenome
         ];
 
         // Verifica se o idHost está definido no plano
         if ($plano && $plano->idHost !== null) {
-            Log::info("valor plano:" .$plano->valor);
             $valor = $plano->valor * 100;
-            Log::info("valor plano:" .$valor);
 
             $data = [
                 "cardToken" => $request->token,
                 "idPlano" => $plano->idHost,
                 "usuario" => [
-                    "name" => $usuario->nome,
+                    "name" =>  $usuario->primeiroNome . " " . $usuario->sobrenome,
                     "cpf" => $usuario->cpf,
                     "phone_number" =>  $usuario->telefone,
                     "email" => $usuario->email,
@@ -85,12 +80,11 @@ class VendasController extends Controller
                     "value" => $valor
                 ]
             ];
-            Log::info("Valor:" .$data['produto']['value']);
-            $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
-
+            $responseApi = json_decode($this->apiEfi->createSubscription($data), true)['body'];
 
             if ($responseApi['code'] == 200) {
-                Log::info("Sucesso:");
+                $usuario->idPlano = $request->plano;
+                $usuario->save();
 
                 $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
                 $usuario->dataLimiteCompra = Carbon::createFromFormat('d/m/Y', $responseApi['data']['first_execution'])->format('Y-m-d');                $usuario->idAssinatura = $responseApi['data']['subscription_id'];
@@ -99,12 +93,12 @@ class VendasController extends Controller
                     'message' => $this->codes[200]
                 ];
             } else {
-                Log::info("Valor:" .$responseApi['description']);
 
                 $response = [
                     'codRetorno' => 400,
                     'message' => $responseApi['description']
                 ];
+                return response()->json($response);
             }
         } else {
             // Caso idHost esteja nulo, salva dataLimiteCompra para amanhã
@@ -112,8 +106,10 @@ class VendasController extends Controller
         }
         $usuario->save();
         MailHelper::confirmacaoAssinatura($dadosEmail, $usuario->email);
-
+        
         return response()->json($response);
+
+
     }
 
 
@@ -168,7 +164,7 @@ class VendasController extends Controller
 
         if ($usuario) {
 
-            $responseApi = json_decode($this->apiEfi->cancelSubscription($usuario->idAssinatura), true);
+            $responseApi = json_decode($this->apiEfi->cancelSubscription($usuario->idAssinatura), true)['body'];
 
 
             if ($responseApi['code'] == 200) {

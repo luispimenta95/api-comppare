@@ -10,43 +10,53 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
 
+/**
+ * Classe utilitária com funções auxiliares do sistema
+ * 
+ * Contém constantes importantes, validações, operações de arquivo
+ * e métodos auxiliares utilizados em toda a aplicação.
+ */
 class Helper
 
 
 {
-    const int ID_PERFIL_ADMIN = 1;
-    const int ID_PERFIL_USUARIO = 2;
-    const int ID_PERFIL_CONVIDADO = 3;
-    const int ID_PLANO_CONVIDADO = 7;
+    const ID_PERFIL_ADMIN = 1;
+    const ID_PERFIL_USUARIO = 2;
+    const ID_PERFIL_CONVIDADO = 3;
+    const ID_PLANO_CONVIDADO = 7;
+    const PERIODICIDADE_MENSAL = 'MENSAL';
+    const PERIODICIDADE_ANUAL = 'ANUAL';
+    const PERIODICIDADE_SEMESTRAL = 'SEMESTRAL';
 
-    const int ATIVO = 1;
+    const ATIVO = 1;
 
-    const int TEMPO_GRATUIDADE = 7;
-    const int LIMITE_FOTOS = 2;
+    const TEMPO_GRATUIDADE = 7;
+    const LIMITE_FOTOS = 2;
 
-    const int LIMITE_TAGS = 5;
+    const LIMITE_TAGS = 5;
 
-    const int LIMITE_PASTAS = 10;
+    const LIMITE_PASTAS = 10;
+    
+    const LIMITE_SUBPASTAS = 5;
 
+    const TEMPO_RENOVACAO_MENSAL = 30;
+    const TEMPO_RENOVACAO_ANUAL = 360;
 
-    const int TEMPO_RENOVACAO_MENSAL = 30;
-    const int TEMPO_RENOVACAO_ANUAL = 360;
+    const TEMPO_RENOVACAO_SEMESTRAL = 180;
 
-    const int TEMPO_RENOVACAO_SEMESTRAL = 180;
-
-    const string STATUS_APROVADO = 'paid';
-    const string STATUS_AGUARDANDO_APROVACAO = 'waiting';
-    const string STATUS_CANCELADO = 'CANCELLED';
-    const string MOEDA = "BRL";
+    const STATUS_APROVADO = 'paid';
+    const STATUS_AGUARDANDO_APROVACAO = 'waiting';
+    const STATUS_CANCELADO = 'CANCELLED';
+    const MOEDA = "BRL";
     const TIPO_RENOVACAO_MENSAL = 'months';
-    const string TIPO_RENOVACAO_DIARIA = 'days';
-    const int DIA_COBRANCA = 05;
-    const string STATUS_ATIVO = 'active';
-    const string STATUS_AUTORIZADO = 'authorized';
+    const TIPO_RENOVACAO_DIARIA = 'days';
+    const DIA_COBRANCA = 05;
+    const STATUS_ATIVO = 'active';
+    const STATUS_AUTORIZADO = 'authorized';
 
-    const int QUANTIDADE = 1;
-    const int INTERVALO_MENSAL = 1;
-    const int INTERVALO_ANUAL = 12;
+    const QUANTIDADE = 1;
+    const INTERVALO_MENSAL = 1;
+    const INTERVALO_ANUAL = 12;
 
     /**
      * Retorna todos os códigos HTTP e suas descrições.
@@ -134,6 +144,14 @@ class Helper
         ];
     }
 
+    /**
+     * Valida se um CPF é válido
+     * 
+     * Verifica se o CPF possui formato correto e dígitos verificadores válidos.
+     * 
+     * @param string $cpf - CPF a ser validado
+     * @return bool - True se válido, false caso contrário
+     */
     public static function validaCPF(string $cpf): bool
     {
 
@@ -163,6 +181,15 @@ class Helper
         return true;
     }
 
+    /**
+     * Valida se todos os campos obrigatórios estão presentes no request
+     * 
+     * Verifica se todos os campos requeridos foram fornecidos na requisição.
+     * 
+     * @param Request $request - Requisição HTTP
+     * @param array $requiredFields - Array com nomes dos campos obrigatórios
+     * @return mixed - Retorna erro se algum campo obrigatório estiver ausente
+     */
     public static function validarRequest(Request $request, array $requiredFields): mixed
     {
         $camposNulos = [];
@@ -176,8 +203,15 @@ class Helper
         return empty($camposNulos) ? true : $camposNulos; // Return true if valid, otherwise return all null fields
     }
 
-
-
+    /**
+     * Cria uma nova pasta no sistema de arquivos
+     * 
+     * Cria estrutura de diretórios no storage público para organizar
+     * arquivos de usuários.
+     * 
+     * @param string $folderName - Nome da pasta a ser criada
+     * @return array - Array com 'path' da pasta criada ou null se erro
+     */
     public static function createFolder(string $folderName): array
     {
         $folderName = str_replace(" ", "_", $folderName);
@@ -195,6 +229,15 @@ class Helper
         return ['message' => 'Erro ao criar a pasta.'];
     }
 
+    /**
+     * Remove uma pasta do sistema de arquivos
+     * 
+     * Deleta permanentemente uma pasta e todo seu conteúdo
+     * do storage do sistema.
+     * 
+     * @param string $folderName - Nome da pasta a ser removida
+     * @return JsonResponse - Resposta JSON com status da operação
+     */
     public static function deleteFolder(string $folderName): JsonResponse
     {
         $delete = true;
@@ -226,13 +269,34 @@ class Helper
             return response()->json(['message' => 'Erro ao realizar request', 'code'  => 500], 500);
         }
     }
+
+    /**
+     * Verifica se uma data já passou (está no passado)
+     * 
+     * Compara uma data específica com a data atual para determinar
+     * se já expirou.
+     * 
+     * @param mixed $date - Data a ser verificada
+     * @return bool - True se a data já passou, false caso contrário
+     */
     // Checa se uma data informada já passou. Caso positivo, return true | return false
     public static function checkDateIsPassed($date): bool
     {
+        //Call to a member function lt() on string
         $dataAtual = Carbon::now();
-        return $date->lt($dataAtual);
+        return  Carbon::parse($date)->lt($dataAtual);
     }
 
+    /**
+     * Relaciona pastas e subpastas a um usuário
+     * 
+     * Estabelece a relação entre um usuário e suas pastas,
+     * incluindo subpastas recursivamente.
+     * 
+     * @param Pastas $pasta - Pasta a ser relacionada
+     * @param Usuarios $usuario - Usuário para relacionar a pasta
+     * @return void
+     */
     public static function relacionarPastas(Pastas $pasta, Usuarios $usuario): void
     {
 
@@ -245,5 +309,84 @@ class Helper
             // Chama a função recursivamente para adicionar as subpastas das subpastas
             self::relacionarPastas($subpasta, $usuario);
         }
+    }
+
+    /**
+     * Formata o caminho da pasta para URL amigável
+     * 
+     * @param Pastas $pasta
+     * @param string $separador
+     * @return string
+     */
+    public static function formatFriendlyPath(Pastas $pasta, string $separador = '/'): string
+    {
+        $caminho = [];
+        $pastaAtual = $pasta;
+        
+        // Constrói o caminho do filho para o pai
+        while ($pastaAtual) {
+            $nomeFormatado = strtolower(str_replace(' ', '-', $pastaAtual->nome));
+            array_unshift($caminho, $nomeFormatado);
+            $pastaAtual = $pastaAtual->pastaPai;
+        }
+        
+        return implode($separador, $caminho);
+    }
+
+    /**
+     * Formata o caminho da imagem
+     * 
+     * @param string $caminho
+     * @return string
+     */
+    public static function formatImagePath(string $caminho): string
+    {
+        // Remove barras extras e normaliza o caminho
+        $caminho = trim($caminho, '/');
+        return $caminho ? '/' . $caminho : '';
+    }
+
+    /**
+     * Formata uma URL completa para imagem
+     * 
+     * @param string $imagePath
+     * @return string
+     */
+    public static function formatImageUrl(string $imagePath): string
+    {
+        // Se o path não começa com http, formata como URL completa
+        if (!str_starts_with($imagePath, 'http')) {
+            // Se começa com /storage, remove e reconstrói
+            if (str_starts_with($imagePath, '/storage/')) {
+                $relativePath = str_replace('/storage/', '', $imagePath);
+            } else {
+                $relativePath = trim($imagePath, '/');
+            }
+            $appUrl = config('app.url');
+            return $appUrl . '/storage/' . $relativePath;
+        }
+        
+        return $imagePath;
+    }
+
+    /**
+     * Formata uma URL completa para a pasta física
+     * 
+     * @param Pastas $pasta
+     * @return string
+     */
+    public static function formatFolderUrl(Pastas $pasta): string
+    {
+        $appUrl = config('app.url');
+        
+        // Remove o caminho base e formata como URL
+        $relativePath = str_replace(
+            env('PUBLIC_PATH', '/home/u757410616/domains/comppare.com.br/public_html/api-comppare/storage/app/public/'),
+            '',
+            $pasta->caminho
+        );
+        $relativePath = trim($relativePath, '/');
+        
+        return $appUrl . '/storage/' . $relativePath;
     }
 }

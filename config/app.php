@@ -124,5 +124,6 @@ return [
     ],
 
     'validadeCupom' => env('VALIDADE_CUPOM'),
-    'gratuidadePlano' => env('GRATUIDADE_PLANOS')
+    'gratuidadePlano' => env('GRATUIDADE_PLANOS'),
+    'publicPath' =>   env("APP_URL") . env('PUBLIC_PATH')
 ];

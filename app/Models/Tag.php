@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
+
 use Illuminate\Database\Eloquent\Model;
 
 class Tag extends Model
 {
     protected $fillable = [
-        'nome',              // Nome
-        'descricao',         // Campo adicional: Descrição
+        'nomeTag',              // Nome
         'idUsuarioCriador',  // ID do usuário criador,
         'status'
     ];

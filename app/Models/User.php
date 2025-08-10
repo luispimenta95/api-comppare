@@ -7,13 +7,21 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+/**
+ * Modelo de usuário padrão do Laravel
+ * 
+ * Modelo base para autenticação de usuários no sistema.
+ * Utiliza a tabela 'usuarios' para compatibilidade com o modelo Usuarios customizado.
+ */
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
+    protected $table = 'usuarios';
+
     /**
-     * The attributes that are mass assignable.
+     * Os atributos que podem ser preenchidos em massa
      *
      * @var list<string>
      */
@@ -24,7 +32,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Os atributos que devem ser ocultados na serialização
      *
      * @var list<string>
      */
@@ -34,7 +42,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Obtém os atributos que devem ser convertidos para tipos específicos
      *
      * @return array<string, string>
      */
