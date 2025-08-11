@@ -647,21 +647,6 @@ POST /admin/vendas/cancelar-assinatura
 ### 1. Criar Cobrança PIX Recorrente
 
 ```http
-POST /pix/recorrente
-```
-
-**Body:**
-
-```json
-{
-    "usuario": "integer (required)",
-    "plano": "integer (required)"
-}
-```
-
-### 3. Criar Cobrança PIX
-
-```http
 POST /pix/enviar
 ```
 
