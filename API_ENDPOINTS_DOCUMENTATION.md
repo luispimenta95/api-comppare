@@ -659,20 +659,7 @@ POST /pix/recorrente
 }
 ```
 
-### 2. Criar Cobrança PIX Dinâmica
 
-```http
-POST /pix/dinamico
-```
-
-**Body:**
-
-```json
-{
-    "usuario": "integer (required)",
-    "plano": "integer (required)"
-}
-```
 
 ### 3. Criar Cobrança PIX
 
