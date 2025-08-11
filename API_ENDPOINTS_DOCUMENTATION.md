@@ -196,23 +196,9 @@ POST /usuarios/esqueceu-senha
 }
 ```
 
-### 8. Validar Existência de Usuário
+`
 
-```http
-POST /usuarios/valida-existencia-usuario
-```
-
-**Body:**
-
-```json
-{
-    "cpf": "string (required)",
-    "telefone": "string (optional)",
-    "email": "string (optional, email)"
-}
-```
-
-### 9. Atualizar Status do Usuário
+### 8. Atualizar Status do Usuário
 
 ```http
 POST /usuarios/atualizar-status
@@ -228,13 +214,13 @@ Authorization: Bearer {token}
 }
 ```
 
-### 10. Listar Usuários (Admin)
+### 9. Listar Usuários (Admin)
 
 ```http
 GET /admin/usuarios/listar
 ```
 
-### 11. Ranking - Classificação
+### 10. Ranking - Classificação
 
 ```http
 GET /usuarios/ranking/classificacao
