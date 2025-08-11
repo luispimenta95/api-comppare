@@ -841,14 +841,4 @@ O token é obtido através do endpoint `/usuarios/autenticar` e tem validade lim
 
 ---
 
-## 📱 Testes da API
-
-Para testar a API, você pode usar:
-
-1. **Arquivo HTTP:** `app/Http/Util/requests.http` (REST Client do VS Code)
-2. **Interface Web:** `https://api.comppare.com.br/test-auth.php`
-3. **Swagger UI:** Link disponível no README principal
-
----
-
 _Documentação gerada automaticamente - CompPare API v1.0_
