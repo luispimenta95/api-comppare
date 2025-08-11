@@ -57,7 +57,7 @@ class TagController extends Controller
 
         // Buscar o usuário e seu plano
         $usuario = Usuarios::with('plano')->find($request->usuario);
-        
+
         if (!$usuario) {
             return response()->json([
                 'codRetorno' => HttpCodesEnum::NotFound->value,
@@ -71,7 +71,7 @@ class TagController extends Controller
                 'message' => 'Usuário não possui plano associado.',
             ], HttpCodesEnum::BadRequest->value);
         }
-            $plano = Planos::find($usuario->idPlano);
+        $plano = Planos::find($usuario->idPlano);
         // Contar tags pessoais já criadas pelo usuário
         $tagsPersonaisCriadas = Tag::where('idUsuarioCriador', $request->usuario)
             ->where('status', Helper::ATIVO)
@@ -273,7 +273,7 @@ class TagController extends Controller
                 'codRetorno' => HttpCodesEnum::NotFound->value,
                 'message' => HttpCodesEnum::NotFound->description(),
             ];
-}
+        }
         return response()->json($response);
     }
 
@@ -292,13 +292,13 @@ class TagController extends Controller
     public function excluirTag(Request $request): JsonResponse
     {
         $request->validate([
-            'idTag' => 'required|integer|exists:tag,id',
+            'idTag' => 'required|integer|exists:tags,id',
             'usuario' => 'required|integer|exists:usuarios,id'
         ]);
 
         // Buscar a tag
         $tag = Tag::find($request->idTag);
-        
+
         if (!$tag) {
             return response()->json([
                 'codRetorno' => HttpCodesEnum::NotFound->value,
