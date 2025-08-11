@@ -63,15 +63,15 @@ POST /usuarios/cadastrar
 
 ```json
 {
-    "primeiroNome": "Luis",
-    "sobrenome": "Pimenta",
-    "apelido": "luispimenta95",
-    "cpf": "02049035055",
-    "senha": "Mp13151319!",
-    "telefone": "61998690313",
-    "email": "luispimenta.contato@gmail.com",
+    "primeiroNome": "nome",
+    "sobrenome": "sobrenome",
+    "apelido": "apelido",
+    "cpf": "12345678909",
+    "senha": "abc12345678M@",
+    "telefone": "61999999999",
+    "email": "email@teste.com",
     "idPlano": 1,
-    "nascimento": "19/09/1995"
+    "nascimento": "11/08/2025"
 }
 ```
 
