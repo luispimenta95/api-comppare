@@ -659,8 +659,6 @@ POST /pix/recorrente
 }
 ```
 
-
-
 ### 3. Criar Cobrança PIX
 
 ```http
@@ -675,60 +673,6 @@ POST /pix/enviar
     "plano": "integer (required)"
 }
 ```
-
-### 4. Gerar QR Code
-
-```http
-GET /pix/qrcode/{txid}
-```
-
-### 5. Webhook PIX (EFI)
-
-```http
-POST /pix/atualizar
-```
-
-_Requer TLS mútuo_
-
-### 6. Webhook PIX Simples
-
-```http
-POST /pix/webhook-simple
-```
-
-_Requer TLS mútuo_
-
-### 7. Configurar Webhook
-
-```http
-PUT /pix/webhook
-```
-
-### 8. Status do Webhook
-
-```http
-GET /pix/webhook-status
-```
-
-### 9. Status SSL
-
-```http
-GET /pix/ssl-status
-```
-
-### 10. Teste TLS
-
-```http
-GET /pix/test-tls
-```
-
-### 11. Teste Configuração PIX
-
-```http
-GET /pix/test-config
-```
-
----
 
 ## 🎫 Cupons (Admin)
 
