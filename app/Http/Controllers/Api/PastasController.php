@@ -473,8 +473,10 @@ class PastasController extends Controller
             $nomePasta = $pasta->nome;
             $pasta->delete();
 
-            // Decrementa o contador de pastas criadas pelo usuário
-            $user->decrement('pastasCriadas');
+            // Decrementa o contador de pastas criadas pelo usuário, mas nunca deixa ficar negativo
+            if ($user->pastasCriadas > 0) {
+                $user->decrement('pastasCriadas');
+            }
 
             return response()->json([
                 'codRetorno' => HttpCodesEnum::OK->value,
