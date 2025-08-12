@@ -236,6 +236,8 @@ class TagController extends Controller
             })->where('status', Helper::ATIVO);
         })->get();
 
+
+        dd($tags);
         $response = [
             'codRetorno' => HttpCodesEnum::OK->value,
             'message' => HttpCodesEnum::OK->description(),
