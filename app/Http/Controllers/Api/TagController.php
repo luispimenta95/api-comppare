@@ -41,6 +41,7 @@ class TagController extends Controller
      * Cadastrar uma nova tag.
      * 
      * Verifica se o usuário ainda pode criar tags baseado no limite do plano.
+     * Usuários administrativos não têm limite de tags.
      * 
      * Exemplo de request:
      * {
@@ -72,23 +73,30 @@ class TagController extends Controller
             ], HttpCodesEnum::BadRequest->value);
         }
         $plano = Planos::find($usuario->idPlano);
-        // Contar tags pessoais já criadas pelo usuário
-        $tagsPersonaisCriadas = Tag::where('idUsuarioCriador', $request->usuario)
-            ->where('status', Helper::ATIVO)
-            ->count();
 
-        // Verificar se o limite do plano foi atingido
-        if ($tagsPersonaisCriadas >= $plano->quantidadeTags) {
-            return response()->json([
-                'codRetorno' => HttpCodesEnum::Forbidden->value,
-                'message' => 'Limite de tags do plano atingido.',
-                'detalhes' => [
-                    'limite_plano' => $plano->quantidadeTags,
-                    'tags_criadas' => $tagsPersonaisCriadas,
-                    'plano_atual' => $plano->nome,
-                    'sugestao' => 'Faça upgrade do seu plano para criar mais tags.'
-                ]
-            ], HttpCodesEnum::Forbidden->value);
+        // Verificar se o usuário é administrativo
+        $isAdmin = $usuario->idPerfil == Helper::ID_PERFIL_ADMIN;
+
+        // Aplicar limite apenas se o usuário não for administrativo
+        if (!$isAdmin) {
+            // Contar tags pessoais já criadas pelo usuário
+            $tagsPersonaisCriadas = Tag::where('idUsuarioCriador', $request->usuario)
+                ->where('status', Helper::ATIVO)
+                ->count();
+
+            // Verificar se o limite do plano foi atingido
+            if ($tagsPersonaisCriadas >= $plano->quantidadeTags) {
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::Forbidden->value,
+                    'message' => 'Limite de tags do plano atingido.',
+                    'detalhes' => [
+                        'limite_plano' => $plano->quantidadeTags,
+                        'tags_criadas' => $tagsPersonaisCriadas,
+                        'plano_atual' => $plano->nome,
+                        'sugestao' => 'Faça upgrade do seu plano para criar mais tags.'
+                    ]
+                ], HttpCodesEnum::Forbidden->value);
+            }
         }
 
         // Verificar se já existe uma tag com o mesmo nome para este usuário
@@ -116,21 +124,35 @@ class TagController extends Controller
             'status' => Helper::ATIVO
         ]);
 
+        // Preparar resposta com informações de limites (apenas para usuários não admin)
+        $limites = null;
+        if (!$isAdmin) {
+            $tagsPersonaisCriadas = Tag::where('idUsuarioCriador', $request->usuario)
+                ->where('status', Helper::ATIVO)
+                ->count();
+
+            $limites = [
+                'usado' => $tagsPersonaisCriadas,
+                'limite' => $plano->quantidadeTags,
+                'restante' => $plano->quantidadeTags - $tagsPersonaisCriadas
+            ];
+        }
+
         $response = [
             'codRetorno' => HttpCodesEnum::Created->value,
             'message' => 'Tag criada com sucesso.',
             'tag' => [
                 'id' => $novaTag->id,
                 'nome' => $novaTag->nomeTag,
-                'tipo' => 'pessoal',
+                'tipo' => $isAdmin ? 'global' : 'pessoal',
                 'criada_em' => $novaTag->created_at->format('Y-m-d H:i:s')
-            ],
-            'limites' => [
-                'usado' => $tagsPersonaisCriadas + 1,
-                'limite' => $plano->quantidadeTags,
-                'restante' => $plano->quantidadeTags - ($tagsPersonaisCriadas + 1)
             ]
         ];
+
+        // Adicionar limites apenas se o usuário não for admin
+        if ($limites !== null) {
+            $response['limites'] = $limites;
+        }
 
         return response()->json($response, HttpCodesEnum::Created->value);
     }
@@ -280,8 +302,11 @@ class TagController extends Controller
     /**
      * Excluir uma tag (soft delete).
      * 
-     * Permite que apenas o criador da tag possa excluí-la.
-     * Decrementa o contador de tags pessoais do usuário.
+     * Regras de permissão:
+     * - O próprio criador pode excluir sua tag
+     * - Admin pode excluir tag de outro admin
+     * - Admin NÃO pode excluir tag de usuário comum
+     * - Usuário comum só pode excluir suas próprias tags
      * 
      * Exemplo de request:
      * {
@@ -296,8 +321,8 @@ class TagController extends Controller
             'usuario' => 'required|integer|exists:usuarios,id'
         ]);
 
-        // Buscar a tag
-        $tag = Tag::find($request->idTag);
+        // Buscar a tag com informações do criador
+        $tag = Tag::with('usuario')->find($request->idTag);
 
         if (!$tag) {
             return response()->json([
@@ -314,8 +339,32 @@ class TagController extends Controller
             ], HttpCodesEnum::BadRequest->value);
         }
 
-        // Verificar se o usuário é o criador da tag
-        if ($tag->idUsuarioCriador != $request->usuario) {
+        // Buscar informações do usuário que está tentando excluir
+        $usuarioSolicitante = Usuarios::find($request->usuario);
+        $isUsuarioAdmin = $usuarioSolicitante->idPerfil == Helper::ID_PERFIL_ADMIN;
+
+        // Buscar informações do criador da tag
+        $criadorTag = $tag->usuario;
+        $isCriadorAdmin = $criadorTag->idPerfil == Helper::ID_PERFIL_ADMIN;
+
+        // Regras de permissão para exclusão:
+        // 1. O próprio criador pode excluir sua tag
+        // 2. Admin pode excluir tag de outro admin
+        // 3. Admin NÃO pode excluir tag de usuário comum
+        // 4. Usuário comum só pode excluir suas próprias tags
+
+        if ($tag->idUsuarioCriador == $request->usuario) {
+            // Regra 1: O próprio criador pode excluir
+        } elseif ($isUsuarioAdmin && $isCriadorAdmin) {
+            // Regra 2: Admin pode excluir tag de outro admin
+        } elseif ($isUsuarioAdmin && !$isCriadorAdmin) {
+            // Regra 3: Admin NÃO pode excluir tag de usuário comum
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::Forbidden->value,
+                'message' => 'Administradores não podem excluir tags de usuários comuns.',
+            ], HttpCodesEnum::Forbidden->value);
+        } else {
+            // Regra 4: Usuário comum só pode excluir suas próprias tags
             return response()->json([
                 'codRetorno' => HttpCodesEnum::Forbidden->value,
                 'message' => 'Você só pode excluir tags criadas por você.',
@@ -330,10 +379,20 @@ class TagController extends Controller
         $tag->status = 0;
         $tag->save();
 
-        // Contar tags pessoais ativas restantes
-        $tagsPersonaisRestantes = Tag::where('idUsuarioCriador', $request->usuario)
-            ->where('status', 1)
-            ->count();
+        // Preparar resposta com informações de limites (apenas para usuários não admin)
+        $limites = null;
+        if (!$isUsuarioAdmin) {
+            // Contar tags pessoais ativas restantes
+            $tagsPersonaisRestantes = Tag::where('idUsuarioCriador', $request->usuario)
+                ->where('status', 1)
+                ->count();
+
+            $limites = [
+                'usado' => $tagsPersonaisRestantes,
+                'limite' => $plano->quantidadeTags,
+                'restante' => $plano->quantidadeTags - $tagsPersonaisRestantes
+            ];
+        }
 
         $response = [
             'codRetorno' => HttpCodesEnum::OK->value,
@@ -342,13 +401,13 @@ class TagController extends Controller
                 'id' => $tag->id,
                 'nome' => $tag->nomeTag,
                 'excluida_em' => now()->format('Y-m-d H:i:s')
-            ],
-            'limites' => [
-                'usado' => $tagsPersonaisRestantes,
-                'limite' => $plano->quantidadeTags,
-                'restante' => $plano->quantidadeTags - $tagsPersonaisRestantes
             ]
         ];
+
+        // Adicionar limites apenas se o usuário não for admin
+        if ($limites !== null) {
+            $response['limites'] = $limites;
+        }
 
         return response()->json($response, HttpCodesEnum::OK->value);
     }
