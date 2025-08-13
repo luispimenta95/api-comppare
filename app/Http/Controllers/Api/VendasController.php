@@ -89,17 +89,62 @@ class VendasController extends Controller
                 'response' => $responseApi
             ]);
 
-            if ($responseApi['code'] == 200) {
-                $usuario->idPlano = $request->plano;
-                $usuario->save();
+            // Verificando se o 'code' está dentro do 'body'
+            if (isset($responseApi['body']['code']) && $responseApi['body']['code'] == 200) {
+                // Extrair dados principais da resposta
+                $subscriptionId = $responseApi['body']['data']['subscription_id'];
+                $subscriptionStatus = $responseApi['body']['data']['status'];
+                $planId = $responseApi['body']['data']['plan']['id'];
+                $planInterval = $responseApi['body']['data']['plan']['interval'];
+                $planRepeats = $responseApi['body']['data']['plan']['repeats'];
+                $chargeId = $responseApi['body']['data']['charge']['id'];
+                $chargeStatus = $responseApi['body']['data']['charge']['status'];
+                $chargeParcel = $responseApi['body']['data']['charge']['parcel'];
+                $chargeTotal = $responseApi['body']['data']['charge']['total'];
+                $firstExecution = $responseApi['body']['data']['first_execution'];
+                $total = $responseApi['body']['data']['total'];
+                $paymentMethod = $responseApi['body']['data']['payment'];
 
-                $usuario->idUltimaCobranca = $responseApi['data']['charge']['id'];
-                $usuario->dataLimiteCompra = Carbon::createFromFormat('d/m/Y', $responseApi['data']['first_execution'])->format('Y-m-d');                $usuario->idAssinatura = $responseApi['data']['subscription_id'];
+                Log::info('Dados extraídos da resposta EFI', [
+                    'subscription_id' => $subscriptionId,
+                    'subscription_status' => $subscriptionStatus,
+                    'plan_id' => $planId,
+                    'plan_interval' => $planInterval,
+                    'plan_repeats' => $planRepeats,
+                    'charge_id' => $chargeId,
+                    'charge_status' => $chargeStatus,
+                    'charge_parcel' => $chargeParcel,
+                    'charge_total' => $chargeTotal,
+                    'first_execution' => $firstExecution,
+                    'total' => $total,
+                    'payment_method' => $paymentMethod
+                ]);
+                if ($chargeStatus == Helper::STATUS_APROVADO) {
+                    $usuario->idPlano = $request->plano;
+                    $usuario->idAssinatura = $subscriptionId;
+                    $usuario->idUltimaCobranca = $chargeId;
+                    $usuario->status = 1; // Ativar usuário
+                    $usuario->dataLimiteCompra = Carbon::now()->addDays($plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife')->format('Y-m-d');
+                    $usuario->save();
+                    MailHelper::confirmacaoAssinatura($dadosEmail, $usuario->email);
+                }
+
+                // Atualizar dados do usuário
+                TransacaoFinanceira::create([
+                    'idPlano' => $plano->idPlano,
+                    'idUsuario' => $request->usuario,
+                    'formaPagamento' => self::CARTAO,
+                    'valorPagamento' => ($chargeTotal / 100),
+                    'idPagamento' => $chargeId,
+                    'pagamentoEfetuado' => 1
+                ]);
+
                 $response = [
                     'codRetorno' => 200,
                     'message' => $this->codes[200]
                 ];
             } else {
+                $usuario->dataLimiteCompra = Carbon::tomorrow()->format('Y-m-d');
 
                 $response = [
                     'codRetorno' => 400,
@@ -111,12 +156,8 @@ class VendasController extends Controller
             // Caso idHost esteja nulo, salva dataLimiteCompra para amanhã
             $usuario->dataLimiteCompra = Carbon::tomorrow()->format('Y-m-d');
         }
-        $usuario->save();
-        MailHelper::confirmacaoAssinatura($dadosEmail, $usuario->email);
-        
+
         return response()->json($response);
-
-
     }
 
 

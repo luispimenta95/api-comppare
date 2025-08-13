@@ -44,7 +44,7 @@ class Helper
 
     const TEMPO_RENOVACAO_SEMESTRAL = 180;
 
-    const STATUS_APROVADO = 'paid';
+    const STATUS_APROVADO = 'approved';
     const STATUS_AGUARDANDO_APROVACAO = 'waiting';
     const STATUS_CANCELADO = 'CANCELLED';
     const MOEDA = "BRL";
