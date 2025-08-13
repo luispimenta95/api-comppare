@@ -80,7 +80,7 @@ class ApiEfi
         $params = [
             "id" => $dados["idPlano"],
         ];
-        dd($params);
+        
         $dados['produto']['value'] = (int) round($dados["produto"]['value']);
         $body = [
             "items" =>  [$dados['produto']],
