@@ -58,7 +58,8 @@ class VendasController extends Controller
         }
 
         $usuario = Usuarios::find($request->usuario);
-        $plano = Planos::find($request->plano);
+        //$plano = Planos::find($request->plano);
+        $plano = Planos::find(3);
 
         $dadosEmail = [
             'nome' => $usuario->primeiroNome . " " . $usuario->sobrenome
