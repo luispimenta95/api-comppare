@@ -81,7 +81,10 @@ class VendasController extends Controller
                     "value" => $valor
                 ]
             ];
-            $responseApi = json_decode($this->apiEfi->createSubscription($data), true)['body'];
+            $responseApi = json_decode($this->apiEfi->createSubscription($data), true);
+            Log::info('Resposta da API EFI ao criar assinatura', [
+                'response' => $responseApi
+            ]);
 
             if ($responseApi['code'] == 200) {
                 $usuario->idPlano = $request->plano;
