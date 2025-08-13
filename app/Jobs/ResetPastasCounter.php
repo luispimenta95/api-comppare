@@ -52,18 +52,16 @@ class ResetPastasCounter implements ShouldQueue
             $usuarios = Usuarios::all();
 
             foreach ($usuarios as $usuario) {
-                // Se você tiver um atributo que conta o número de pastas criadas, resetar ele aqui
-                // Exemplo: $usuario->pastasCriadas = 0;
-                // O código abaixo é só um exemplo, modifique conforme sua lógica de contagem
-
+                // Resetar contadores de pastas principais e subpastas
                 $usuario->pastasCriadas = 0;
+                $usuario->subpastasCriadas = 0;
                 $usuario->save();
             }
 
-            Log::info('Contador de pastas resetado com sucesso para todos os usuários.');
+            Log::info('Contadores de pastas e subpastas resetados com sucesso para todos os usuários.');
 
             } catch (\Exception $e) {
-            Log::error('Erro ao resetar contador de pastas: ' . $e->getMessage());
+            Log::error('Erro ao resetar contadores de pastas e subpastas: ' . $e->getMessage());
         }
     }
 }

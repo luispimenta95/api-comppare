@@ -28,6 +28,7 @@ return new class extends Migration
             $table->integer('idUltimaCobranca')->nullable();
             $table->integer('idAssinatura')->nullable();
             $table->integer('pastasCriadas')->default(0);
+            $table->integer('subpastasCriadas')->default(0);
             $table->integer('pontos')->default(0);
             $table->integer('quantidadeConvites')->default(0);
             $table->timestamp('ultimoAcesso')->nullable();

@@ -449,7 +449,56 @@ class PastasController extends Controller
                     'codRetorno' => HttpCodesEnum::Forbidden->value,
                     'message' => 'Você não tem permissão para excluir esta pasta.',
                 ]);
-            }            // Remove todas as fotos associadas à pasta da tabela photos
+            }
+
+            // Determinar se é pasta principal ou subpasta
+            $isPastaPrincipal = is_null($pasta->idPastaPai);
+            $isSubpasta = !is_null($pasta->idPastaPai);
+            
+            // Salvar informações antes de deletar
+            $nomePasta = $pasta->nome;
+            $tipoPasta = $isPastaPrincipal ? 'pasta_principal' : 'subpasta';
+            $pastaPaiInfo = null;
+            $subpastasCount = 0;
+
+            if ($isSubpasta) {
+                $pastaPai = Pastas::find($pasta->idPastaPai);
+                $pastaPaiInfo = $pastaPai ? $pastaPai->nome : 'Pasta pai não encontrada';
+            }
+
+            // Se for pasta principal, verificar e excluir subpastas primeiro
+            if ($isPastaPrincipal) {
+                $subpastasCount = Pastas::where('idPastaPai', $pasta->id)->count();
+                
+                if ($subpastasCount > 0) {
+                    $subpastas = Pastas::where('idPastaPai', $pasta->id)->get();
+                    
+                    foreach ($subpastas as $subpasta) {
+                        // Excluir fotos da subpasta
+                        Photos::where('pasta_id', $subpasta->id)->delete();
+                        
+                        // Excluir pasta física da subpasta
+                        $subpastaRelativePath = str_replace(
+                            env('PUBLIC_PATH', '/home/u757410616/domains/comppare.com.br/public_html/api-comppare/storage/app/public/'),
+                            '',
+                            $subpasta->caminho
+                        );
+                        $subpastaRelativePath = trim($subpastaRelativePath, '/');
+                        
+                        if (Storage::disk('public')->exists($subpastaRelativePath)) {
+                            Storage::disk('public')->deleteDirectory($subpastaRelativePath);
+                        }
+                        
+                        // Remover associações da subpasta
+                        $subpasta->usuario()->detach();
+                        
+                        // Excluir registro da subpasta
+                        $subpasta->delete();
+                    }
+                }
+            }
+
+            // Remove todas as fotos associadas à pasta principal da tabela photos
             $photosCount = Photos::where('pasta_id', $pasta->id)->count();
             Photos::where('pasta_id', $pasta->id)->delete();
 
@@ -470,22 +519,38 @@ class PastasController extends Controller
             $pasta->usuario()->detach();
 
             // Remove o registro da pasta do banco de dados
-            $nomePasta = $pasta->nome;
             $pasta->delete();
 
-            // Decrementa o contador de pastas criadas pelo usuário, mas nunca deixa ficar negativo
-            if ($user->pastasCriadas > 0) {
+            // IMPORTANTE: Atualizar contadores apenas para pastas principais
+            // Subpastas não afetam o contador pastasCriadas (que é apenas para pastas principais)
+            if ($isPastaPrincipal && $user->pastasCriadas > 0) {
                 $user->decrement('pastasCriadas');
+            }
+
+            // Preparar resposta detalhada
+            $detalhes = [
+                'pasta_excluida' => $nomePasta,
+                'tipo' => $tipoPasta,
+                'fotos_removidas' => $photosCount,
+                'pastas_principais_restantes' => $user->fresh()->pastasCriadas
+            ];
+
+            if ($isPastaPrincipal && $subpastasCount > 0) {
+                $detalhes['subpastas_excluidas'] = $subpastasCount;
+                $detalhes['observacao'] = "Pasta principal excluída junto com {$subpastasCount} subpasta(s)";
+            }
+
+            if ($isSubpasta) {
+                $detalhes['pasta_pai'] = $pastaPaiInfo;
+                $detalhes['observacao'] = 'Subpasta excluída - contador de pastas principais não foi afetado';
             }
 
             return response()->json([
                 'codRetorno' => HttpCodesEnum::OK->value,
-                'message' => 'Pasta excluída com sucesso!',
-                'detalhes' => [
-                    'pasta_excluida' => $nomePasta,
-                    'fotos_removidas' => $photosCount,
-                    'pastas_restantes' => $user->fresh()->pastasCriadas
-                ]
+                'message' => $isPastaPrincipal 
+                    ? 'Pasta principal excluída com sucesso!' 
+                    : 'Subpasta excluída com sucesso!',
+                'detalhes' => $detalhes
             ]);
         } catch (ValidationException $e) {
             return response()->json([

@@ -36,6 +36,7 @@ class Usuarios extends Authenticatable implements JWTSubject
         'idPlano',
         'idPerfil',
         'pastasCriadas',
+        'subpastasCriadas',
         'pontos',
         'quantidadeConvites',
         'ultimoAcesso',
