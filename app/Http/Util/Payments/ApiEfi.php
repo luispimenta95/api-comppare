@@ -88,6 +88,7 @@ class ApiEfi
             "payment" => [
                 "credit_card" => [
                     "payment_token" =>  $dados['cardToken'],
+                    "trial_days" => Helper::TEMPO_GRATUIDADE,
                     "customer" =>  $dados['usuario']
                 ]
             ]

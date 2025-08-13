@@ -178,7 +178,7 @@ class VendasController extends Controller
 
         if ($usuario) {
 
-            $responseApi = json_decode($this->apiEfi->cancelSubscription($usuario->idAssinatura), true)['body'];
+            $responseApi = json_decode($this->apiEfi->cancelSubscription($usuario->idAssinatura), true);
 
 
             if ($responseApi['code'] == 200) {
