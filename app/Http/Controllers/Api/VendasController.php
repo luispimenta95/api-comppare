@@ -36,6 +36,9 @@ class VendasController extends Controller
 
     public function createSubscription(Request $request): JsonResponse
     {
+        Log::info('Iniciando criação de assinatura', [
+            'request' => $request->all()
+        ]);
         $response = [];
 
 
