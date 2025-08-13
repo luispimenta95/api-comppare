@@ -87,7 +87,6 @@ class ApiEfi
             "metadata" =>  ["notification_url" =>  $this->url],
             "payment" => [
                 "credit_card" => [
-                    "trial_days" =>  Helper::TEMPO_GRATUIDADE,
                     "payment_token" =>  $dados['cardToken'],
                     "customer" =>  $dados['usuario']
                 ]

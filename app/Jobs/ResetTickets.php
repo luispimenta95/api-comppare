@@ -36,7 +36,6 @@ class ResetTickets implements ShouldQueue
      */
     public function handle()
     {
-        Log::info('Processo iniciado.');
 
         // Resetando o contador de pastas criadas para todos os usuários no mês
         try {
@@ -48,8 +47,7 @@ class ResetTickets implements ShouldQueue
                     $cupom->save();
                 }
             }
-            Log::info('Processo finalizado.');
-
+    
         } catch (\Exception $e) {
             Log::error('Erro ao resetar contador de pastas: ' . $e->getMessage());
         }

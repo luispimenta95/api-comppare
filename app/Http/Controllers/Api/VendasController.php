@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use App\Models\TransacaoFinanceira;
 use Illuminate\Http\Request;
 use App\Enums\HttpCodesEnum;
+use Illuminate\Support\Facades\Log;
 
 class VendasController extends Controller
 {
@@ -116,6 +117,7 @@ class VendasController extends Controller
     public function updatePayment(Request $request)
     {
 
+        Log::info('Recebendo notificação de cobrança');
 
         $chargeNotification = json_decode($this->apiEfi->getSubscriptionDetail($request->notification), true);
 
@@ -125,7 +127,8 @@ class VendasController extends Controller
                 if ($usuario) {
                     $plano = Planos::find($usuario->idPlano);
                     $usuario->dataUltimoPagamento = Carbon::parse($item['received_by_bank_at'])->format('Y-m-d');
-                    $usuario->dataLimiteCompra = $usuario->dataUltimoPagamento->addDays($plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife');
+                    $dataUltimoPagamento = Carbon::parse($item['received_by_bank_at']);
+                    $usuario->dataLimiteCompra = $dataUltimoPagamento->addDays($plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife')->format('Y-m-d');
                     $usuario->status = 1;
                     $usuario->save();
 
@@ -137,6 +140,14 @@ class VendasController extends Controller
                         'idPagamento' => $item['identifiers']['charge_id'],
                         'pagamentoEfetuado' => 1
                     ]);
+
+                            Log::info('Cobrança atualizada com sucesso', [
+                                'usuario_id' => $usuario->idUsuario,
+                                'plano_id' => $plano->idPlano,
+                                'valor' => $item['value'] / 100,
+                                'data_pagamento' => $usuario->dataUltimoPagamento
+                            ]);
+
                 }
             }
         }
