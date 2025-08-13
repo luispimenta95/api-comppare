@@ -41,7 +41,6 @@ class ApiEfi
     // Inicializar o EfiPay
     try {
         $this->efiPay = new EfiPay($this->options);
-        Log::info('ApiEfi - EfiPay inicializado com sucesso');
     } catch (\Exception $e) {
         Log::error('ApiEfi - Falha na inicialização do EfiPay', [
             'error_message' => $e->getMessage(),
