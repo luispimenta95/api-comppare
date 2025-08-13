@@ -150,7 +150,7 @@ class PastasController extends Controller
                 ];
             }
             
-            // Verificar se a subpasta já existe
+            // Verificar se a subpasta já existe (verificar pelo nome original, não sanitizado)
             $subpastaExistente = Pastas::where('idUsuario', $user->id)
                 ->where('nome', $nomeSubpasta)
                 ->where('idPastaPai', $pastaPai->id)
@@ -182,7 +182,7 @@ class PastasController extends Controller
                 ];
             }
             
-            // Verificar se pasta principal já existe
+            // Verificar se pasta principal já existe (verificar pelo nome original, não sanitizado)
             $pastaExistente = Pastas::where('idUsuario', $user->id)
                 ->where('nome', $nomePasta)
                 ->whereNull('idPastaPai')
@@ -300,13 +300,16 @@ class PastasController extends Controller
         try {
             if ($isPastaSubpasta) {
                 // Para subpastas, criar dentro da pasta pai
-                $folderName = $analiseEstrutura['pasta_pai_caminho'] . '/' . $analiseEstrutura['nome_subpasta'];
-                $nomePastaParaBanco = $analiseEstrutura['nome_subpasta'];
+                $nomeSubpastaSanitizado = $this->sanitizeFolderName($analiseEstrutura['nome_subpasta']);
+                $folderName = $analiseEstrutura['pasta_pai_caminho'] . '/' . $nomeSubpastaSanitizado;
+                $nomePastaParaBanco = $analiseEstrutura['nome_subpasta']; // Nome original para o banco
                 $idPastaPai = $analiseEstrutura['pasta_pai_id'];
             } else {
                 // Para pastas principais
-                $folderName = $user->primeiroNome . '_' . $user->sobrenome . '/' . $analiseEstrutura['nome_pasta_principal'];
-                $nomePastaParaBanco = $analiseEstrutura['nome_pasta_principal'];
+                $nomeUsuarioSanitizado = $this->sanitizeFolderName($user->primeiroNome . '_' . $user->sobrenome);
+                $nomePastaSanitizada = $this->sanitizeFolderName($analiseEstrutura['nome_pasta_principal']);
+                $folderName = $nomeUsuarioSanitizado . '/' . $nomePastaSanitizada;
+                $nomePastaParaBanco = $analiseEstrutura['nome_pasta_principal']; // Nome original para o banco
                 $idPastaPai = null;
             }
 
@@ -321,9 +324,11 @@ class PastasController extends Controller
                     'idPastaPai' => $idPastaPai
                 ]);
 
-                // Incrementar contador se for pasta principal
+                // Incrementar contador apropriado
                 if (!$isPastaSubpasta) {
                     $user->increment('pastasCriadas');
+                } else {
+                    $user->increment('subpastasCriadas');
                 }
 
                 return [
@@ -521,10 +526,12 @@ class PastasController extends Controller
             // Remove o registro da pasta do banco de dados
             $pasta->delete();
 
-            // IMPORTANTE: Atualizar contadores apenas para pastas principais
-            // Subpastas não afetam o contador pastasCriadas (que é apenas para pastas principais)
+            // IMPORTANTE: Atualizar contadores apropriados
+            // Pastas principais afetam 'pastasCriadas', subpastas afetam 'subpastasCriadas'
             if ($isPastaPrincipal && $user->pastasCriadas > 0) {
                 $user->decrement('pastasCriadas');
+            } elseif ($isSubpasta && $user->subpastasCriadas > 0) {
+                $user->decrement('subpastasCriadas');
             }
 
             // Preparar resposta detalhada
@@ -532,7 +539,8 @@ class PastasController extends Controller
                 'pasta_excluida' => $nomePasta,
                 'tipo' => $tipoPasta,
                 'fotos_removidas' => $photosCount,
-                'pastas_principais_restantes' => $user->fresh()->pastasCriadas
+                'pastas_principais_restantes' => $user->fresh()->pastasCriadas,
+                'subpastas_restantes' => $user->fresh()->subpastasCriadas
             ];
 
             if ($isPastaPrincipal && $subpastasCount > 0) {
@@ -542,7 +550,7 @@ class PastasController extends Controller
 
             if ($isSubpasta) {
                 $detalhes['pasta_pai'] = $pastaPaiInfo;
-                $detalhes['observacao'] = 'Subpasta excluída - contador de pastas principais não foi afetado';
+                $detalhes['observacao'] = 'Subpasta excluída - contador de subpastas foi decrementado';
             }
 
             return response()->json([
@@ -939,6 +947,37 @@ class PastasController extends Controller
         ];
 
         return response()->json($response);
+    }
+
+    /**
+     * Sanitiza o nome da pasta para criação física, removendo acentos e caracteres especiais
+     * 
+     * @param string $name - Nome original da pasta
+     * @return string - Nome sanitizado para uso no sistema de arquivos
+     */
+    private function sanitizeFolderName(string $name): string
+    {
+        // Remove acentos e caracteres especiais
+        $name = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name);
+        
+        // Remove caracteres que não são alfanuméricos, hífens, underscores ou espaços
+        $name = preg_replace('/[^a-zA-Z0-9\-_\s]/', '', $name);
+        
+        // Substitui espaços por underscores
+        $name = preg_replace('/\s+/', '_', $name);
+        
+        // Remove múltiplos underscores consecutivos
+        $name = preg_replace('/_+/', '_', $name);
+        
+        // Remove underscores no início e fim
+        $name = trim($name, '_');
+        
+        // Se o nome ficou vazio, usa um nome padrão
+        if (empty($name)) {
+            $name = 'pasta_' . time();
+        }
+        
+        return $name;
     }
 
 }
