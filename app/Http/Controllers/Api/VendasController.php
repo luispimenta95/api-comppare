@@ -132,7 +132,7 @@ class VendasController extends Controller
 
                 // Atualizar dados do usuário
                 TransacaoFinanceira::create([
-                    'idPlano' => $plano->idPlano,
+                    'idPlano' => $plano->id,
                     'idUsuario' => $request->usuario,
                     'formaPagamento' => self::CARTAO,
                     'valorPagamento' => ($chargeTotal / 100),
