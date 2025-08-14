@@ -67,6 +67,37 @@ class VendasController extends Controller
 
         // Verifica se o idHost está definido no plano
         if ($plano && $plano->idHost !== null) {
+            
+            // Verificar se o usuário já possui uma assinatura ativa
+            if (!empty($usuario->idAssinatura)) {
+                Log::info('Usuário possui assinatura ativa, cancelando antes de criar nova', [
+                    'usuario_id' => $usuario->id,
+                    'assinatura_atual' => $usuario->idAssinatura
+                ]);
+                
+                try {
+                    // Cancelar assinatura existente
+                    $cancelResponse = json_decode($this->apiEfi->cancelSubscription($usuario->idAssinatura), true);
+                    
+                    Log::info('Resposta do cancelamento da assinatura anterior', [
+                        'response' => $cancelResponse,
+                        'assinatura_cancelada' => $usuario->idAssinatura
+                    ]);
+                    
+                    // Limpar dados da assinatura anterior independente do resultado
+                    $usuario->idAssinatura = null;
+                    $usuario->status = 0; // Desativar temporariamente
+                    $usuario->save();
+                    
+                } catch (\Exception $e) {
+                    Log::error('Erro ao cancelar assinatura anterior', [
+                        'error' => $e->getMessage(),
+                        'assinatura' => $usuario->idAssinatura
+                    ]);
+                    // Continuar com a criação da nova assinatura mesmo se o cancelamento falhar
+                }
+            }
+            
             $valor = $plano->valor * 100;
 
             $data = [
