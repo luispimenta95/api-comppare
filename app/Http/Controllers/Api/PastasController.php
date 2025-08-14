@@ -137,16 +137,26 @@ class PastasController extends Controller
                 ];
             }
             
-            // Buscar a pasta pai
+            // Buscar a pasta pai pelo nome original (sem sanitização)
             $pastaPai = Pastas::where('idUsuario', $user->id)
                 ->where('nome', $nomePastaPai)
                 ->whereNull('idPastaPai') // Garantir que é uma pasta principal
                 ->first();
             
+            // Se não encontrou, tentar buscar pelo nome sanitizado (para compatibilidade com pastas antigas)
+            if (!$pastaPai) {
+                $nomePastaPaiSanitizado = $this->sanitizeFolderName($nomePastaPai);
+                $pastaPai = Pastas::where('idUsuario', $user->id)
+                    ->where('nome', $nomePastaPaiSanitizado)
+                    ->whereNull('idPastaPai')
+                    ->first();
+            }
+            
             if (!$pastaPai) {
                 return [
                     'valido' => false,
-                    'erro' => "Pasta pai '{$nomePastaPai}' não encontrada. Certifique-se de que ela existe e pertence a você."
+                    'erro' => "Pasta pai '{$nomePastaPai}' não encontrada. Certifique-se de que ela existe e pertence a você.",
+                    'pastas_disponiveis' => $this->listarPastasDisponiveis($user)
                 ];
             }
             
@@ -978,6 +988,22 @@ class PastasController extends Controller
         }
         
         return $name;
+    }
+
+    /**
+     * Lista as pastas principais disponíveis do usuário para ajudar no debug
+     * 
+     * @param Usuarios $user - Usuário para listar as pastas
+     * @return string - String com nomes das pastas separados por vírgula
+     */
+    private function listarPastasDisponiveis(Usuarios $user): string
+    {
+        $pastas = Pastas::where('idUsuario', $user->id)
+            ->whereNull('idPastaPai')
+            ->pluck('nome')
+            ->toArray();
+        
+        return empty($pastas) ? 'Nenhuma pasta principal encontrada' : implode(', ', $pastas);
     }
 
 }
