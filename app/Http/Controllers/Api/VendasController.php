@@ -126,6 +126,7 @@ class VendasController extends Controller
                     $usuario->idUltimaCobranca = $chargeId;
                     $usuario->status = 1; // Ativar usuário
                     $usuario->dataLimiteCompra = Carbon::now()->addDays($plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife')->format('Y-m-d');
+                    $usuario->dataUltimoPagamento = Carbon::now()->format('Y-m-d');
                     $usuario->save();
                     MailHelper::confirmacaoAssinatura($dadosEmail, $usuario->email);
                 }
