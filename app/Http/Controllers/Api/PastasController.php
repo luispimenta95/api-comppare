@@ -152,11 +152,33 @@ class PastasController extends Controller
                     ->first();
             }
             
+            // Se ainda não encontrou, tentar buscar considerando que o nome fornecido pode ser sanitizado
+            // e a pasta no banco pode estar com o nome original
             if (!$pastaPai) {
+                // Buscar todas as pastas principais do usuário e verificar se alguma, quando sanitizada, corresponde ao nome fornecido
+                $todasPastasPrincipais = Pastas::where('idUsuario', $user->id)
+                    ->whereNull('idPastaPai')
+                    ->get();
+                
+                foreach ($todasPastasPrincipais as $pasta) {
+                    $nomeSanitizado = $this->sanitizeFolderName($pasta->nome);
+                    if ($nomeSanitizado === $nomePastaPai || $nomeSanitizado === $nomePastaPaiSanitizado) {
+                        $pastaPai = $pasta;
+                        break;
+                    }
+                }
+            }
+            
+            if (!$pastaPai) {
+                $pastasDisponiveis = $this->listarPastasDisponiveisDetalhado($user);
                 return [
                     'valido' => false,
                     'erro' => "Pasta pai '{$nomePastaPai}' não encontrada. Certifique-se de que ela existe e pertence a você.",
-                    'pastas_disponiveis' => $this->listarPastasDisponiveis($user)
+                    'detalhes_busca' => [
+                        'nome_procurado' => $nomePastaPai,
+                        'nome_sanitizado_procurado' => $nomePastaPaiSanitizado ?? $this->sanitizeFolderName($nomePastaPai),
+                        'pastas_disponiveis' => $pastasDisponiveis
+                    ]
                 ];
             }
             
@@ -1004,6 +1026,34 @@ class PastasController extends Controller
             ->toArray();
         
         return empty($pastas) ? 'Nenhuma pasta principal encontrada' : implode(', ', $pastas);
+    }
+
+    /**
+     * Lista as pastas principais disponíveis do usuário com detalhes para debug avançado
+     * 
+     * @param Usuarios $user - Usuário para listar as pastas
+     * @return array - Array com detalhes das pastas disponíveis
+     */
+    private function listarPastasDisponiveisDetalhado(Usuarios $user): array
+    {
+        $pastas = Pastas::where('idUsuario', $user->id)
+            ->whereNull('idPastaPai')
+            ->get(['id', 'nome']);
+        
+        if ($pastas->isEmpty()) {
+            return ['mensagem' => 'Nenhuma pasta principal encontrada'];
+        }
+        
+        $resultado = [];
+        foreach ($pastas as $pasta) {
+            $resultado[] = [
+                'id' => $pasta->id,
+                'nome_original' => $pasta->nome,
+                'nome_sanitizado' => $this->sanitizeFolderName($pasta->nome)
+            ];
+        }
+        
+        return $resultado;
     }
 
 }
