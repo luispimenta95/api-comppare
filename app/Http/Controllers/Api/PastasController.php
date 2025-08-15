@@ -503,7 +503,7 @@ class PastasController extends Controller
                 $pastaPaiInfo = $pastaPai ? $pastaPai->nome : 'Pasta pai não encontrada';
             }
 
-            // Se for pasta principal, verificar e excluir subpastas primeiro
+            // REGRA 1: Se for pasta principal, excluir TODAS as subpastas primeiro
             if ($isPastaPrincipal) {
                 $subpastasCount = Pastas::where('idPastaPai', $pasta->id)->count();
                 
@@ -532,6 +532,13 @@ class PastasController extends Controller
                         // Excluir registro da subpasta
                         $subpasta->delete();
                     }
+                    
+                    // Atualizar contador de subpastas (todas as subpastas da pasta principal foram removidas)
+                    if ($user->subpastasCriadas >= $subpastasCount) {
+                        $user->decrement('subpastasCriadas', $subpastasCount);
+                    } else {
+                        $user->update(['subpastasCriadas' => 0]);
+                    }
                 }
             }
 
@@ -558,15 +565,21 @@ class PastasController extends Controller
             // Remove o registro da pasta do banco de dados
             $pasta->delete();
 
-            // IMPORTANTE: Atualizar contadores apropriados
-            // Pastas principais afetam 'pastasCriadas', subpastas afetam 'subpastasCriadas'
-            if ($isPastaPrincipal && $user->pastasCriadas > 0) {
-                $user->decrement('pastasCriadas');
-            } elseif ($isSubpasta && $user->subpastasCriadas > 0) {
-                $user->decrement('subpastasCriadas');
+            // IMPORTANTE: Atualizar contadores apropriados baseado nas regras
+            if ($isPastaPrincipal) {
+                // REGRA 1: Pasta principal - decrementa apenas o contador de pastas principais
+                // (subpastas já foram decrementadas acima)
+                if ($user->pastasCriadas > 0) {
+                    $user->decrement('pastasCriadas');
+                }
+            } else {
+                // REGRA 2: Subpasta - decrementa apenas o contador de subpastas
+                if ($user->subpastasCriadas > 0) {
+                    $user->decrement('subpastasCriadas');
+                }
             }
 
-            // Preparar resposta detalhada
+            // Preparar resposta detalhada baseada nas regras implementadas
             $detalhes = [
                 'pasta_excluida' => $nomePasta,
                 'tipo' => $tipoPasta,
@@ -575,21 +588,23 @@ class PastasController extends Controller
                 'subpastas_restantes' => $user->fresh()->subpastasCriadas
             ];
 
-            if ($isPastaPrincipal && $subpastasCount > 0) {
-                $detalhes['subpastas_excluidas'] = $subpastasCount;
-                $detalhes['observacao'] = "Pasta principal excluída junto com {$subpastasCount} subpasta(s)";
-            }
-
-            if ($isSubpasta) {
+            if ($isPastaPrincipal) {
+                if ($subpastasCount > 0) {
+                    $detalhes['subpastas_excluidas'] = $subpastasCount;
+                    $detalhes['observacao'] = "REGRA 1 APLICADA: Pasta principal excluída junto com {$subpastasCount} subpasta(s)";
+                } else {
+                    $detalhes['observacao'] = "REGRA 1 APLICADA: Pasta principal excluída (sem subpastas)";
+                }
+            } else {
                 $detalhes['pasta_pai'] = $pastaPaiInfo;
-                $detalhes['observacao'] = 'Subpasta excluída - contador de subpastas foi decrementado';
+                $detalhes['observacao'] = 'REGRA 2 APLICADA: Subpasta excluída (pasta pai mantida)';
             }
 
             return response()->json([
                 'codRetorno' => HttpCodesEnum::OK->value,
                 'message' => $isPastaPrincipal 
-                    ? 'Pasta principal excluída com sucesso!' 
-                    : 'Subpasta excluída com sucesso!',
+                    ? "Pasta principal '{$nomePasta}' excluída com sucesso!" 
+                    : "Subpasta '{$nomePasta}' excluída com sucesso!",
                 'detalhes' => $detalhes
             ]);
         } catch (ValidationException $e) {
