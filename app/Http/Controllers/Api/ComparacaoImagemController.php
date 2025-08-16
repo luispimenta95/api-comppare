@@ -48,7 +48,14 @@ class ComparacaoImagemController extends Controller
 
     public function show($id): JsonResponse
     {
-        $comparacao = ComparacaoImagem::with('tags')->findOrFail($id);
-        return response()->json($comparacao);
+        $comparacoes = ComparacaoImagem::with('tags')
+            ->where('id_photo', $id)
+            ->get();
+
+        if ($comparacoes->isEmpty()) {
+            return response()->json(['message' => 'Nenhuma comparação encontrada para esta foto.'], 404);
+        }
+
+        return response()->json($comparacoes);
     }
 }
