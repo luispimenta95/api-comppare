@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use App\Models\ComparacaoImagem;
 
 class PastasController extends Controller
 {
@@ -64,7 +65,7 @@ class PastasController extends Controller
         ]);
 
         $user = Usuarios::find($request->idUsuario);
-        
+
         if (!$user) {
             return response()->json([
                 'codRetorno' => HttpCodesEnum::NotFound->value,
@@ -78,7 +79,7 @@ class PastasController extends Controller
 
         // Analisar a estrutura do nome da pasta para determinar se é principal ou subpasta
         $analiseEstrutura = $this->analisarEstruturaPasta($request->nomePasta, $user);
-        
+
         if (!$analiseEstrutura['valido']) {
             return response()->json([
                 'codRetorno' => HttpCodesEnum::BadRequest->value,
@@ -87,7 +88,7 @@ class PastasController extends Controller
         }
 
         $isPastaSubpasta = $analiseEstrutura['subfloder'];
-        
+
         if ($isPastaSubpasta) {
             // Verificação para subpasta
             $verificacao = $this->verificarLimiteSubpastas($user, $analiseEstrutura['pasta_pai_id'], $plano, $currentMonth, $currentYear);
@@ -107,7 +108,7 @@ class PastasController extends Controller
 
         // Criar a pasta
         $resultado = $this->criarPasta($user, $analiseEstrutura, $isPastaSubpasta);
-        
+
         return response()->json($resultado);
     }
 
@@ -119,30 +120,30 @@ class PastasController extends Controller
         // Se contém '/', é uma tentativa de criar subpasta
         if (str_contains($nomePasta, '/')) {
             $partes = explode('/', $nomePasta);
-            
+
             if (count($partes) != 2) {
                 return [
                     'valido' => false,
                     'erro' => 'Formato inválido. Use "PastaPai/Subpasta" para criar subpastas.'
                 ];
             }
-            
+
             $nomePastaPai = trim($partes[0]);
             $nomeSubpasta = trim($partes[1]);
-            
+
             if (empty($nomePastaPai) || empty($nomeSubpasta)) {
                 return [
                     'valido' => false,
                     'erro' => 'Nome da pasta pai e subpasta não podem estar vazios.'
                 ];
             }
-            
+
             // Buscar a pasta pai pelo nome original (sem sanitização)
             $pastaPai = Pastas::where('idUsuario', $user->id)
                 ->where('nome', $nomePastaPai)
                 ->whereNull('idPastaPai') // Garantir que é uma pasta principal
                 ->first();
-            
+
             // Se não encontrou, tentar buscar pelo nome sanitizado (para compatibilidade com pastas antigas)
             if (!$pastaPai) {
                 $nomePastaPaiSanitizado = $this->sanitizeFolderName($nomePastaPai);
@@ -151,7 +152,7 @@ class PastasController extends Controller
                     ->whereNull('idPastaPai')
                     ->first();
             }
-            
+
             // Se ainda não encontrou, tentar buscar considerando que o nome fornecido pode ser sanitizado
             // e a pasta no banco pode estar com o nome original
             if (!$pastaPai) {
@@ -159,7 +160,7 @@ class PastasController extends Controller
                 $todasPastasPrincipais = Pastas::where('idUsuario', $user->id)
                     ->whereNull('idPastaPai')
                     ->get();
-                
+
                 foreach ($todasPastasPrincipais as $pasta) {
                     $nomeSanitizado = $this->sanitizeFolderName($pasta->nome);
                     if ($nomeSanitizado === $nomePastaPai || $nomeSanitizado === $nomePastaPaiSanitizado) {
@@ -168,7 +169,7 @@ class PastasController extends Controller
                     }
                 }
             }
-            
+
             if (!$pastaPai) {
                 $pastasDisponiveis = $this->listarPastasDisponiveisDetalhado($user);
                 return [
@@ -181,20 +182,20 @@ class PastasController extends Controller
                     ]
                 ];
             }
-            
+
             // Verificar se a subpasta já existe (verificar pelo nome original, não sanitizado)
             $subpastaExistente = Pastas::where('idUsuario', $user->id)
                 ->where('nome', $nomeSubpasta)
                 ->where('idPastaPai', $pastaPai->id)
                 ->exists();
-            
+
             if ($subpastaExistente) {
                 return [
                     'valido' => false,
                     'erro' => "Subpasta '{$nomeSubpasta}' já existe dentro de '{$nomePastaPai}'."
                 ];
             }
-            
+
             return [
                 'valido' => true,
                 'subfloder' => true,
@@ -206,27 +207,27 @@ class PastasController extends Controller
         } else {
             // É uma pasta principal
             $nomePasta = trim($nomePasta);
-            
+
             if (empty($nomePasta)) {
                 return [
                     'valido' => false,
                     'erro' => 'Nome da pasta não pode estar vazio.'
                 ];
             }
-            
+
             // Verificar se pasta principal já existe (verificar pelo nome original, não sanitizado)
             $pastaExistente = Pastas::where('idUsuario', $user->id)
                 ->where('nome', $nomePasta)
                 ->whereNull('idPastaPai')
                 ->exists();
-            
+
             if ($pastaExistente) {
                 return [
                     'valido' => false,
                     'erro' => "Pasta principal '{$nomePasta}' já existe."
                 ];
             }
-            
+
             return [
                 'valido' => true,
                 'subfloder' => false,
@@ -370,7 +371,7 @@ class PastasController extends Controller
                     'pasta_nome' => $novaPasta->nome,
                     'pasta_caminho' => $novaPasta->caminho,
                     'tipo' => $isPastaSubpasta ? 'subpasta' : 'pasta_principal',
-                    'estrutura_completa' => $isPastaSubpasta 
+                    'estrutura_completa' => $isPastaSubpasta
                         ? $analiseEstrutura['pasta_pai_nome'] . '/' . $analiseEstrutura['nome_subpasta']
                         : $analiseEstrutura['nome_pasta_principal']
                 ];
@@ -491,7 +492,7 @@ class PastasController extends Controller
             // Determinar se é pasta principal ou subpasta
             $isPastaPrincipal = is_null($pasta->idPastaPai);
             $isSubpasta = !is_null($pasta->idPastaPai);
-            
+
             // Salvar informações antes de deletar
             $nomePasta = $pasta->nome;
             $tipoPasta = $isPastaPrincipal ? 'pasta_principal' : 'subpasta';
@@ -506,14 +507,14 @@ class PastasController extends Controller
             // REGRA 1: Se for pasta principal, excluir TODAS as subpastas primeiro
             if ($isPastaPrincipal) {
                 $subpastasCount = Pastas::where('idPastaPai', $pasta->id)->count();
-                
+
                 if ($subpastasCount > 0) {
                     $subpastas = Pastas::where('idPastaPai', $pasta->id)->get();
-                    
+
                     foreach ($subpastas as $subpasta) {
                         // Excluir fotos da subpasta
                         Photos::where('pasta_id', $subpasta->id)->delete();
-                        
+
                         // Excluir pasta física da subpasta
                         $subpastaRelativePath = str_replace(
                             env('PUBLIC_PATH', '/home/u757410616/domains/comppare.com.br/public_html/api-comppare/storage/app/public/'),
@@ -521,18 +522,18 @@ class PastasController extends Controller
                             $subpasta->caminho
                         );
                         $subpastaRelativePath = trim($subpastaRelativePath, '/');
-                        
+
                         if (Storage::disk('public')->exists($subpastaRelativePath)) {
                             Storage::disk('public')->deleteDirectory($subpastaRelativePath);
                         }
-                        
+
                         // Remover associações da subpasta
                         $subpasta->usuario()->detach();
-                        
+
                         // Excluir registro da subpasta
                         $subpasta->delete();
                     }
-                    
+
                     // Atualizar contador de subpastas (todas as subpastas da pasta principal foram removidas)
                     if ($user->subpastasCriadas >= $subpastasCount) {
                         $user->decrement('subpastasCriadas', $subpastasCount);
@@ -602,8 +603,8 @@ class PastasController extends Controller
 
             return response()->json([
                 'codRetorno' => HttpCodesEnum::OK->value,
-                'message' => $isPastaPrincipal 
-                    ? "Pasta principal '{$nomePasta}' excluída com sucesso!" 
+                'message' => $isPastaPrincipal
+                    ? "Pasta principal '{$nomePasta}' excluída com sucesso!"
                     : "Subpasta '{$nomePasta}' excluída com sucesso!",
                 'detalhes' => $detalhes
             ]);
@@ -810,23 +811,23 @@ class PastasController extends Controller
             ->whereNull('idPastaPai') // Apenas pastas principais
             ->get();
 
-        $pastasFormatadas = $pastas->map(function($pasta) {
+        $pastasFormatadas = $pastas->map(function ($pasta) {
             return [
                 'id' => $pasta->id,
                 'nome' => $pasta->nome,
                 'caminho' => Helper::formatFolderUrl($pasta),
-                'imagens' => $pasta->photos->map(function($photo) {
+                'imagens' => $pasta->photos->map(function ($photo) {
                     return [
                         'id' => $photo->id,
                         'path' => Helper::formatImageUrl($photo->path) // URL clicável
                     ];
                 })->values()->toArray(),
-                'subpastas' => $pasta->subpastas->map(function($subpasta) {
+                'subpastas' => $pasta->subpastas->map(function ($subpasta) {
                     return [
                         'id' => $subpasta->id,
                         'nome' => $subpasta->nome,
                         'caminho' => Helper::formatFolderUrl($subpasta),
-                        'imagens' => $subpasta->photos->map(function($photo) {
+                        'imagens' => $subpasta->photos->map(function ($photo) {
                             return [
                                 'id' => $photo->id,
                                 'path' => Helper::formatImageUrl($photo->path) // URL clicável
@@ -917,6 +918,7 @@ class PastasController extends Controller
             }
 
             // Salva informações antes de deletar
+            ComparacaoImagem::where('id_photo', $photo->id)->delete();
             $imageName = basename($photo->path);
             $pastaName = $pasta->nome;
 
@@ -977,12 +979,12 @@ class PastasController extends Controller
                 'id' => $pasta->id,
                 'nome' => $pasta->nome,
                 'path' => Helper::formatFolderUrl($pasta),
-                'subpastas' => $pasta->subpastas->map(function($subpasta) {
+                'subpastas' => $pasta->subpastas->map(function ($subpasta) {
                     return [
                         'id' => $subpasta->id,
                         'nome' => $subpasta->nome,
                         'path' => Helper::formatFolderUrl($subpasta),
-                        'imagens' => $subpasta->photos->map(function($photo) {
+                        'imagens' => $subpasta->photos->map(function ($photo) {
                             return [
                                 'id' => $photo->id,
                                 'path' => Helper::formatImageUrl($photo->path),
@@ -1006,24 +1008,24 @@ class PastasController extends Controller
     {
         // Remove acentos e caracteres especiais
         $name = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name);
-        
+
         // Remove caracteres que não são alfanuméricos, hífens, underscores ou espaços
         $name = preg_replace('/[^a-zA-Z0-9\-_\s]/', '', $name);
-        
+
         // Substitui espaços por underscores
         $name = preg_replace('/\s+/', '_', $name);
-        
+
         // Remove múltiplos underscores consecutivos
         $name = preg_replace('/_+/', '_', $name);
-        
+
         // Remove underscores no início e fim
         $name = trim($name, '_');
-        
+
         // Se o nome ficou vazio, usa um nome padrão
         if (empty($name)) {
             $name = 'pasta_' . time();
         }
-        
+
         return $name;
     }
 
@@ -1039,7 +1041,7 @@ class PastasController extends Controller
             ->whereNull('idPastaPai')
             ->pluck('nome')
             ->toArray();
-        
+
         return empty($pastas) ? 'Nenhuma pasta principal encontrada' : implode(', ', $pastas);
     }
 
@@ -1054,11 +1056,11 @@ class PastasController extends Controller
         $pastas = Pastas::where('idUsuario', $user->id)
             ->whereNull('idPastaPai')
             ->get(['id', 'nome']);
-        
+
         if ($pastas->isEmpty()) {
             return ['mensagem' => 'Nenhuma pasta principal encontrada'];
         }
-        
+
         $resultado = [];
         foreach ($pastas as $pasta) {
             $resultado[] = [
@@ -1067,8 +1069,7 @@ class PastasController extends Controller
                 'nome_sanitizado' => $this->sanitizeFolderName($pasta->nome)
             ];
         }
-        
+
         return $resultado;
     }
-
 }
