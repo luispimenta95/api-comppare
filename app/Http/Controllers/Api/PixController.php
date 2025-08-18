@@ -809,6 +809,7 @@ class PixController extends Controller
             ->post("{$baseUrl}/oauth/token", [
                 "grant_type" => "client_credentials"
             ]);
+        dd($tokenResponse->json());
 
         if ($tokenResponse->failed()) {
             return response()->json([
