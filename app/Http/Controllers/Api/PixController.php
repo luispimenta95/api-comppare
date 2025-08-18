@@ -839,4 +839,26 @@ class PixController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Atualiza o status de uma cobrança PIX
+     * 
+     * @return JsonResponse
+     */
+    public function atualizarCobranca(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'cobsr' => 'required|array'
+        ]);
+
+        // Processar cada registro de cobrança
+        foreach ($validated['cobsr'] as $rec) {
+            // Lógica para atualizar a cobrança na Efí
+        }
+
+        return response()->json([
+            'codRetorno' => 200,
+            'message' => 'Cobranças atualizadas com sucesso',
+        ]);
+    }
 }

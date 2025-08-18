@@ -7,4 +7,5 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('pix')->group(function () {
     Route::post('/enviar', [PixController::class, 'criarCobranca']);
     Route::get('/cadastrar', [PixController::class, 'registrarWebhook']);
+    Route::post('/atualizar', [PixController::class, 'atualizarCobranca']);
 });
