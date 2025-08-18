@@ -772,24 +772,49 @@ class PixController extends Controller
         ];
     }
 
+
+    /**
+     * Endpoint interno para receber atualizações de status de pagamento Pix
+     * Recebe notificações da Efí e atualiza status do pagamento
+     */
     public function receberWebhook(Request $request)
     {
-        $baseUrl = $this->enviroment === 'local'
-            ? env('URL_API_PIX_LOCAL')
-            : env('URL_API_PIX_PRODUCAO');
+        Log::info('Webhook PIX recebido', [
+            'payload' => $request->all(),
+            'ip' => $request->ip()
+        ]);
 
-        Log::info('Webhook PIX recebido', $request->all());
+        // Atualiza status do pagamento Pix pelo txid
+        if ($request->has('pix')) {
+            foreach ($request->input('pix') as $pix) {
+                $txid = $pix['txid'] ?? null;
+                $status = $pix['status'] ?? null;
+                if ($txid) {
+                    $pagamento = PagamentoPix::where('txid', $txid)->first();
+                    if ($pagamento) {
+                        $pagamento->statusPagamento = $status ?? 'PAGO';
+                        $pagamento->save();
+                        Log::info('Pagamento Pix atualizado via webhook', [
+                            'txid' => $txid,
+                            'status' => $status,
+                            'idPagamento' => $pagamento->id
+                        ]);
+                    } else {
+                        Log::warning('Pagamento Pix não encontrado para txid', [
+                            'txid' => $txid
+                        ]);
+                    }
+                }
+            }
+        }
 
-        // Exemplo: salvar em banco
-        // PixWebhook::create([
-        //     'payload' => json_encode($request->all())
-        // ]);
-
+        // Responde 200 para Efí/Banco Central
         return response()->json(['status' => 200], 200);
     }
 
     /**
      * Cadastrar webhook na Efí para uma chave Pix
+     * Faz autenticação, obtém token e cadastra webhook
      */
     public function cadastrarWebhook(Request $request)
     {
@@ -805,11 +830,10 @@ class PixController extends Controller
         ]);
 
         // Obter Access Token
-        $tokenResponse = Http::withBasicAuth($user, $clientSecret)
+        $tokenResponse = \Illuminate\Support\Facades\Http::withBasicAuth($user, $clientSecret)
             ->post("{$baseUrl}/oauth/token", [
                 "grant_type" => "client_credentials"
             ]);
-        dd($tokenResponse->json());
 
         if ($tokenResponse->failed()) {
             return response()->json([
@@ -819,15 +843,14 @@ class PixController extends Controller
         }
 
         $accessToken = $tokenResponse->json()['access_token'];
-        dd($accessToken);
 
         // Cadastrar o webhook
-        $response = Http::withToken($accessToken)
+        $response = \Illuminate\Support\Facades\Http::withToken($accessToken)
             ->withHeaders([
                 "x-skip-mtls-checking" => "false" // Se não usar mTLS
             ])
             ->put("{$baseUrl}/v2/webhook/{$request->chave_pix}", [
-                "webhookUrl" => env('APP_URL') . '/' . $request->url
+                "webhookUrl" => $request->url
             ]);
 
         return response()->json($response->json(), $response->status());
