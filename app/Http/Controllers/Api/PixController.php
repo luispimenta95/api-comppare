@@ -777,82 +777,66 @@ class PixController extends Controller
      * Endpoint interno para receber atualizações de status de pagamento Pix
      * Recebe notificações da Efí e atualiza status do pagamento
      */
-    public function receberWebhook(Request $request)
-    {
-        Log::info('Webhook PIX recebido', [
-            'payload' => $request->all(),
-            'ip' => $request->ip()
-        ]);
-
-        // Atualiza status do pagamento Pix pelo txid
-        if ($request->has('pix')) {
-            foreach ($request->input('pix') as $pix) {
-                $txid = $pix['txid'] ?? null;
-                $status = $pix['status'] ?? null;
-                if ($txid) {
-                    $pagamento = PagamentoPix::where('txid', $txid)->first();
-                    if ($pagamento) {
-                        $pagamento->statusPagamento = $status ?? 'PAGO';
-                        $pagamento->save();
-                        Log::info('Pagamento Pix atualizado via webhook', [
-                            'txid' => $txid,
-                            'status' => $status,
-                            'idPagamento' => $pagamento->id
-                        ]);
-                    } else {
-                        Log::warning('Pagamento Pix não encontrado para txid', [
-                            'txid' => $txid
-                        ]);
-                    }
-                }
-            }
-        }
-
-        // Responde 200 para Efí/Banco Central
-        return response()->json(['status' => 200], 200);
-    }
-
     /**
-     * Cadastrar webhook na Efí para uma chave Pix
-     * Faz autenticação, obtém token e cadastra webhook
+     * Registra ou atualiza o webhook PIX na Efí
+     * 
+     * @return JsonResponse
      */
-    public function cadastrarWebhook(Request $request)
+    public function registrarWebhook(): JsonResponse
     {
-        $baseUrl = $this->enviroment === 'local'
-            ? env('URL_API_PIX_LOCAL')
-            : env('URL_API_PIX_PRODUCAO');
+        try {
+            // URL fixa no .env (ex: WEBHOOK_PIX_URL=https://api.comppare.com.br/api/pix/webhook)
+            $webhookUrl = env('APP_URL') . '/api/pix/atualizar';
 
-        $user = $this->enviroment == "local" ? env('ID_EFI_HML') : env('ID_EFI_PRD');
-        $clientSecret = $this->enviroment == "local" ? env('SECRET_EFI_HML') : env('SECRET_EFI_PRD');
-        $request->validate([
-            'chave_pix' => 'required|string',
-            'url' => 'required|url'
-        ]);
+            $url = $this->buildApiUrl("/v2/webhook/{$this->chavePix}");
 
-        // Obter Access Token
-        $tokenResponse = \Illuminate\Support\Facades\Http::withBasicAuth($user, $clientSecret)
-            ->post("{$baseUrl}/oauth/token", [
-                "grant_type" => "client_credentials"
+            $body = json_encode([
+                "webhookUrl" => $webhookUrl
             ]);
 
-        if ($tokenResponse->failed()) {
+            Log::info('Registrando webhook PIX na Efí', [
+                'url' => $url,
+                'webhookUrl' => $webhookUrl,
+                'chavePix' => $this->chavePix
+            ]);
+
+            $response = $this->executeApiRequest($url, 'PUT', $body);
+
+            if (!$response['success']) {
+                Log::error('Erro ao registrar webhook PIX', [
+                    'http_code' => $response['http_code'],
+                    'error' => $response['error'],
+                    'data' => $response['data']
+                ]);
+
+                return response()->json([
+                    'codRetorno' => 500,
+                    'message' => 'Falha ao registrar webhook Pix',
+                    'detalhes' => $response
+                ], 500);
+            }
+
+            Log::info('Webhook PIX registrado/atualizado com sucesso', [
+                'response' => $response['data']
+            ]);
+
             return response()->json([
-                "erro" => "Falha ao obter token",
-                "detalhes" => $tokenResponse->body()
+                'codRetorno' => 200,
+                'message' => 'Webhook PIX registrado com sucesso',
+                'data' => $response['data']
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erro inesperado ao registrar webhook PIX', [
+                'error_message' => $e->getMessage(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
+
+            return response()->json([
+                'codRetorno' => 500,
+                'message' => 'Erro interno ao registrar webhook Pix',
+                'error' => $e->getMessage()
             ], 500);
         }
-
-        $accessToken = $tokenResponse->json()['access_token'];
-
-        // Cadastrar o webhook
-        $response = \Illuminate\Support\Facades\Http::withToken($accessToken)
-            ->withHeaders([
-                "x-skip-mtls-checking" => "false" // Se não usar mTLS
-            ])
-            ->put("{$baseUrl}/v2/webhook/{$request->chave_pix}", [
-                "webhookUrl" => $request->url
-            ]);
-
-        return response()->json($response->json(), $response->status());
     }
 }
