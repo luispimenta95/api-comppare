@@ -818,6 +818,7 @@ class PixController extends Controller
         }
 
         $accessToken = $tokenResponse->json()['access_token'];
+        dd($accessToken);
 
         // Cadastrar o webhook
         $response = Http::withToken($accessToken)
