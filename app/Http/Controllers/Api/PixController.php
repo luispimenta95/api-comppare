@@ -793,7 +793,6 @@ class PixController extends Controller
      */
     public function cadastrarWebhook(Request $request)
     {
-        dd($request->all());
         $baseUrl = $this->enviroment === 'local'
             ? env('URL_API_PIX_LOCAL')
             : env('URL_API_PIX_PRODUCAO');
