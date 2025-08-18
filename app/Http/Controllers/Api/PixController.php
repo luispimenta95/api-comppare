@@ -845,20 +845,23 @@ class PixController extends Controller
      * 
      * @return JsonResponse
      */
+    /**
+     * Endpoint público para receber notificações de webhook Pix
+     * Sempre responde 200 para evitar redirecionamento (erro 302)
+     */
     public function atualizarCobranca(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'cobsr' => 'required|array'
-        ]);
-
-        // Processar cada registro de cobrança
-        foreach ($validated['cobsr'] as $rec) {
-            // Lógica para atualizar a cobrança na Efí
+        // Não valida autenticação, não faz redirecionamento
+        // Processa payload se existir
+        if ($request->has('cobsr')) {
+            foreach ($request->input('cobsr') as $rec) {
+                // Lógica para atualizar cobrança, se necessário
+            }
         }
-
+        // Responde 200 sempre
         return response()->json([
             'codRetorno' => 200,
-            'message' => 'Cobranças atualizadas com sucesso',
-        ]);
+            'message' => 'Webhook recebido com sucesso',
+        ], 200);
     }
 }
