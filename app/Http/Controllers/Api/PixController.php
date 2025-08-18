@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Util\Helper;
+use Illuminate\Support\Facades\Http;
 
 class PixController extends Controller
 {
@@ -771,10 +772,62 @@ class PixController extends Controller
         ];
     }
 
-    public function atualizarCobrança(Request $request): void
+    public function receberWebhook(Request $request)
     {
-        Log::info('Atualizando cobrança', [
-            'request_data' => $request->all()
+        $baseUrl = $this->enviroment === 'local'
+            ? env('URL_API_PIX_LOCAL')
+            : env('URL_API_PIX_PRODUCAO');
+
+        Log::info('Webhook PIX recebido', $request->all());
+
+        // Exemplo: salvar em banco
+        // PixWebhook::create([
+        //     'payload' => json_encode($request->all())
+        // ]);
+
+        return response()->json(['status' => 200], 200);
+    }
+
+    /**
+     * Cadastrar webhook na Efí para uma chave Pix
+     */
+    public function cadastrarWebhook(Request $request)
+    {
+        $baseUrl = $this->enviroment === 'local'
+            ? env('URL_API_PIX_LOCAL')
+            : env('URL_API_PIX_PRODUCAO');
+
+        $user = $this->enviroment == "local" ? env('ID_EFI_HML') : env('ID_EFI_PRD');
+        $clientSecret = $this->enviroment == "local" ? env('SECRET_EFI_HML') : env('SECRET_EFI_PRD');
+        $request->validate([
+            'chave_pix' => 'required|string',
+            'url' => 'required|url'
         ]);
+
+        // Obter Access Token
+        $tokenResponse = Http::withBasicAuth($user, $clientSecret)
+            ->post("{$baseUrl}/oauth/token", [
+                "grant_type" => "client_credentials"
+            ]);
+
+        if ($tokenResponse->failed()) {
+            return response()->json([
+                "erro" => "Falha ao obter token",
+                "detalhes" => $tokenResponse->body()
+            ], 500);
+        }
+
+        $accessToken = $tokenResponse->json()['access_token'];
+
+        // Cadastrar o webhook
+        $response = Http::withToken($accessToken)
+            ->withHeaders([
+                "x-skip-mtls-checking" => "false" // Se não usar mTLS
+            ])
+            ->put("{$baseUrl}/v2/webhook/{$request->chave_pix}", [
+                "webhookUrl" => env('APP_URL') . '/' . $request->url
+            ]);
+
+        return response()->json($response->json(), $response->status());
     }
 }

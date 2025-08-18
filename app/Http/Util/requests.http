@@ -419,105 +419,10 @@ Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL
 }
 
 ###configurar webhook PIX (com URL customizada)
-PUT {{baseUrl}}/pix/webhook
+POST  {{baseUrl}}/pix/cadastrar
 Content-Type: application/json
 
 {
-  "webhookUrl": "https://seu-dominio.com/api/webhookcobr/"
+  "webhookUrl": "api/pix/atualizar",
+  "chave_pix": "contato@comppare.com.br"
 }
-
-###configurar webhook PIX (usando URL do .env)
-PUT {{baseUrl}}/pix/webhook
-Content-Type: application/json
-
-{}
-
-### IMPORTANTE: Para configurar webhook PIX
-# 1. A URL deve ter HTTPS obrigatoriamente
-# 2. Deve estar configurada com autenticação TLS mútuo
-# 3. Configure no .env: WEBHOOK_PIX_URL=https://seu-dominio-com-tls-mutuo.com/api/pix/atualizar
-# 4. Certificados necessários em storage/app/certificates/:
-#    - cliente.pem (certificado cliente homologação)
-#    - cliente.key (chave privada cliente homologação)  
-#    - cliente_prd.pem (certificado cliente produção)
-#    - cliente_prd.key (chave privada cliente produção)
-# 5. Em ambiente local: SSL verification é desabilitada automaticamente
-# 6. Em produção: SSL verification é obrigatória
-# 7. Consulte a documentação da EFI sobre como configurar TLS mútuo
-
-### Possíveis erros e soluções:
-# Erro: "SSL certificate problem: self-signed certificate in certificate chain"
-# Solução: 
-#   - Em local: erro será ignorado automaticamente
-#   - Em produção: use certificados válidos da EFI
-#   - Configure APP_ENV=local no .env para desenvolvimento
-
-### Response de sucesso:
-# {
-#   "codRetorno": 200,
-#   "message": "Webhook configurado com sucesso",
-#   "data": {
-#     "webhookUrl": "https://seu-dominio.com/api/webhookcobr/",
-#     "configurado_em": "2024-08-08 15:30:00",
-#     "observacao": "Webhook configurado com autenticação TLS mútuo"
-#   }
-# }
-
-### Response de erro (TLS mútuo não configurado):
-# {
-#   "codRetorno": 500,
-#   "message": "Erro ao configurar webhook",
-#   "error": "Autenticação TLS mútuo não está configurada na URL informada. Configure um certificado SSL com autenticação mútua.",
-#   "sugestoes": [
-#     "Verifique se a URL possui certificado SSL válido",
-#     "Confirme se a autenticação TLS mútuo está configurada",
-#     "Teste se a URL está acessível externamente",
-#     "Consulte a documentação da EFI sobre configuração de webhooks"
-#   ]
-# }
-
-### Response de erro (certificado auto-assinado):
-# {
-#   "codRetorno": 500,
-#   "message": "Erro ao configurar webhook",
-#   "error": "SSL certificate problem: self-signed certificate in certificate chain",
-#   "tipo_erro": "SSL_CERTIFICATE_PROBLEM",
-#   "ambiente": "desenvolvimento/homologação",
-#   "solucao": {
-#     "ambiente_local": "Desabilite verificação SSL no .env: SSL_VERIFY_DISABLED=true",
-#     "ambiente_producao": "Use certificados SSL válidos emitidos por CA confiável",
-#     "certificados_efi": "Configure certificados homologação/produção EFI corretamente"
-#   },
-#   "sugestoes": [
-#     "Para ambiente local: Configure SSL_VERIFY_DISABLED=true no .env",
-#     "Para homologação: Use certificados de homologação da EFI",
-#     "Para produção: Use certificados SSL válidos e certificados de produção da EFI",
-#     "Verifique se os certificados cliente.pem e cliente.key estão corretos",
-#     "Confirme se a URL webhook está correta no .env: WEBHOOK_PIX_URL"
-#   ]
-# }
-
-### TROUBLESHOOTING: Problemas comuns com SSL/TLS
-# 
-# 1. ERRO: "SSL certificate problem: self-signed certificate in certificate chain"
-#    CAUSA: Certificado auto-assinado ou cadeia de certificados inválida
-#    SOLUÇÃO DESENVOLVIMENTO: Configure no .env:
-#      SSL_VERIFY_DISABLED=true
-#    SOLUÇÃO PRODUÇÃO: Use certificados SSL válidos de CA confiável
-#
-# 2. ERRO: "SSL certificate problem: unable to get local issuer certificate"
-#    CAUSA: Certificado raiz não encontrado na cadeia de confiança
-#    SOLUÇÃO: Atualize certificados CA do sistema ou use SSL_VERIFY_DISABLED=true para desenvolvimento
-#
-# 3. ERRO: "SSL peer certificate or SSH remote key was not OK"
-#    CAUSA: Certificado não corresponde ao domínio ou expirado
-#    SOLUÇÃO: Verifique se o certificado está válido para o domínio utilizado
-#
-# 4. ERRO: "TLS handshake failed"
-#    CAUSA: Problemas com TLS mútuo ou configuração de certificados cliente
-#    SOLUÇÃO: Verifique certificados cliente (cliente.pem e cliente.key) em storage/app/certificates/
-#
-# 5. Para testar webhook sem SSL (apenas desenvolvimento):
-#    - Configure WEBHOOK_PIX_URL com HTTP (não HTTPS)
-#    - Adicione SSL_VERIFY_DISABLED=true no .env
-#    - Use ngrok ou similar para expor localhost com HTTPS válido
