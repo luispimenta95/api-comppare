@@ -794,15 +794,11 @@ class PixController extends Controller
 
             // PUT /v2/webhookrec
             $urlRec = $this->buildApiUrl("/v2/webhookrec/");
-            $responseRec = $this->executeApiRequestWithExtraHeaders($urlRec, 'PUT', $body, [
-                "x-skip-mtls-checking: true"
-            ]);
+            $responseRec = $this->executeApiRequestWithExtraHeaders($urlRec, 'DELETE');
 
             // PUT /v2/webhookcobr
             $urlCobr = $this->buildApiUrl("/v2/webhookcobr/");
-            $responseCobr = $this->executeApiRequestWithExtraHeaders($urlCobr, 'PUT', $body, [
-                "x-skip-mtls-checking: true"
-            ]);
+            $responseCobr = $this->executeApiRequestWithExtraHeaders($urlCobr, 'DELETE');
 
             $result = [
                 'webhookrec' => [
