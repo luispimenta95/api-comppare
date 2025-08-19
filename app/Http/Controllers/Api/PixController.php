@@ -793,7 +793,7 @@ PUT /v2/webhookcobr
             $skipMtlsHeader = 'true';
 
             $webhookUrl = env('APP_URL') . '/api/pix/atualizar';
-            $url = $this->buildApiUrl("/v2/webhookrec/{$this->chavePix}");
+            $url = $this->buildApiUrl("/v2/webhookrec");
             $body = json_encode([
                 "webhookUrl" => $webhookUrl
             ]);
