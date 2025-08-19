@@ -789,11 +789,10 @@ class PixController extends Controller
 PUT /v2/webhookcobr
         */
         try {
-            // Recebe parâmetro skip_mtls via query string (?skip_mtls=true/false)
             $skipMtlsHeader = 'true';
 
             $webhookUrl = env('APP_URL') . '/api/pix/atualizar';
-            $url = $this->buildApiUrl("/v2/webhookcobr");
+            $url = $this->buildApiUrl("/v2/webhookrec/");
             $body = json_encode([
                 "webhookUrl" => $webhookUrl
             ]);
