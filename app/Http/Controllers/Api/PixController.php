@@ -13,7 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Util\Helper;
-use Illuminate\Support\Facades\Http;
+use Carbon\Carbon;
 
 class PixController extends Controller
 {
@@ -857,11 +857,28 @@ class PixController extends Controller
     {
         // Não valida autenticação, não faz redirecionamento
         // Processa payload se existir
-        if ($request->has('cobsr')) {
-            foreach ($request->input('cobsr') as $rec) {
-                // Lógica para atualizar cobrança, se necessário
+        if (isset($request->cobsr)) {
+            foreach ($request->cobsr as $rec) {
+                $status = $rec->status ?? null;
+                $txid   = $rec->txid ?? null;
+
+                if ($txid) {
+                    $pagamento = PagamentoPix::where('txid', $txid)->first();
+
+                    if ($pagamento && strtolower($status) == 'aprovada') {
+                        $pagamento->status = $status;
+                        $pagamento->dataPagamento = now();
+                        $pagamento->save();
+                        $usuario = Usuarios::where('id', $pagamento->idUsuario)->first();
+                        $plano = Planos::where('id', $usuario->idPlano)->first();
+                        $usuario->status = 1;
+                        $usuario->dataLimiteCompra = Carbon::now()->addDays($plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife')->format('Y-m-d');
+                        $usuario->dataUltimoPagamento = Carbon::now()->format('Y-m-d H:i:s');
+                    }
+                }
             }
         }
+
         // Responde 200 sempre
         return response()->json([
             'codRetorno' => 200,
@@ -999,5 +1016,48 @@ class PixController extends Controller
             'execution_time' => $executionTime,
             'curl_info' => $curlInfo
         ];
+    }
+
+    /**
+     * Exibe informações do webhook de recorrência de Pix Automático
+     * Endpoint: GET /v2/webhookrec
+     * Requer autorização para o escopo: webhookrec.read
+     * Possíveis respostas: 200, 403, 404, 503
+     */
+    public function consultarWebhookRecorrente(Request $request): JsonResponse
+    {
+        try {
+            // URL da API Efí para consulta do webhook de recorrência
+            $url = $this->buildApiUrl('/v2/webhookrec');
+
+            // Adiciona o token de autorização (escopo webhookrec.read)
+            $headers = [
+                "Authorization: Bearer " . $this->apiEfi->getToken(),
+                "Content-Type: application/json"
+            ];
+
+            // Requisição GET para Efí
+            $response = $this->executeApiRequestWithExtraHeaders($url, 'GET', null, $headers);
+
+            // Resposta de sucesso
+            if ($response['success'] && isset($response['data']['webhookUrl'])) {
+                return response()->json([
+                    'webhookUrl' => $response['data']['webhookUrl'],
+                    'criacao' => $response['data']['criacao'] ?? null
+                ], 200);
+            }
+
+            // Erros específicos
+            $httpCode = $response['http_code'] ?? 503;
+            $errorMsg = $response['error'] ?? 'Erro ao consultar webhook de recorrência';
+            return response()->json([
+                'error' => $errorMsg,
+                'data' => $response['data'] ?? null
+            ], $httpCode);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 503);
+        }
     }
 }
