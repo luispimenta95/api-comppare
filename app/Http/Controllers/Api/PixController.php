@@ -863,8 +863,8 @@ PUT /v2/webhookcobr
      */
     public function atualizarCobranca(Request $request): JsonResponse
     {
-        // Não valida autenticação, não faz redirecionamento
-        // Processa payload se existir
+        Log::info('Recebendo atualização de cobrança PIX via webhook');
+
         if (isset($request->cobsr)) {
             foreach ($request->cobsr as $rec) {
                 $status = $rec->status ?? null;
@@ -872,8 +872,18 @@ PUT /v2/webhookcobr
 
                 if ($txid) {
                     $pagamento = PagamentoPix::where('txid', $txid)->first();
+                    Log::info('Atualizando pagamento PIX', [
+                        'txid' => $txid,
+                        'status' => $status
+                    ]);
 
-                    if ($pagamento && strtolower($status) == 'aprovada') {
+                    if ($pagamento && strtoupper($status) == 'ACEITA') {
+                        // Atualiza status do pagamento
+                        Log::info('Pagamento PIX encontrado, atualizando status', [
+                            'txid' => $txid,
+                            'status' => $status
+                        ]);
+
                         $pagamento->status = $status;
                         $pagamento->dataPagamento = now();
                         $pagamento->save();
@@ -882,6 +892,13 @@ PUT /v2/webhookcobr
                         $usuario->status = 1;
                         $usuario->dataLimiteCompra = Carbon::now()->addDays($plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife')->format('Y-m-d');
                         $usuario->dataUltimoPagamento = Carbon::now()->format('Y-m-d H:i:s');
+                        $usuario->idPlano = $plano->id;
+                        $usuario->save();
+                        Log::info('Usuário atualizado após pagamento PIX', [
+                            'usuario_id' => $usuario->id,
+                            'data_limite_compra' => $usuario->dataLimiteCompra,
+                            'data_ultimo_pagamento' => $usuario->dataUltimoPagamento
+                        ]);
                     }
                 }
             }
