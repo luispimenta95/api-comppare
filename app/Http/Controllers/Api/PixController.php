@@ -382,6 +382,10 @@ class PixController extends Controller
      */
     private function buildSuccessResponse(array $pixData): JsonResponse
     {
+        Log::info('Construindo resposta de sucesso para cobrança PIX', [
+            'dados' => $pixData
+        ]);
+
         return response()->json([
             'codRetorno' => 200,
             'message' => 'Cobrança PIX criada com sucesso',
