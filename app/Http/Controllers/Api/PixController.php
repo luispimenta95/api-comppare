@@ -779,63 +779,62 @@ class PixController extends Controller
      */
     /**
      * Registra ou atualiza o webhook PIX na Efí
-     * Agora registra tanto o webhook de recorrência quanto o de cobrança
-     * PUT /v2/webhookrec e PUT /v2/webhookcobr
-     * Os parâmetros enviados não são modificados
+     * 
      * @return JsonResponse
      */
     public function registrarWebhook(): JsonResponse
     {
+        /*
+        PUT /v2/webhookrec
+PUT /v2/webhookcobr
+        */
         try {
+            // Recebe parâmetro skip_mtls via query string (?skip_mtls=true/false)
+            $skipMtlsHeader = 'true';
+
             $webhookUrl = env('APP_URL') . '/api/pix/atualizar';
+            $url = $this->buildApiUrl("/v2/webhookrec/");
             $body = json_encode([
                 "webhookUrl" => $webhookUrl
             ]);
 
-            // PUT /v2/webhookrec v16h
-            $urlRec = $this->buildApiUrl("/v2/webhookrec/");
-            $responseRec = $this->executeApiRequestWithExtraHeaders($urlRec, 'PUT', $body, [
-                "x-skip-mtls-checking: true"
+            Log::info('Registrando webhook PIX na Efí', [
+                'url' => $url,
+                'webhookUrl' => $webhookUrl,
+                'chavePix' => $this->chavePix,
+                'x-skip-mtls-checking' => $skipMtlsHeader
             ]);
 
-            // PUT /v2/webhookcobr
-            $urlCobr = $this->buildApiUrl("/v2/webhookcobr/");
-            $responseCobr = $this->executeApiRequestWithExtraHeaders($urlCobr, 'PUT', $body, [
-                "x-skip-mtls-checking: true"
+            // Adiciona cabeçalho x-skip-mtls-checking na requisição
+            $response = $this->executeApiRequestWithExtraHeaders($url, 'PUT', $body, [
+                "x-skip-mtls-checking: $skipMtlsHeader"
             ]);
 
-            $result = [
-                'webhookrec' => [
-                    'success' => $responseRec['success'],
-                    'data' => $responseRec['data'],
-                    'http_code' => $responseRec['http_code'],
-                    'error' => $responseRec['error'] ?? null
-                ],
-                'webhookcobr' => [
-                    'success' => $responseCobr['success'],
-                    'data' => $responseCobr['data'],
-                    'http_code' => $responseCobr['http_code'],
-                    'error' => $responseCobr['error'] ?? null
-                ]
-            ];
+            if (!$response['success']) {
+                Log::error('Erro ao registrar webhook PIX', [
+                    'http_code' => $response['http_code'],
+                    'error' => $response['error'],
+                    'data' => $response['data']
+                ]);
 
-            // Se ambos sucesso, retorna 200
-            if ($responseRec['success'] && $responseCobr['success']) {
                 return response()->json([
-                    'codRetorno' => 200,
-                    'message' => 'Webhooks registrados com sucesso',
-                    'result' => $result
-                ], 200);
+                    'codRetorno' => 500,
+                    'message' => 'Falha ao registrar webhook Pix',
+                    'detalhes' => $response
+                ], 500);
             }
 
-            // Se algum falhar, retorna erro
+            Log::info('Webhook PIX registrado/atualizado com sucesso', [
+                'response' => $response['data']
+            ]);
+
             return response()->json([
-                'codRetorno' => 500,
-                'message' => 'Falha ao registrar um ou ambos webhooks',
-                'result' => $result
-            ], 500);
+                'codRetorno' => 200,
+                'message' => 'Webhook PIX registrado com sucesso',
+                'data' => $response['data']
+            ]);
         } catch (\Exception $e) {
-            Log::error('Erro inesperado ao registrar webhooks PIX', [
+            Log::error('Erro inesperado ao registrar webhook PIX', [
                 'error_message' => $e->getMessage(),
                 'error_file' => $e->getFile(),
                 'error_line' => $e->getLine()
@@ -843,7 +842,7 @@ class PixController extends Controller
 
             return response()->json([
                 'codRetorno' => 500,
-                'message' => 'Erro interno ao registrar webhooks Pix',
+                'message' => 'Erro interno ao registrar webhook Pix',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -1052,9 +1051,7 @@ class PixController extends Controller
                 ], 200);
             }
 
-            Log::info('Webhook de recorrência consultado com erro', [
-                'dados' => $response
-            ]);
+
 
             // Erros específicos
             $httpCode = $response['http_code'] ?? 503;
