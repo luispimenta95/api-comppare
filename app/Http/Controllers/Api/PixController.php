@@ -785,11 +785,11 @@ class PixController extends Controller
     public function registrarWebhook(): JsonResponse
     {
         try {
-            // URL fixa no .env (ex: WEBHOOK_PIX_URL=https://api.comppare.com.br/api/pix/webhook)
+            // Recebe parâmetro skip_mtls via query string (?skip_mtls=true/false)
+            $skipMtlsHeader = 'true';
+
             $webhookUrl = env('APP_URL') . '/api/pix/atualizar';
-
             $url = $this->buildApiUrl("/v2/webhook/{$this->chavePix}");
-
             $body = json_encode([
                 "webhookUrl" => $webhookUrl
             ]);
@@ -797,10 +797,14 @@ class PixController extends Controller
             Log::info('Registrando webhook PIX na Efí', [
                 'url' => $url,
                 'webhookUrl' => $webhookUrl,
-                'chavePix' => $this->chavePix
+                'chavePix' => $this->chavePix,
+                'x-skip-mtls-checking' => $skipMtlsHeader
             ]);
 
-            $response = $this->executeApiRequest($url, 'PUT', $body);
+            // Adiciona cabeçalho x-skip-mtls-checking na requisição
+            $response = $this->executeApiRequestWithExtraHeaders($url, 'PUT', $body, [
+                "x-skip-mtls-checking: $skipMtlsHeader"
+            ]);
 
             if (!$response['success']) {
                 Log::error('Erro ao registrar webhook PIX', [
@@ -863,5 +867,137 @@ class PixController extends Controller
             'codRetorno' => 200,
             'message' => 'Webhook recebido com sucesso',
         ], 200);
+    }
+
+    /**
+     * Executa requisição para API EFI com cabeçalhos extras
+     */
+    private function executeApiRequestWithExtraHeaders(string $url, ?string $method = 'POST', ?string $body = null, array $extraHeaders = []): array
+    {
+        if (!file_exists($this->certificadoPath)) {
+            Log::error('Certificado não encontrado', [
+                'path' => $this->certificadoPath,
+                'environment' => $this->enviroment
+            ]);
+            return [
+                'success' => false,
+                'http_code' => 0,
+                'error' => "Certificado não encontrado: {$this->certificadoPath}",
+                'data' => null,
+                'url' => $url,
+                'body' => $body
+            ];
+        }
+
+        if (!is_readable($this->certificadoPath)) {
+            Log::error('Certificado não é legível', [
+                'path' => $this->certificadoPath,
+                'permissions' => substr(sprintf('%o', fileperms($this->certificadoPath)), -4)
+            ]);
+            return [
+                'success' => false,
+                'http_code' => 0,
+                'error' => "Certificado não é legível: {$this->certificadoPath}",
+                'data' => null,
+                'url' => $url,
+                'body' => $body
+            ];
+        }
+
+        $curl = curl_init();
+
+        $headers = [
+            "Authorization: Bearer " . $this->apiEfi->getToken(),
+            "Content-Type: application/json"
+        ];
+        $headers = array_merge($headers, $extraHeaders);
+
+        $curlOptions = [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => self::TIMEOUT_REQUEST,
+            CURLOPT_CUSTOMREQUEST => $method,
+            CURLOPT_SSLCERT => $this->certificadoPath,
+            CURLOPT_SSLCERTPASSWD => "",
+            CURLOPT_SSLCERTTYPE => "PEM",
+            CURLOPT_HTTPHEADER => $headers,
+        ];
+
+        if ($this->enviroment === 'local') {
+            $curlOptions[CURLOPT_SSL_VERIFYHOST] = 0;
+            $curlOptions[CURLOPT_SSL_VERIFYPEER] = false;
+            Log::info('Configuração SSL relaxada para desenvolvimento');
+        } else {
+            $curlOptions[CURLOPT_SSL_VERIFYHOST] = 2;
+            $curlOptions[CURLOPT_SSL_VERIFYPEER] = true;
+        }
+
+        if ($body) {
+            $curlOptions[CURLOPT_POSTFIELDS] = $body;
+        }
+
+        curl_setopt_array($curl, $curlOptions);
+
+        $startTime = microtime(true);
+        $response = curl_exec($curl);
+        $executionTime = microtime(true) - $startTime;
+
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curlInfo = curl_getinfo($curl);
+        $error = curl_error($curl);
+        curl_close($curl);
+
+        Log::info('Execução de requisição para API EFI (extra headers)', [
+            'url' => $url,
+            'method' => $method,
+            'has_body' => !empty($body),
+            'body_length' => $body ? strlen($body) : 0,
+            'execution_time' => round($executionTime, 3) . 's',
+            'http_code' => $httpCode,
+            'has_curl_error' => !empty($error),
+            'curl_error' => $error,
+            'response_size' => strlen($response),
+            'cert_info' => [
+                'exists' => file_exists($this->certificadoPath),
+                'path' => $this->certificadoPath,
+                'readable' => is_readable($this->certificadoPath)
+            ],
+            'extra_headers' => $extraHeaders
+        ]);
+
+        if (!empty($error)) {
+            Log::error('Erro de cURL na requisição para API EFI (extra headers)', [
+                'curl_error' => $error,
+                'curl_errno' => curl_errno($curl),
+                'url' => $url,
+                'method' => $method,
+                'curl_info' => $curlInfo
+            ]);
+        }
+
+        $decodedResponse = null;
+        if ($response) {
+            $decodedResponse = json_decode($response, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::warning('Erro ao decodificar JSON da resposta da API (extra headers)', [
+                    'json_error' => json_last_error_msg(),
+                    'response_length' => strlen($response),
+                    'response_preview' => substr($response, 0, 500),
+                    'url' => $url
+                ]);
+            }
+        }
+
+        return [
+            'success' => !$error && ($httpCode >= 200 && $httpCode < 300),
+            'http_code' => $httpCode,
+            'error' => $error,
+            'data' => $decodedResponse,
+            'raw_response' => $response,
+            'url' => $url,
+            'body' => $body,
+            'execution_time' => $executionTime,
+            'curl_info' => $curlInfo
+        ];
     }
 }
