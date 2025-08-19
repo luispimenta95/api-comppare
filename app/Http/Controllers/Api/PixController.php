@@ -1028,7 +1028,7 @@ class PixController extends Controller
     {
         try {
             // URL da API Efí para consulta do webhook de recorrência
-            $url = $this->buildApiUrl('/v2/webhookrec');
+            $url = $this->buildApiUrl('/v2/webhookrec/' . $this->chavePix);
 
             // Adiciona o token de autorização (escopo webhookrec.read)
             $headers = [
