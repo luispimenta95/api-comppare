@@ -1047,6 +1047,10 @@ class PixController extends Controller
                 ], 200);
             }
 
+            Log::info('Webhook de recorrência consultado com erro', [
+                'dados' => $response
+            ]);
+
             // Erros específicos
             $httpCode = $response['http_code'] ?? 503;
             $errorMsg = $response['error'] ?? 'Erro ao consultar webhook de recorrência';
