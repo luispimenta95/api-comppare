@@ -828,9 +828,9 @@ PUT /v2/webhookcobr
             ]);
 
             return response()->json([
-                'codRetorno' => 200,
+                'codRetorno' => 201,
                 'message' => 'Webhook PIX registrado com sucesso',
-                'data' => $response['data']
+                'data' => $response
             ]);
         } catch (\Exception $e) {
             Log::error('Erro inesperado ao registrar webhook PIX', [
