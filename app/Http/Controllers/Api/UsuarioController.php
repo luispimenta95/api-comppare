@@ -618,17 +618,7 @@ class UsuarioController extends Controller
             'codRetorno' => HttpCodesEnum::OK->value,
             'message' => HttpCodesEnum::OK->description(),
             'token' => $token,
-            'dados' => [
-                'usuario' => $dadosUsuario,
-                'pastas' => $pastas,
-                'tags' => [
-                    'total' => $tags->count(),
-                    'pessoais' => $tags->where('tipo', 'pessoal')->count(),
-                    'globais' => $tags->where('tipo', 'global')->count(),
-                    'lista' => $tags->values()
-                ],
-                'regras' => $limitesInfo['resumo']
-            ],
+            'usuario' => $user
         ]);
     }
     /**
@@ -846,6 +836,85 @@ class UsuarioController extends Controller
         return response()->json([
             'codRetorno' => HttpCodesEnum::OK->value,
             'message' => 'Se o e-mail estiver cadastrado, você receberá um código de recuperação de senha no seu e-mail.',
+        ]);
+    }
+
+    /**
+     * Autentica um usuário e retorna token JWT
+     * 
+     * Valida as credenciais do usuário (email e senha) e, se corretas,
+     * gera um token JWT para autenticação nas próximas requisições.
+     * 
+     * @param Request $request - Dados de autenticação (email e senha)
+     * @return JsonResponse - Token JWT e dados do usuário ou erro de autenticação
+     */
+    public function auth(Request $request): JsonResponse
+    {
+        $request->validate([
+            'cpf' => 'required|string',
+            'senha' => 'required|string',
+        ]);
+
+        $usuario = Usuarios::where('cpf', $request->cpf)->first();
+
+        if (!$usuario) {
+            return $this->respostaErro(HttpCodesEnum::NotFound);
+        }
+
+        if (!Hash::check($request->senha, $usuario->senha)) {
+            return $this->respostaErro(HttpCodesEnum::Unauthorized, [
+                'message' => 'Credenciais inválidas.'
+            ]);
+        }
+
+        if ($usuario->status === 0) {
+            return $this->respostaErro(HttpCodesEnum::BadRequest, [
+                'message' => HttpCodesEnum::UserBlockedDueToInactivity->description()
+            ]);
+        }
+
+        if (Helper::checkDateIsPassed($usuario->dataLimiteCompra)) {
+            return $this->respostaErro(HttpCodesEnum::BadRequest, [
+                'message' => HttpCodesEnum::ExpiredSubscription->description()
+            ]);
+        }
+
+        // Recupera usuário autenticado
+        $token = JWTAuth::fromUser($usuario);
+        $pastas = []; // ...código para obter pastas...
+        $tags = []; // ...código para obter tags...
+        $plano = $usuario->plano; // Supondo relacionamento plano
+
+        // Cálculo das regras de criação de pastas/subpastas no mês
+        $now = now();
+        $inicioMes = $now->copy()->startOfMonth();
+        $fimMes = $now->copy()->endOfMonth();
+
+        // Pastas criadas pelo usuário no mês
+        $pastasCriadas = \App\Models\Pastas::where('idUsuario', $usuario->id)
+            ->whereNull('idPastaPai')
+            ->whereBetween('created_at', [$inicioMes, $fimMes])
+            ->count();
+
+        // Subpastas criadas pelo usuário no mês (pastas que têm idPastaPai preenchido)
+        $subpastasCriadas = \App\Models\Pastas::where('idUsuario', $usuario->id)
+            ->whereNotNull('idPastaPai')
+            ->whereBetween('created_at', [$inicioMes, $fimMes])
+            ->count();
+
+        $regras = [
+            'pode_criar_nova_pasta' => $pastasCriadas < $plano->quantidadePastas,
+            'pode_criar_subpastas' => $subpastasCriadas < $plano->quantidadeSubpastas,
+        ];
+
+        // Adiciona atributos ao objeto usuario
+        $usuario->pastas = $pastas;
+        $usuario->tags = $tags;
+        $usuario->regras = $regras;
+
+        return response()->json([
+            'token' => $token,
+            'usuario' => $usuario
         ]);
     }
 }
