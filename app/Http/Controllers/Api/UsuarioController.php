@@ -115,7 +115,7 @@ class UsuarioController extends Controller
             }
 
             $planoAtual = $usuario->plano;
-            
+
             // Validar regras específicas de mudança de plano
             $validacao = $this->validarMudancaPlano($usuario, $planoAtual, $planoNovo);
             if (!$validacao['permitido']) {
@@ -156,7 +156,6 @@ class UsuarioController extends Controller
                 'plano_atual' => $planoNovo->nome,
                 'tipo_alteracao' => $validacao['tipo'],
             ]);
-
         } catch (\Exception $e) {
             Log::error("Erro ao alterar plano do usuário", [
                 'cpf' => $request->cpf,
@@ -295,7 +294,7 @@ class UsuarioController extends Controller
         // Verificar fotos (se houver uma forma de contar)
         // Note: Assumindo que há uma relação ou forma de contar fotos por usuário
         // Isso pode ser implementado conforme a estrutura do banco
-        
+
         if (!empty($restricoes)) {
             return [
                 'permitido' => false,
@@ -417,20 +416,20 @@ class UsuarioController extends Controller
      * Cadastra um novo usuário no sistema
      * 
      * Valida dados pessoais, cria conta do usuário, envia email de boas-vindas
-    * e processa convites pendentes se existirem.
-    *
-    * Exemplo de request:
-    * {
-    *   "primeiroNome": "João",
-    *   "sobrenome": "Silva",
-    *   "apelido": "jsilva",
-    *   "cpf": "12345678901",
-    *   "senha": "SenhaForte@123",
-    *   "telefone": "11999999999",
-    *   "email": "joao.silva@email.com",
-    *   "idPlano": 1,
-    *   "nascimento": "01/01/1990"
-    * }
+     * e processa convites pendentes se existirem.
+     *
+     * Exemplo de request:
+     * {
+     *   "primeiroNome": "João",
+     *   "sobrenome": "Silva",
+     *   "apelido": "jsilva",
+     *   "cpf": "12345678901",
+     *   "senha": "SenhaForte@123",
+     *   "telefone": "11999999999",
+     *   "email": "joao.silva@email.com",
+     *   "idPlano": 1,
+     *   "nascimento": "01/01/1990"
+     * }
      * 
      * @param Cadastrar $request - Dados completos do novo usuário
      * @return JsonResponse - Dados do usuário criado e token JWT ou erro
@@ -467,7 +466,7 @@ class UsuarioController extends Controller
         }
         // Gera o token JWT para o usuário recém-criado
         $token = JWTAuth::fromUser($usuario);
-        
+
         return response()->json([
             'codRetorno' => HttpCodesEnum::Created->value,
             'message'    => HttpCodesEnum::Created->description(),
@@ -485,150 +484,153 @@ class UsuarioController extends Controller
         $pasta = Pastas::findOrFail($convite->idPasta);
         Helper::relacionarPastas($pasta, $usuario);
     }
-private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $request): JsonResponse
-{
-    if (!Hash::check($request->input('senha'), $user->senha)) {
-        return $this->respostaErro(HttpCodesEnum::NotFound);
-    }
+    private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $request): JsonResponse
+    {
+        if (!Hash::check($request->input('senha'), $user->senha)) {
+            return $this->respostaErro(HttpCodesEnum::NotFound);
+        }
 
-    if ($user->status === 0) {
-        return $this->respostaErro(HttpCodesEnum::BadRequest, [
-            'message' => HttpCodesEnum::UserBlockedDueToInactivity->description()
-        ]);
-    }
+        if ($user->status === 0) {
+            return $this->respostaErro(HttpCodesEnum::BadRequest, [
+                'message' => HttpCodesEnum::UserBlockedDueToInactivity->description()
+            ]);
+        }
 
-    if (Helper::checkDateIsPassed($user->dataLimiteCompra)) {
-        return $this->respostaErro(HttpCodesEnum::BadRequest, [
-            'message' => HttpCodesEnum::ExpiredSubscription->description()
-        ]);
-    }
+        if (Helper::checkDateIsPassed($user->dataLimiteCompra)) {
+            return $this->respostaErro(HttpCodesEnum::BadRequest, [
+                'message' => HttpCodesEnum::ExpiredSubscription->description()
+            ]);
+        }
 
-    $token = JWTAuth::fromUser($user);
+        $token = JWTAuth::fromUser($user);
 
-    // Buscar dados do plano do usuário
-    $plano = Planos::find($user->idPlano);
-    $currentMonth = now()->month;
-    $currentYear = now()->year;
+        // Buscar dados do plano do usuário
+        $plano = Planos::find($user->idPlano);
+        $currentMonth = now()->month;
+        $currentYear = now()->year;
 
-    // Calcular limites de criação para o mês atual
-    $limitesInfo = $this->calcularLimitesUsuario($user, $plano, $currentMonth, $currentYear);
+        // Calcular limites de criação para o mês atual
+        $limitesInfo = $this->calcularLimitesUsuario($user, $plano, $currentMonth, $currentYear);
 
-    // Buscar todas as pastas do usuário com relacionamentos
-    $todasPastas = Pastas::where('idUsuario', $user->id)
-        ->with(['photos', 'subpastas.photos'])
-        ->get();
+        // Buscar todas as pastas do usuário com relacionamentos
+        $todasPastas = Pastas::where('idUsuario', $user->id)
+            ->with(['photos', 'subpastas.photos'])
+            ->get();
 
-    // Separar pastas principais das subpastas
-    $pastasPrincipais = $todasPastas->whereNull('idPastaPai');
-    
-    // Buscar tags associadas ao usuário
-    $tags = Tag::where(function ($query) use ($user) {
-        // Tags criadas pelo próprio usuário
-        $query->where('idUsuarioCriador', $user->id)
-            ->where('status', Helper::ATIVO);
-    })->orWhere(function ($query) {
-        // Tags criadas por administradores (públicas/globais)
-        $query->whereHas('usuario', function ($q) {
-            $q->where('idPerfil', Helper::ID_PERFIL_ADMIN);
-        })->where('status', Helper::ATIVO);
-    })->select(['id', 'nomeTag', 'idUsuarioCriador', 'created_at'])
-    ->orderBy('nomeTag', 'asc')
-    ->get()
-    ->map(function($tag) use ($user) {
-        return [
-            'id' => $tag->id,
-            'nome' => $tag->nomeTag,
-            'tipo' => $tag->idUsuarioCriador == $user->id ? 'pessoal' : 'global',
-            'criada_em' => $tag->created_at->format('Y-m-d H:i:s')
-        ];
-    });
-    
-    // Criar estrutura completa das pastas com caminhos
-    $pastas = $pastasPrincipais->map(function($pasta) use ($limitesInfo) {
-        // Buscar subpastas desta pasta principal
-        $subpastas = Pastas::where('idPastaPai', $pasta->id)
-            ->with('photos')
+        // Separar pastas principais das subpastas
+        $pastasPrincipais = $todasPastas->whereNull('idPastaPai');
+
+        // Buscar tags associadas ao usuário
+        $tags = Tag::where(function ($query) use ($user) {
+            // Tags criadas pelo próprio usuário
+            $query->where('idUsuarioCriador', $user->id)
+                ->where('status', Helper::ATIVO);
+        })->orWhere(function ($query) {
+            // Tags criadas por administradores (públicas/globais)
+            $query->whereHas('usuario', function ($q) {
+                $q->where('idPerfil', Helper::ID_PERFIL_ADMIN);
+            })->where('status', Helper::ATIVO);
+        })->select(['id', 'nomeTag', 'idUsuarioCriador', 'created_at'])
+            ->orderBy('nomeTag', 'asc')
             ->get()
-            ->map(function($subpasta) use ($pasta) {
+            ->map(function ($tag) use ($user) {
                 return [
+                    'id' => $tag->id,
+                    'nome' => $tag->nomeTag,
+                    'tipo' => $tag->idUsuarioCriador == $user->id ? 'pessoal' : 'global',
+                    'criada_em' => $tag->created_at->format('Y-m-d H:i:s')
+                ];
+            });
+
+        // Criar estrutura completa das pastas com caminhos
+        $pastas = $pastasPrincipais->map(function ($pasta) use ($limitesInfo) {
+            // Buscar subpastas desta pasta principal
+            $subpastas = Pastas::where('idPastaPai', $pasta->id)
+                ->with('photos')
+                ->get()
+                ->map(function ($subpasta) use ($pasta) {
+                    return [
+                        'id' => $subpasta->id,
+                        'nome' => $subpasta->nome,
+                        'path' => Helper::formatFolderUrl($subpasta),
+                        'idPastaPai' => $subpasta->idPastaPai,
+                        'imagens' => $subpasta->photos->map(fn($photo) => [
+                            'id' => $photo->id,
+                            'path' => Helper::formatImageUrl($photo->path),
+                            'taken_at' => $photo->taken_at
+                        ])->values()
+                    ];
+                })->values();
+
+            return [
+                'nome' => $pasta->nome,
+                'id' => $pasta->id,
+                'path' => Helper::formatFolderUrl($pasta),
+                'idPastaPai' => null,
+                'subpastas' => $subpastas
+
+            ];
+        })->values();
+
+        // Lista plana de todas as pastas e subpastas com caminhos completos
+        $todasPastasComCaminho = [];
+
+        foreach ($pastasPrincipais as $pastaPrincipal) {
+            // Adicionar pasta principal
+            $todasPastasComCaminho[] = [
+                'id' => $pastaPrincipal->id,
+                'nome' => $pastaPrincipal->nome,
+                'tipo' => 'pasta_principal',
+                'caminho_completo' => $pastaPrincipal->nome,
+                'idPastaPai' => null,
+                'nivel' => 1,
+                'created_at' => $pastaPrincipal->created_at,
+                'total_imagens' => $pastaPrincipal->photos->count()
+            ];
+
+            // Adicionar subpastas
+            $subpastas = Pastas::where('idPastaPai', $pastaPrincipal->id)->with('photos')->get();
+            foreach ($subpastas as $subpasta) {
+                $todasPastasComCaminho[] = [
                     'id' => $subpasta->id,
                     'nome' => $subpasta->nome,
-                    'path' => Helper::formatFolderUrl($subpasta),
+                    'tipo' => 'subpasta',
+                    'caminho_completo' => $pastaPrincipal->nome . '/' . $subpasta->nome,
                     'idPastaPai' => $subpasta->idPastaPai,
-                    'imagens' => $subpasta->photos->map(fn($photo) => [
-                        'id' => $photo->id,
-                        'path' => Helper::formatImageUrl($photo->path),
-                        'taken_at' => $photo->taken_at
-                    ])->values()
+                    'pasta_pai_nome' => $pastaPrincipal->nome,
+                    'nivel' => 2,
+                    'created_at' => $subpasta->created_at,
+                    'total_imagens' => $subpasta->photos->count()
                 ];
-            })->values();
-
-        return [
-            'nome' => $pasta->nome,
-            'id' => $pasta->id,
-            'path' => Helper::formatFolderUrl($pasta),
-            'idPastaPai' => null,
-            'subpastas' => $subpastas
-        
-        ];
-    })->values();
-
-    // Lista plana de todas as pastas e subpastas com caminhos completos
-    $todasPastasComCaminho = [];
-    
-    foreach ($pastasPrincipais as $pastaPrincipal) {
-        // Adicionar pasta principal
-        $todasPastasComCaminho[] = [
-            'id' => $pastaPrincipal->id,
-            'nome' => $pastaPrincipal->nome,
-            'tipo' => 'pasta_principal',
-            'caminho_completo' => $pastaPrincipal->nome,
-            'idPastaPai' => null,
-            'nivel' => 1,
-            'created_at' => $pastaPrincipal->created_at,
-            'total_imagens' => $pastaPrincipal->photos->count()
-        ];
-
-        // Adicionar subpastas
-        $subpastas = Pastas::where('idPastaPai', $pastaPrincipal->id)->with('photos')->get();
-        foreach ($subpastas as $subpasta) {
-            $todasPastasComCaminho[] = [
-                'id' => $subpasta->id,
-                'nome' => $subpasta->nome,
-                'tipo' => 'subpasta',
-                'caminho_completo' => $pastaPrincipal->nome . '/' . $subpasta->nome,
-                'idPastaPai' => $subpasta->idPastaPai,
-                'pasta_pai_nome' => $pastaPrincipal->nome,
-                'nivel' => 2,
-                'created_at' => $subpasta->created_at,
-                'total_imagens' => $subpasta->photos->count()
-            ];
+            }
         }
+
+        // Atualiza último acesso
+        $user->ultimoAcesso = now();
+        $user->save();
+
+        // Converte o usuário para array e remove a relação 'pastas'
+        $dadosUsuario = $user->toArray();
+        unset($dadosUsuario['pastas']);
+
+        // Nova resposta agrupando pastas, tags e regras em 'dados'
+        return response()->json([
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => HttpCodesEnum::OK->description(),
+            'token' => $token,
+            'dados' => [
+                'usuario' => $dadosUsuario,
+                'pastas' => $pastas,
+                'tags' => [
+                    'total' => $tags->count(),
+                    'pessoais' => $tags->where('tipo', 'pessoal')->count(),
+                    'globais' => $tags->where('tipo', 'global')->count(),
+                    'lista' => $tags->values()
+                ],
+                'regras' => $limitesInfo['resumo']
+            ],
+        ]);
     }
-
-    // Atualiza último acesso
-    $user->ultimoAcesso = now();
-    $user->save();
-
-    // Converte o usuário para array e remove a relação 'pastas'
-    $dadosUsuario = $user->toArray();
-    unset($dadosUsuario['pastas']);
-
-    return response()->json([
-        'codRetorno' => HttpCodesEnum::OK->value,
-        'message' => HttpCodesEnum::OK->description(),
-        'token' => $token,
-        'dados' => $dadosUsuario,
-        'pastas' => $pastas, // Estrutura hierárquica
-        'tags' => [
-            'total' => $tags->count(),
-            'pessoais' => $tags->where('tipo', 'pessoal')->count(),
-            'globais' => $tags->where('tipo', 'global')->count(),
-            'lista' => $tags->values()
-        ],
-        'regras' => $limitesInfo['resumo']
-    ]);
-}
     /**
      * Calcula os limites de criação de pastas e subpastas para o usuário
      */
