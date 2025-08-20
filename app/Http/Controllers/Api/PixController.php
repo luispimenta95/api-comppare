@@ -796,7 +796,7 @@ PUT /v2/webhookcobr
             // Recebe parâmetro skip_mtls via query string (?skip_mtls=true/false)
             $skipMtlsHeader = 'true';
 
-            $webhookUrl = env('APP_URL') . '/api/pix/atualizar';
+            $webhookUrl = env('APP_URL') . '/api/pix/atualizar?ignorar=';
             $url = $this->buildApiUrl("/v2/webhookrec/");
             $body = json_encode([
                 "webhookUrl" => $webhookUrl
