@@ -612,20 +612,20 @@ class UsuarioController extends Controller
         // Converte o usuário para array e remove a relação 'pastas'
         $dadosUsuario = $user->toArray();
         unset($dadosUsuario['pastas']);
+        $dadosUsuario['pastas'] = $pastas; // Estrutura hierárquica
+        $dadosUsuario['tags'] = [
+            'total' => $tags->count(),
+            'pessoais' => $tags->where('tipo', 'pessoal')->count(),
+            'globais' => $tags->where('tipo', 'global')->count(),
+            'lista' => $tags->values()
+        ];
+        $dadosUsuario['regras'] = $limitesInfo['resumo'];
 
         return response()->json([
             'codRetorno' => HttpCodesEnum::OK->value,
             'message' => HttpCodesEnum::OK->description(),
             'token' => $token,
-            'dados' => $dadosUsuario,
-            'pastas' => $pastas, // Estrutura hierárquica
-            'tags' => [
-                'total' => $tags->count(),
-                'pessoais' => $tags->where('tipo', 'pessoal')->count(),
-                'globais' => $tags->where('tipo', 'global')->count(),
-                'lista' => $tags->values()
-            ],
-            'regras' => $limitesInfo['resumo']
+            'dados' => $dadosUsuario
         ]);
     }
     /**
