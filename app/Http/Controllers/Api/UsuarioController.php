@@ -625,7 +625,9 @@ class UsuarioController extends Controller
             'codRetorno' => HttpCodesEnum::OK->value,
             'message' => HttpCodesEnum::OK->description(),
             'token' => $token,
-            'dados' => $dadosUsuario
+            'dados' => $dadosUsuario,
+            'pastas' => $pastas
+
         ]);
     }
     /**
