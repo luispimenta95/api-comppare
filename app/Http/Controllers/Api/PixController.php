@@ -1049,11 +1049,11 @@ PUT /v2/webhookcobr
      * Requer autorização para o escopo: webhookrec.read
      * Possíveis respostas: 200, 403, 404, 503
      */
-    public function consultarWebhookRecorrente(Request $request): JsonResponse
+    public function consultarWebhookRecorrente(): JsonResponse
     {
         try {
             // URL da API Efí para consulta do webhook de recorrência
-            $url = $this->buildApiUrl('/v2/webhookrec/' . $this->chavePix);
+            $url = $this->buildApiUrl('/v2/webhookrec');
 
             // Adiciona o token de autorização (escopo webhookrec.read)
             $headers = [
