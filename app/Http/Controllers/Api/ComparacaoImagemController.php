@@ -27,6 +27,7 @@ class ComparacaoImagemController extends Controller
 
         // Verificar se a foto pertence ao usuário informado
         $photo = Photos::find($request->id_photo);
+        dd($photo);
         if (!$photo || $photo->pasta_id === null) {
             return response()->json(['message' => 'Foto não encontrada ou sem pasta associada.'], 404);
         }
