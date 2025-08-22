@@ -16,6 +16,7 @@ class ComparacaoImagemController extends Controller
 {
     public function store(Request $request): JsonResponse
     {
+        dd('chegou aqui');
         $request->validate([
             'id_usuario' => 'required|exists:usuarios,id',
             'id_photo' => 'required|exists:photos,id',
