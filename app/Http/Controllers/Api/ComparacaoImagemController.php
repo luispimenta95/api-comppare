@@ -11,6 +11,8 @@ use App\Models\Photos;
 use App\Models\Pastas;
 use App\Models\Tag;
 use App\Http\Util\Helper;
+use Illuminate\Support\Facades\Log;
+
 
 class ComparacaoImagemController extends Controller
 {
@@ -24,10 +26,18 @@ class ComparacaoImagemController extends Controller
             'tags.*.id_tag' => 'required|exists:tags,id',
             'tags.*.valor' => 'required|string'
         ]);
+        Log::info('Store ComparacaoImagem called', [
+            'id_usuario' => $request->id_usuario,
+            'id_photo' => $request->id_photo,
+            'data_comparacao' => $request->data_comparacao,
+            'tags' => $request->tags
+        ]);
 
         // Verificar se a foto pertence ao usuário informado
         $photo = Photos::find($request->id_photo);
-        dd($photo);
+        Log::info('Verificando foto', [
+            'photo' => $photo
+        ]);
         if (!$photo || $photo->pasta_id === null) {
             return response()->json(['message' => 'Foto não encontrada ou sem pasta associada.'], 404);
         }
