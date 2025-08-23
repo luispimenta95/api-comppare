@@ -774,16 +774,28 @@ class PixController extends Controller
 
   public function atualizarCobranca(Request $request): JsonResponse
     {
+        try {
+            Log::info('Recebido webhook de atualização de cobrança PIX', ['request' => $request->all()]);
         if (isset($request->cobsr)) {
+            Log::info('Processando cobranças recebidas', ['cobsr' => $request->cobsr]);
             foreach ($request->cobsr as $rec) {
+                Log::info('Processando cobrança individual', ['cobranca' => $rec]);
                 $status = $rec->status ?? null;
                 $txid   = $rec->txid ?? null;
                 if ($txid) {
                     $pagamento = PagamentoPix::where('txid', $txid)->first();
+                    Log::info('Processando atualização de cobrança', [
+                        'txid' => $txid,
+                        'status_recebido' => $status,
+                        'pagamento_encontrado' => $pagamento ? true : false,
+                        'pagamento_id' => $pagamento ? $pagamento->id : null
+                    ]);
                     if ($pagamento && strtoupper($status) == 'ACEITA') {
+                        Log::info('Atualizando pagamento para ACEITA', ['txid' => $txid]);
                         $pagamento->status = $status;
                         $pagamento->dataPagamento = now();
                         $pagamento->save();
+                        Log::info('Pagamento atualizado com sucesso', ['pagamento_id' => $pagamento->id]);
                         $usuario = Usuarios::where('id', $pagamento->idUsuario)->first();
                         $plano = Planos::where('id', $usuario->idPlano)->first();
                         $usuario->status = 1;
@@ -791,6 +803,7 @@ class PixController extends Controller
                         $usuario->dataUltimoPagamento = Carbon::now()->format('Y-m-d H:i:s');
                         $usuario->idPlano = $plano->id;
                         $usuario->save();
+                        Log::info('Usuário atualizado com sucesso', ['usuario_id' => $usuario->id]);
                     }
                 }
             }
@@ -799,6 +812,14 @@ class PixController extends Controller
             'codRetorno' => 200,
             'message' => 'Processamento do pagamento realizado com sucesso',
         ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao processar webhook de atualização de cobrança PIX', ['exception' => $e]);
+            return response()->json([
+                'codRetorno' => 500,
+                'message' => 'Erro interno ao processar o pagamento: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
 }
