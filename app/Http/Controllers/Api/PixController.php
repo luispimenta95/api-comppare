@@ -33,6 +33,14 @@ class PixController extends Controller
     private string $dataInicial;
     private string $frequencia;
 
+    /**
+     * Logger específico para PIX
+     */
+    private function pixLog(): \Illuminate\Log\LogManager
+    {
+        return Log::channel('pix');
+    }
+
 
     public function __construct()
     {
@@ -82,7 +90,7 @@ class PixController extends Controller
 
             return $this->buildSuccessResponse($pixData);
         } catch (\Exception $e) {
-            Log::error('Erro geral no fluxo PIX', [
+            $this->pixLog()->error('Erro geral no fluxo PIX', [
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine()
@@ -105,7 +113,7 @@ class PixController extends Controller
         $this->plano = Planos::find($request->plano);
 
         if (!$this->usuario || !$this->plano) {
-            Log::error('Usuário ou plano não encontrado na inicialização dos dados', [
+            $this->pixLog()->error('Usuário ou plano não encontrado na inicialização dos dados', [
                 'usuario_id_solicitado' => $request->usuario,
                 'plano_id_solicitado' => $request->plano,
                 'usuario_encontrado' => !is_null($this->usuario),
@@ -156,7 +164,7 @@ class PixController extends Controller
 
         $locrecId = $locrecResponse['data']['id'] ?? null;
         if (!$locrecId) {
-            Log::error('ID do Location Rec não encontrado na resposta da API', [
+            $this->pixLog()->error('ID do Location Rec não encontrado na resposta da API', [
                 'locrecResponse' => $locrecResponse,
                 'usuario_id' => $this->usuario->id,
                 'plano_id' => $this->plano->id
@@ -165,7 +173,7 @@ class PixController extends Controller
         }
 
         // Passo 3.5: Verificar status do COB antes de criar REC com retry robusto
-        Log::info('Verificando status do COB antes de criar REC', [
+        $this->pixLog()->info('Verificando status do COB antes de criar REC', [
             'txid' => $txid,
             'aguardando_ativacao' => true
         ]);
@@ -175,7 +183,7 @@ class PixController extends Controller
             throw new \RuntimeException('COB não ficou ativa após múltiplas tentativas. Tente novamente em alguns minutos.');
         }
 
-        Log::info('COB confirmada como ativa, prosseguindo com criação de REC', [
+        $this->pixLog()->info('COB confirmada como ativa, prosseguindo com criação de REC', [
             'txid' => $txid
         ]);
 
@@ -185,7 +193,7 @@ class PixController extends Controller
 
         $recId = $recResponse['data']['idRec'] ?? null;
         if (!$recId) {
-            Log::error('ID do REC não encontrado na resposta da API', [
+            $this->pixLog()->error('ID do REC não encontrado na resposta da API', [
                 'recResponse' => $recResponse,
                 'txid' => $txid,
                 'locrecId' => $locrecId,
@@ -200,7 +208,7 @@ class PixController extends Controller
 
         $pixCopiaECola = $qrcodeResponse['data']['dadosQR']['pixCopiaECola'] ?? null;
         if (!$pixCopiaECola) {
-            Log::error('Código PIX não gerado na resposta da API', [
+            $this->pixLog()->error('Código PIX não gerado na resposta da API', [
                 'qrcodeResponse' => $qrcodeResponse,
                 'recId' => $recId,
                 'txid' => $txid,
@@ -249,7 +257,7 @@ class PixController extends Controller
                             if (strpos($violacao['razao'], 'não está ativa') !== false) {
                                 $errorMessage = "Erro no passo REC: COB não está ativa para criação de recorrência. Aguarde alguns segundos e tente novamente.";
 
-                                Log::warning('Problema de timing entre COB e REC', [
+                                $this->pixLog()->warning('Problema de timing entre COB e REC', [
                                     'violacao' => $violacao,
                                     'sugestao' => 'Implementar retry com delay maior ou verificar status do COB'
                                 ]);
@@ -278,7 +286,7 @@ class PixController extends Controller
                 $errorMessage .= ": Erro HTTP " . ($response['http_code'] ?? 'desconhecido');
             }
 
-            Log::error("Erro na validação da resposta da API - Passo {$step}", $errorDetails);
+            $this->pixLog()->error("Erro na validação da resposta da API - Passo {$step}", $errorDetails);
             throw new \RuntimeException($errorMessage);
         }
     }
@@ -313,10 +321,10 @@ class PixController extends Controller
                 ]
             ]);
 
-            Log::info('Pagamento PIX salvo no banco', ['id' => $pagamentoPix->id]);
+            $this->pixLog()->info('Pagamento PIX salvo no banco', ['id' => $pagamentoPix->id]);
             return $pagamentoPix;
         } catch (\Exception $e) {
-            Log::error('Erro ao salvar pagamento PIX', [
+            $this->pixLog()->error('Erro ao salvar pagamento PIX', [
                 'error' => $e->getMessage(),
                 'txid' => $pixData['txid']
             ]);
@@ -330,7 +338,7 @@ class PixController extends Controller
     private function enviarEmailPix(string $pixCopiaECola, string $txid): void
     {
         try {
-            Log::info('Iniciando envio de email PIX', [
+            $this->pixLog()->info('Iniciando envio de email PIX', [
                 'email' => $this->usuario->email,
                 'txid' => $txid,
                 'nome' => $this->usuario->primeiroNome . " " . $this->usuario->sobrenome
@@ -340,12 +348,12 @@ class PixController extends Controller
 
             Mail::to($this->usuario->email)->send(new EmailPix($dadosParaEmail));
 
-            Log::info('Email PIX enviado com sucesso', [
+            $this->pixLog()->info('Email PIX enviado com sucesso', [
                 'email' => $this->usuario->email,
                 'txid' => $txid
             ]);
         } catch (\Exception $e) {
-            Log::error('Erro ao enviar email PIX', [
+            $this->pixLog()->error('Erro ao enviar email PIX', [
                 'error_message' => $e->getMessage(),
                 'error_file' => $e->getFile(),
                 'error_line' => $e->getLine(),
@@ -440,7 +448,7 @@ class PixController extends Controller
         $delays = [5, 10, 15]; // Delays entre tentativas em segundos
 
         for ($tentativa = 1; $tentativa <= $maxTentativas; $tentativa++) {
-            Log::info("Tentativa {$tentativa}/{$maxTentativas} - Criando REC", [
+            $this->pixLog()->info("Tentativa {$tentativa}/{$maxTentativas} - Criando REC", [
                 'txid' => $txid,
                 'locrecId' => $locrecId
             ]);
@@ -449,7 +457,7 @@ class PixController extends Controller
 
             // Se sucesso, retornar imediatamente
             if ($recResponse['success']) {
-                Log::info("REC criado com sucesso na tentativa {$tentativa}", [
+                $this->pixLog()->info("REC criado com sucesso na tentativa {$tentativa}", [
                     'txid' => $txid,
                     'tentativas_necessarias' => $tentativa
                 ]);
@@ -469,7 +477,7 @@ class PixController extends Controller
 
             // Se não é erro de COB não ativa, não tentar novamente
             if (!$isCobNaoAtiva) {
-                Log::warning("Erro na criação de REC não relacionado a COB inativa, não tentando novamente", [
+                $this->pixLog()->warning("Erro na criação de REC não relacionado a COB inativa, não tentando novamente", [
                     'tentativa' => $tentativa,
                     'error_response' => $recResponse
                 ]);
@@ -479,7 +487,7 @@ class PixController extends Controller
             // Se ainda há tentativas restantes, aguardar e tentar novamente
             if ($tentativa < $maxTentativas) {
                 $delay = $delays[$tentativa - 1];
-                Log::info("COB ainda não está ativa, aguardando {$delay} segundos para nova tentativa", [
+                $this->pixLog()->info("COB ainda não está ativa, aguardando {$delay} segundos para nova tentativa", [
                     'txid' => $txid,
                     'tentativa' => $tentativa,
                     'delay' => $delay
@@ -488,14 +496,14 @@ class PixController extends Controller
 
                 // Verificar status do COB novamente
                 $cobStatus = $this->verificarStatusCob($txid);
-                Log::info("Status do COB antes da próxima tentativa", [
+                $this->pixLog()->info("Status do COB antes da próxima tentativa", [
                     'txid' => $txid,
                     'status' => $cobStatus['data']['status'] ?? 'DESCONHECIDO'
                 ]);
             }
         }
 
-        Log::error("Falha na criação de REC após {$maxTentativas} tentativas", [
+        $this->pixLog()->error("Falha na criação de REC após {$maxTentativas} tentativas", [
             'txid' => $txid,
             'locrecId' => $locrecId,
             'ultimo_response' => $recResponse
@@ -556,14 +564,14 @@ class PixController extends Controller
         $delays = [3, 5, 8, 12, 20]; // Delays progressivos em segundos
 
         for ($tentativa = 1; $tentativa <= $maxTentativas; $tentativa++) {
-            Log::info("Tentativa {$tentativa}/{$maxTentativas} - Verificando status do COB", [
+            $this->pixLog()->info("Tentativa {$tentativa}/{$maxTentativas} - Verificando status do COB", [
                 'txid' => $txid,
                 'delay_anterior' => $tentativa > 1 ? $delays[$tentativa - 2] : 0
             ]);
 
             if ($tentativa > 1) {
                 $delay = $delays[$tentativa - 2];
-                Log::info("Aguardando {$delay} segundos antes da próxima verificação");
+                $this->pixLog()->info("Aguardando {$delay} segundos antes da próxima verificação");
                 sleep($delay);
             }
 
@@ -572,14 +580,14 @@ class PixController extends Controller
             if ($cobStatusResponse['success'] && isset($cobStatusResponse['data']['status'])) {
                 $status = $cobStatusResponse['data']['status'];
 
-                Log::info("Status do COB na tentativa {$tentativa}", [
+                $this->pixLog()->info("Status do COB na tentativa {$tentativa}", [
                     'txid' => $txid,
                     'status' => $status,
                     'response_completa' => $cobStatusResponse['data']
                 ]);
 
                 if ($status === 'ATIVA') {
-                    Log::info("COB está ativa na tentativa {$tentativa}", [
+                    $this->pixLog()->info("COB está ativa na tentativa {$tentativa}", [
                         'txid' => $txid,
                         'tentativas_necessarias' => $tentativa
                     ]);
@@ -587,21 +595,21 @@ class PixController extends Controller
                 }
 
                 // Se status for diferente de ATIVA, continuar tentando
-                Log::warning("COB ainda não está ativa", [
+                $this->pixLog()->warning("COB ainda não está ativa", [
                     'txid' => $txid,
                     'status_atual' => $status,
                     'tentativa' => $tentativa,
                     'tentativas_restantes' => $maxTentativas - $tentativa
                 ]);
             } else {
-                Log::error("Erro ao verificar status do COB na tentativa {$tentativa}", [
+                $this->pixLog()->error("Erro ao verificar status do COB na tentativa {$tentativa}", [
                     'txid' => $txid,
                     'response' => $cobStatusResponse
                 ]);
             }
         }
 
-        Log::error("COB não ficou ativa após {$maxTentativas} tentativas", [
+        $this->pixLog()->error("COB não ficou ativa após {$maxTentativas} tentativas", [
             'txid' => $txid,
             'tempo_total_espera' => array_sum($delays) . ' segundos'
         ]);
@@ -616,7 +624,7 @@ class PixController extends Controller
     {
         $url = $this->buildApiUrl("/v2/cob/{$txid}");
 
-        Log::info('Verificando status do COB', [
+        $this->pixLog()->info('Verificando status do COB', [
             'txid' => $txid,
             'url' => $url
         ]);
@@ -646,7 +654,7 @@ class PixController extends Controller
     {
         // Verificar se o certificado existe
         if (!file_exists($this->certificadoPath)) {
-            Log::error('Certificado não encontrado', [
+            $this->pixLog()->error('Certificado não encontrado', [
                 'path' => $this->certificadoPath,
                 'environment' => $this->enviroment
             ]);
@@ -662,7 +670,7 @@ class PixController extends Controller
 
         // Verificar se o certificado é legível
         if (!is_readable($this->certificadoPath)) {
-            Log::error('Certificado não é legível', [
+            $this->pixLog()->error('Certificado não é legível', [
                 'path' => $this->certificadoPath,
                 'permissions' => substr(sprintf('%o', fileperms($this->certificadoPath)), -4)
             ]);
@@ -696,7 +704,7 @@ class PixController extends Controller
         if ($this->enviroment === 'local') {
             $curlOptions[CURLOPT_SSL_VERIFYHOST] = 0;
             $curlOptions[CURLOPT_SSL_VERIFYPEER] = false;
-            Log::info('Configuração SSL relaxada para desenvolvimento');
+            $this->pixLog()->info('Configuração SSL relaxada para desenvolvimento');
         } else {
             $curlOptions[CURLOPT_SSL_VERIFYHOST] = 2;
             $curlOptions[CURLOPT_SSL_VERIFYPEER] = true;
@@ -718,7 +726,7 @@ class PixController extends Controller
         curl_close($curl);
 
         // Log detalhado da requisição
-        Log::info('Execução de requisição para API EFI', [
+        $this->pixLog()->info('Execução de requisição para API EFI', [
             'url' => $url,
             'method' => $method,
             'has_body' => !empty($body),
@@ -737,7 +745,7 @@ class PixController extends Controller
 
         // Se houve erro de cURL, logar detalhes adicionais
         if (!empty($error)) {
-            Log::error('Erro de cURL na requisição para API EFI', [
+            $this->pixLog()->error('Erro de cURL na requisição para API EFI', [
                 'curl_error' => $error,
                 'curl_errno' => curl_errno($curl),
                 'url' => $url,
@@ -750,7 +758,7 @@ class PixController extends Controller
         if ($response) {
             $decodedResponse = json_decode($response, true);
             if (json_last_error() !== JSON_ERROR_NONE) {
-                Log::warning('Erro ao decodificar JSON da resposta da API', [
+                $this->pixLog()->warning('Erro ao decodificar JSON da resposta da API', [
                     'json_error' => json_last_error_msg(),
                     'response_length' => strlen($response),
                     'response_preview' => substr($response, 0, 500),
@@ -775,14 +783,14 @@ class PixController extends Controller
     public function atualizarCobranca(Request $request): JsonResponse
     {
         try {
-            Log::info('Recebido webhook de atualização de cobrança PIX', ['request' => $request->all()]);
+            $this->pixLog()->info('Recebido webhook de atualização de cobrança PIX', ['request' => $request->all()]);
             
             // Processar webhooks de recorrência (REC)
             if (isset($request->recs)) {
-                Log::info('Processando recorrências (REC) recebidas', ['recs' => $request->recs]);
+                $this->pixLog()->info('Processando recorrências (REC) recebidas', ['recs' => $request->recs]);
                 
                 foreach ($request->recs as $rec) {
-                    Log::info('Processando recorrência individual', ['rec' => $rec]);
+                    $this->pixLog()->info('Processando recorrência individual', ['rec' => $rec]);
                     
                     $status = $rec['status'] ?? null;
                     $idRec = $rec['idRec'] ?? null;
@@ -796,7 +804,7 @@ class PixController extends Controller
                     if ($txid) {
                         $pagamento = PagamentoPix::where('txid', $txid)->first();
                         
-                        Log::info('Processando atualização de recorrência', [
+                        $this->pixLog()->info('Processando atualização de recorrência', [
                             'txid' => $txid,
                             'idRec' => $idRec,
                             'status_recebido' => $status,
@@ -810,7 +818,7 @@ class PixController extends Controller
                             
                             // Se status for APROVADA, ativar o usuário
                             if (strtoupper($status) === 'APROVADA') {
-                                Log::info('Recorrência aprovada, ativando usuário', ['txid' => $txid]);
+                                $this->pixLog()->info('Recorrência aprovada, ativando usuário', ['txid' => $txid]);
                                 
                                 $pagamento->dataPagamento = now();
                                 $pagamento->statusPagamento = 'PAGO';
@@ -831,36 +839,36 @@ class PixController extends Controller
                                         $usuario->idPlano = $plano->id;
                                         $usuario->save();
                                         
-                                        Log::info('Usuário ativado com sucesso', [
+                                        $this->pixLog()->info('Usuário ativado com sucesso', [
                                             'usuario_id' => $usuario->id,
                                             'plano_id' => $plano->id,
                                             'data_limite' => $usuario->dataLimiteCompra
                                         ]);
                                     } else {
-                                        Log::warning('Plano não encontrado para usuário', ['usuario_id' => $usuario->id]);
+                                        $this->pixLog()->warning('Plano não encontrado para usuário', ['usuario_id' => $usuario->id]);
                                     }
                                 } else {
-                                    Log::warning('Usuário não encontrado para pagamento', ['pagamento_id' => $pagamento->id]);
+                                    $this->pixLog()->warning('Usuário não encontrado para pagamento', ['pagamento_id' => $pagamento->id]);
                                 }
                                 
-                                Log::info('Recorrência processada com sucesso', ['pagamento_id' => $pagamento->id]);
+                                $this->pixLog()->info('Recorrência processada com sucesso', ['pagamento_id' => $pagamento->id]);
                             } else {
                                 // Para outros status, apenas salvar
                                 $pagamento->save();
-                                Log::info('Status da recorrência atualizado', [
+                                $this->pixLog()->info('Status da recorrência atualizado', [
                                     'txid' => $txid,
                                     'novo_status' => $status
                                 ]);
                             }
                         } else {
-                            Log::warning('Pagamento não encontrado para TXID', ['txid' => $txid]);
+                            $this->pixLog()->warning('Pagamento não encontrado para TXID', ['txid' => $txid]);
                         }
                     } else {
-                        Log::warning('TXID não encontrado na recorrência', ['rec' => $rec]);
+                        $this->pixLog()->warning('TXID não encontrado na recorrência', ['rec' => $rec]);
                     }
                 }
             } else {
-                Log::warning('Webhook recebido sem array recs', ['request' => $request->all()]);
+                $this->pixLog()->warning('Webhook recebido sem array recs', ['request' => $request->all()]);
             }
             
             return response()->json([
@@ -869,7 +877,7 @@ class PixController extends Controller
             ], 200);
             
         } catch (\Exception $e) {
-            Log::error('Erro ao processar webhook de atualização de cobrança PIX', [
+            $this->pixLog()->error('Erro ao processar webhook de atualização de cobrança PIX', [
                 'exception' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
