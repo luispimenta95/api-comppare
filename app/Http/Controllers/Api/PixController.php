@@ -36,7 +36,7 @@ class PixController extends Controller
     /**
      * Logger específico para PIX
      */
-    private function pixLog(): \Illuminate\Log\LogManager
+    private function pixLog(): \Illuminate\Log\Logger
     {
         return Log::channel('pix');
     }
