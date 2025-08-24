@@ -827,7 +827,7 @@ class PixController extends Controller
                                 $usuario = Usuarios::where('id', $pagamento->idUsuario)->first();
                                 
                                 if ($usuario) {
-                                    $plano = Planos::where('id', $usuario->idPlano)->first();
+                                    $plano = Planos::where('nome', $pagamento->objeto)->first();
                                     
                                     if ($plano) {
                                         $usuario->status = 1;
