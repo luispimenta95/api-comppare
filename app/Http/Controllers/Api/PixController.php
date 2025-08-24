@@ -772,54 +772,114 @@ class PixController extends Controller
         ];
     }
 
-  public function atualizarCobranca(Request $request): JsonResponse
+    public function atualizarCobranca(Request $request): JsonResponse
     {
         try {
             Log::info('Recebido webhook de atualização de cobrança PIX', ['request' => $request->all()]);
-        if (isset($request->cobsr)) {
-            Log::info('Processando cobranças recebidas', ['cobsr' => $request->cobsr]);
-            foreach ($request->cobsr as $rec) {
-                Log::info('Processando cobrança individual', ['cobranca' => $rec]);
-                $status = $rec->status ?? null;
-                $txid   = $rec->txid ?? null;
-                if ($txid) {
-                    $pagamento = PagamentoPix::where('txid', $txid)->first();
-                    Log::info('Processando atualização de cobrança', [
-                        'txid' => $txid,
-                        'status_recebido' => $status,
-                        'pagamento_encontrado' => $pagamento ? true : false,
-                        'pagamento_id' => $pagamento ? $pagamento->id : null
-                    ]);
-                    if ($pagamento && strtoupper($status) == 'ACEITA') {
-                        Log::info('Atualizando pagamento para ACEITA', ['txid' => $txid]);
-                        $pagamento->status = $status;
-                        $pagamento->dataPagamento = now();
-                        $pagamento->save();
-                        Log::info('Pagamento atualizado com sucesso', ['pagamento_id' => $pagamento->id]);
-                        $usuario = Usuarios::where('id', $pagamento->idUsuario)->first();
-                        $plano = Planos::where('id', $usuario->idPlano)->first();
-                        $usuario->status = 1;
-                        $usuario->dataLimiteCompra = Carbon::now()->addDays($plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife')->format('Y-m-d');
-                        $usuario->dataUltimoPagamento = Carbon::now()->format('Y-m-d H:i:s');
-                        $usuario->idPlano = $plano->id;
-                        $usuario->save();
-                        Log::info('Usuário atualizado com sucesso', ['usuario_id' => $usuario->id]);
+            
+            // Processar webhooks de recorrência (REC)
+            if (isset($request->recs)) {
+                Log::info('Processando recorrências (REC) recebidas', ['recs' => $request->recs]);
+                
+                foreach ($request->recs as $rec) {
+                    Log::info('Processando recorrência individual', ['rec' => $rec]);
+                    
+                    $status = $rec['status'] ?? null;
+                    $idRec = $rec['idRec'] ?? null;
+                    $txid = null;
+                    
+                    // Extrair TXID da ativação
+                    if (isset($rec['ativacao']['dadosJornada']['txid'])) {
+                        $txid = $rec['ativacao']['dadosJornada']['txid'];
+                    }
+                    
+                    if ($txid) {
+                        $pagamento = PagamentoPix::where('txid', $txid)->first();
+                        
+                        Log::info('Processando atualização de recorrência', [
+                            'txid' => $txid,
+                            'idRec' => $idRec,
+                            'status_recebido' => $status,
+                            'pagamento_encontrado' => $pagamento ? true : false,
+                            'pagamento_id' => $pagamento ? $pagamento->id : null
+                        ]);
+                        
+                        if ($pagamento) {
+                            // Atualizar status da recorrência
+                            $pagamento->status = $status;
+                            
+                            // Se status for APROVADA, ativar o usuário
+                            if (strtoupper($status) === 'APROVADA') {
+                                Log::info('Recorrência aprovada, ativando usuário', ['txid' => $txid]);
+                                
+                                $pagamento->dataPagamento = now();
+                                $pagamento->statusPagamento = 'PAGO';
+                                $pagamento->save();
+                                
+                                $usuario = Usuarios::where('id', $pagamento->idUsuario)->first();
+                                
+                                if ($usuario) {
+                                    $plano = Planos::where('id', $usuario->idPlano)->first();
+                                    
+                                    if ($plano) {
+                                        $usuario->status = 1;
+                                        $usuario->dataLimiteCompra = Carbon::now()
+                                            ->addDays($plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)
+                                            ->setTimezone('America/Recife')
+                                            ->format('Y-m-d');
+                                        $usuario->dataUltimoPagamento = Carbon::now()->format('Y-m-d H:i:s');
+                                        $usuario->idPlano = $plano->id;
+                                        $usuario->save();
+                                        
+                                        Log::info('Usuário ativado com sucesso', [
+                                            'usuario_id' => $usuario->id,
+                                            'plano_id' => $plano->id,
+                                            'data_limite' => $usuario->dataLimiteCompra
+                                        ]);
+                                    } else {
+                                        Log::warning('Plano não encontrado para usuário', ['usuario_id' => $usuario->id]);
+                                    }
+                                } else {
+                                    Log::warning('Usuário não encontrado para pagamento', ['pagamento_id' => $pagamento->id]);
+                                }
+                                
+                                Log::info('Recorrência processada com sucesso', ['pagamento_id' => $pagamento->id]);
+                            } else {
+                                // Para outros status, apenas salvar
+                                $pagamento->save();
+                                Log::info('Status da recorrência atualizado', [
+                                    'txid' => $txid,
+                                    'novo_status' => $status
+                                ]);
+                            }
+                        } else {
+                            Log::warning('Pagamento não encontrado para TXID', ['txid' => $txid]);
+                        }
+                    } else {
+                        Log::warning('TXID não encontrado na recorrência', ['rec' => $rec]);
                     }
                 }
+            } else {
+                Log::warning('Webhook recebido sem array recs', ['request' => $request->all()]);
             }
-        }
-        return response()->json([
-            'codRetorno' => 200,
-            'message' => 'Processamento do pagamento realizado com sucesso',
-        ], 200);
-
+            
+            return response()->json([
+                'codRetorno' => 200,
+                'message' => 'Processamento do webhook realizado com sucesso',
+            ], 200);
+            
         } catch (\Exception $e) {
-            Log::error('Erro ao processar webhook de atualização de cobrança PIX', ['exception' => $e]);
+            Log::error('Erro ao processar webhook de atualização de cobrança PIX', [
+                'exception' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'request' => $request->all()
+            ]);
+            
             return response()->json([
                 'codRetorno' => 500,
                 'message' => 'Erro interno ao processar o pagamento: ' . $e->getMessage(),
             ], 500);
         }
     }
-
 }

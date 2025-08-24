@@ -255,13 +255,13 @@ GET {{baseUrl}}/pasta/recuperar?idPasta=26
 Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5jb21wcGFyZS5jb20uYnIvYXBpL3VzdWFyaW9zL2F1dGVudGljYXIiLCJpYXQiOjE3NTI2MTkxMDIsImV4cCI6MTc1MjYyMjcwMiwibmJmIjoxNzUyNjE5MTAyLCJqdGkiOiJqQmdSV0poS2pncE43S29TIiwic3ViIjoiMSIsInBydiI6IjU1NGM1YWVhNGNiMjU0MDE5ZTEyMDY3YTdjYTU0N2Y2NzVkNTQ0Y2EifQ.X36IgXm8avWayQytb4Z2u94NoElPP-s8xbDb8VOccQI
 
 
-#criar cobranca
+###criar cobranca
 POST {{baseUrl}}/pix/enviar
 Content-Type: application/json
 
 {
     "usuario": 1,
-    "plano": 3
+    "plano": 6
 }
 
 ###atualizar cobrança PIX (webhook EFI)
