@@ -837,6 +837,7 @@ class PixController extends Controller
                                             ->format('Y-m-d');
                                         $usuario->dataUltimoPagamento = Carbon::now()->format('Y-m-d H:i:s');
                                         $usuario->idPlano = $plano->id;
+                                        $usuario->idAssinatura = $idRec;
                                         $usuario->save();
                                         
                                         $this->pixLog()->info('Usuário ativado com sucesso', [

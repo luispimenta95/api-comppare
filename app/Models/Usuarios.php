@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\MeioPagamentoEnum;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
@@ -40,10 +41,18 @@ class Usuarios extends Authenticatable implements JWTSubject
         'pontos',
         'quantidadeConvites',
         'ultimoAcesso',
-        'idAssinatura'
+        'idAssinatura',
+        'meioPagamento'
     ];
 
     protected $hidden = ['senha', 'created_at', 'updated_at'];
+
+    /**
+     * Definir casts para conversão automática de tipos
+     */
+    protected $casts = [
+        'meioPagamento' => MeioPagamentoEnum::class,
+    ];
 
     /**
      * Relacionamento: usuário pertence a um plano
@@ -114,5 +123,45 @@ class Usuarios extends Authenticatable implements JWTSubject
     public function pastas()
     {
         return $this->belongsToMany(Pastas::class, 'pasta_usuario', 'usuario_id', 'pasta_id');
+    }
+
+    /**
+     * Verifica se o usuário usa PIX como meio de pagamento
+     * 
+     * @return bool
+     */
+    public function usaPix(): bool
+    {
+        return $this->meioPagamento === MeioPagamentoEnum::PIX;
+    }
+
+    /**
+     * Verifica se o usuário usa cartão como meio de pagamento
+     * 
+     * @return bool
+     */
+    public function usaCartao(): bool
+    {
+        return $this->meioPagamento === MeioPagamentoEnum::CARTAO;
+    }
+
+    /**
+     * Retorna a descrição amigável do meio de pagamento
+     * 
+     * @return string
+     */
+    public function getMeioPagamentoDescricao(): string
+    {
+        return $this->meioPagamento->description();
+    }
+
+    /**
+     * Retorna o ícone do meio de pagamento
+     * 
+     * @return string
+     */
+    public function getMeioPagamentoIcon(): string
+    {
+        return $this->meioPagamento->icon();
     }
 }
