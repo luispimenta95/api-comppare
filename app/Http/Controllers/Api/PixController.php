@@ -780,6 +780,17 @@ class PixController extends Controller
         ];
     }
 
+    /**
+     * Webhook para atualização de status de cobrança PIX
+     * 
+     * Processa webhooks de recorrência (REC) da API EFI:
+     * - APROVADA: Ativa o usuário e define nova data limite
+     * - CANCELADA: Desativa o usuário e define data limite como atual
+     * - Outros status: Apenas atualiza o registro
+     * 
+     * @param Request $request
+     * @return JsonResponse
+     */
     public function atualizarCobranca(Request $request): JsonResponse
     {
         try {
@@ -853,6 +864,41 @@ class PixController extends Controller
                                 }
                                 
                                 $this->pixLog()->info('Recorrência processada com sucesso', ['pagamento_id' => $pagamento->id]);
+                            } 
+                            // Se status for CANCELADA, desativar o usuário
+                            elseif (strtoupper($status) === 'CANCELADA') {
+                                $this->pixLog()->info('Recorrência cancelada, desativando usuário', ['txid' => $txid]);
+                                
+                                $pagamento->statusPagamento = 'CANCELADO';
+                                $pagamento->save();
+                                
+                                $usuario = Usuarios::where('id', $pagamento->idUsuario)->first();
+                                
+                                if ($usuario) {
+                                    $usuario->status = 0;
+                                    $usuario->dataLimiteCompra = Carbon::now()
+                                        ->setTimezone('America/Recife')
+                                        ->format('Y-m-d');
+                                    $usuario->save();
+                                    
+                                    $this->pixLog()->info('Usuário desativado devido ao cancelamento da recorrência', [
+                                        'usuario_id' => $usuario->id,
+                                        'txid' => $txid,
+                                        'data_limite_atual' => $usuario->dataLimiteCompra,
+                                        'status_anterior' => $usuario->getOriginal('status'),
+                                        'novo_status' => $usuario->status
+                                    ]);
+                                } else {
+                                    $this->pixLog()->warning('Usuário não encontrado para pagamento cancelado', [
+                                        'pagamento_id' => $pagamento->id,
+                                        'txid' => $txid
+                                    ]);
+                                }
+                                
+                                $this->pixLog()->info('Recorrência cancelada processada com sucesso', [
+                                    'pagamento_id' => $pagamento->id,
+                                    'status_pagamento' => $pagamento->statusPagamento
+                                ]);
                             } else {
                                 // Para outros status, apenas salvar
                                 $pagamento->save();
