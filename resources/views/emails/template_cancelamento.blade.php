@@ -86,7 +86,7 @@
     <div class="content">
         <p>Olá, {{ $dados['nome'] }}!</p>
 
-        <p>Confirmamos o cancelamento da sua assinatura em nossa plataforma.</p>
+        <p>Confirmamos o cancelamento da sua assinatura em nossa plataforma e à partir de agora, você não será mais cobrado.</p>
 
         <p>Lamentamos ver você partir! 😔 Sua opinião é muito importante para nós.</p>
         
