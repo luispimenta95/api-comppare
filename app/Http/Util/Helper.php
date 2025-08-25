@@ -429,4 +429,47 @@ class Helper
             // Não lança exceção para não interromper o fluxo principal
         }
     }
+
+    /**
+     * Envia email de cancelamento de assinatura
+     * 
+     * @param Usuarios $usuario
+     *
+     * @return void
+     */
+    public static function enviarEmailCancelamento(Usuarios $usuario): void
+    {
+        try {
+            Log::info('Iniciando envio de email de cancelamento', [
+                'usuario_id' => $usuario->id
+            ]); 
+
+            // Converter data de cancelamento para formato brasileiro
+            $dataCancelamento = \Carbon\Carbon::now()->format('d/m/Y');
+            
+            // Converter data de vencimento se fornecida
+    
+            $dadosParaEmail = [
+                'to' => $usuario->email,
+                'body' => [
+                    'nome' => $usuario->primeiroNome . ' ' . $usuario->sobrenome,
+                    'dataCancelamento' => $dataCancelamento
+                ]
+            ];
+
+            Mail::to($usuario->email)->send(new \App\Mail\EmailCancelamento($dadosParaEmail));
+
+            Log::info('Email de cancelamento enviado com sucesso', [
+                'usuario_id' => $usuario->id,
+                'email' => $usuario->email,
+                'data_cancelamento' => $dataCancelamento
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao enviar email de cancelamento', [
+                'usuario_id' => $usuario->id,
+                'error' => $e->getMessage()
+            ]);
+            // Não lança exceção para não interromper o fluxo principal
+        }
+    }
 }

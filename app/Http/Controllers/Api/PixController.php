@@ -893,6 +893,9 @@ class PixController extends Controller
                                         'status_anterior' => $usuario->getOriginal('status'),
                                         'novo_status' => $usuario->status
                                     ]);
+
+                                    //Enviar email de cancelamento
+                                    Helper::enviarEmailCancelamento($usuario);
                                 } else {
                                     $this->pixLog()->warning('Usuário não encontrado para pagamento cancelado', [
                                         'pagamento_id' => $pagamento->id,

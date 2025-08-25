@@ -264,12 +264,17 @@ class VendasController extends Controller
         $response = [];
 
         if ($usuario) {
-
+            // Buscar informações do plano atual antes do cancelamento            
             $responseApi = json_decode($this->apiEfi->cancelSubscription($usuario->idAssinatura), true);
 
-
             if ($responseApi['code'] == 200) {
+                // Cancelamento bem-sucedido
                 $usuario->status = 0;
+                $usuario->save();
+
+                // Enviar email de cancelamento
+
+                Helper::enviarEmailCancelamento($usuario);
 
                 $response = [
                     'codRetorno' => HttpCodesEnum::OK->value,
