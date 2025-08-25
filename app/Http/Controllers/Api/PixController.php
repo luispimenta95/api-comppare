@@ -32,7 +32,7 @@ class PixController extends Controller
     private string $numeroContrato;
     private string $dataInicial;
     private string $frequencia;
-
+    private const MEIO_PAGAMENTO = "PIX Recorrente";
     /**
      * Logger específico para PIX
      */
@@ -856,6 +856,11 @@ class PixController extends Controller
                                             'plano_id' => $plano->id,
                                             'data_limite' => $usuario->dataLimiteCompra
                                         ]);
+
+                                        
+                                        
+                                        // Enviar email de confirmação de pagamento
+                                        Helper::enviarEmailPagamento($usuario, $plano, self::MEIO_PAGAMENTO);
                                     } else {
                                         $this->pixLog()->warning('Plano não encontrado para usuário', ['usuario_id' => $usuario->id]);
                                     }

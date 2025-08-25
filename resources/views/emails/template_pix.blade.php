@@ -122,7 +122,7 @@
     
     <div class="content">
         <p>Olá, {{ $dados['nome'] ?? 'Cliente' }}!</p>
-        <p>Seu código PIX foi gerado com sucesso. Utilize o código abaixo para realizar o pagamento:</p>
+        <p>Seu código PIX foi gerado com sucesso. Utilize o código abaixo para realizar o pagamento e liberar o seu acesso em nossa plataforma.</p>
     </div>
 
     <div class="valor">

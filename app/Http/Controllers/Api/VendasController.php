@@ -14,6 +14,7 @@ use App\Models\TransacaoFinanceira;
 use Illuminate\Http\Request;
 use App\Enums\HttpCodesEnum;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class VendasController extends Controller
 {
@@ -58,11 +59,13 @@ class VendasController extends Controller
         }
 
         $usuario = Usuarios::find($request->usuario);
-        //$plano = Planos::find($request->plano);
-        $plano = Planos::find(3);
+        $plano = Planos::find($request->plano);
 
         $dadosEmail = [
-            'nome' => $usuario->primeiroNome . " " . $usuario->sobrenome
+            'to' => $usuario->email,
+            'body' => [
+                'nome' => $usuario->primeiroNome . " " . $usuario->sobrenome
+            ]
         ];
 
         // Verifica se o idHost está definido no plano
@@ -151,6 +154,9 @@ class VendasController extends Controller
                     'total' => $total,
                     'payment_method' => $paymentMethod
                 ]);
+
+            Mail::to($usuario->email)->send(new \App\Mail\EmailAssinatura($dadosEmail));
+
                 if ($chargeStatus == Helper::STATUS_APROVADO) {
                     $usuario->idPlano = $request->plano;
                     $usuario->idAssinatura = $subscriptionId;
@@ -159,7 +165,11 @@ class VendasController extends Controller
                     $usuario->dataLimiteCompra = Carbon::now()->addDays($plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife')->format('Y-m-d');
                     $usuario->dataUltimoPagamento = Carbon::now()->format('Y-m-d H:i:s');
                     $usuario->save();
-                    MailHelper::confirmacaoAssinatura($dadosEmail, $usuario->email);
+                    
+                    //Envia email de confirmação de pagamento
+
+                    Helper::enviarEmailPagamento($usuario, $plano, self::CARTAO);
+
                 }
 
                 // Atualizar dados do usuário

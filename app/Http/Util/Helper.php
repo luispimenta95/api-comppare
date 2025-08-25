@@ -3,12 +3,15 @@
 namespace App\Http\Util;
 
 use App\Models\Pastas;
+use App\Models\Planos;
 use App\Models\Usuarios;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Classe utilitária com funções auxiliares do sistema
@@ -292,7 +295,7 @@ class Helper
      * 
      * Estabelece a relação entre um usuário e suas pastas,
      * incluindo subpastas recursivamente.
-     * 
+     * PIX
      * @param Pastas $pasta - Pasta a ser relacionada
      * @param Usuarios $usuario - Usuário para relacionar a pasta
      * @return void
@@ -388,5 +391,42 @@ class Helper
         $relativePath = trim($relativePath, '/');
         
         return $appUrl . '/storage/' . $relativePath;
+    }
+
+      public static function enviarEmailPagamento(Usuarios $usuario, Planos $plano, string $meioPagamento): void
+    {
+        try {
+            Log::info('Iniciando envio de email de pagamento', [
+                'usuario_id' => $usuario->id,
+                'plano_id' => $plano->id
+            ]);
+
+            // Converter data limite para formato brasileiro
+            $dataRenovacao = \Carbon\Carbon::createFromFormat('Y-m-d', $usuario->dataLimiteCompra)
+                ->format('d/m/Y');
+
+            $dadosParaEmail = [
+                'to' => $usuario->email,
+                'body' => [
+                    'nome' => $usuario->primeiroNome . ' ' . $usuario->sobrenome,
+                    'meioPagamento' => $meioPagamento,
+                    'dataRenovacao' => $dataRenovacao
+                ]
+            ];
+
+            Mail::to($usuario->email)->send(new \App\Mail\EmailPagamento($dadosParaEmail));
+
+            Log::info('Email de pagamento enviado com sucesso', [
+                'usuario_id' => $usuario->id,
+                'email' => $usuario->email,
+                'data_renovacao' => $dataRenovacao
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erro ao enviar email de pagamento', [
+                'usuario_id' => $usuario->id,
+                'error' => $e->getMessage()
+            ]);
+            // Não lança exceção para não interromper o fluxo principal
+        }
     }
 }
