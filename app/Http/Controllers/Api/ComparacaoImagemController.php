@@ -78,21 +78,43 @@ class ComparacaoImagemController extends Controller
             ], 422);
         }
 
-        $comparacao = ComparacaoImagem::create([
-            'id_usuario' => $request->id_usuario,
-            'id_photo' => $request->id_photo,
-            'data_comparacao' => $dataComparacao->format('Y-m-d')
-        ]);
+            // Verifica se já existe comparação para a foto
+            $comparacao = ComparacaoImagem::where('id_photo', $request->id_photo)->first();
+            if ($comparacao) {
+                // Atualiza os dados da comparação existente
+                $comparacao->id_usuario = $request->id_usuario;
+                $comparacao->data_comparacao = $dataComparacao->format('Y-m-d');
+                $comparacao->save();
 
-        foreach ($request->tags as $tagData) {
-            ComparacaoImagemTag::create([
-                'id_comparacao' => $comparacao->id,
-                'id_tag' => $tagData['id_tag'],
-                'valor' => $tagData['valor']
-            ]);
-        }
+                // Remove as tags antigas
+                ComparacaoImagemTag::where('id_comparacao', $comparacao->id)->delete();
 
-        return response()->json(['message' => 'Comparação salva com sucesso.']);
+                // Adiciona as novas tags
+                foreach ($request->tags as $tagData) {
+                    ComparacaoImagemTag::create([
+                        'id_comparacao' => $comparacao->id,
+                        'id_tag' => $tagData['id_tag'],
+                        'valor' => $tagData['valor']
+                    ]);
+                }
+                return response()->json(['message' => 'Comparação atualizada com sucesso.']);
+            } else {
+                // Cria nova comparação
+                $comparacao = ComparacaoImagem::create([
+                    'id_usuario' => $request->id_usuario,
+                    'id_photo' => $request->id_photo,
+                    'data_comparacao' => $dataComparacao->format('Y-m-d')
+                ]);
+
+                foreach ($request->tags as $tagData) {
+                    ComparacaoImagemTag::create([
+                        'id_comparacao' => $comparacao->id,
+                        'id_tag' => $tagData['id_tag'],
+                        'valor' => $tagData['valor']
+                    ]);
+                }
+                return response()->json(['message' => 'Comparação salva com sucesso.']);
+            }
     }
 
     public function show($id): JsonResponse
