@@ -15,7 +15,7 @@ use Illuminate\Http\Request;
 use App\Enums\HttpCodesEnum;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-
+use App\Enums\MeioPagamentoEnum;
 class VendasController extends Controller
 {
     //update server
@@ -164,6 +164,7 @@ class VendasController extends Controller
                     $usuario->status = 1; // Ativar usuário
                     $usuario->dataLimiteCompra = Carbon::now()->addDays($plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife')->format('Y-m-d');
                     $usuario->dataUltimoPagamento = Carbon::now()->format('Y-m-d H:i:s');
+                    $usuario->meioPagamento = MeioPagamentoEnum::CARTAO;
                     $usuario->save();
                     
                     //Envia email de confirmação de pagamento
