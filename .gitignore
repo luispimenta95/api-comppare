@@ -22,4 +22,5 @@ yarn-error.log
 /.vscode
 /.zed
 *.sh
-app/Http/Util/inserts.sql
+*.sql
+*.http
