@@ -127,6 +127,18 @@ class ComparacaoImagemController extends Controller
             return response()->json(['message' => 'Nenhuma comparação encontrada para esta foto.'], 404);
         }
 
-        return response()->json($comparacoes);
+        // Ajusta o campo data_comparacao para o padrão brasileiro
+        $comparacoesFormatadas = $comparacoes->map(function ($comparacao) {
+            $comparacaoArray = $comparacao->toArray();
+            if (!empty($comparacaoArray['data_comparacao'])) {
+                $date = \DateTime::createFromFormat('Y-m-d', $comparacaoArray['data_comparacao']);
+                if ($date) {
+                    $comparacaoArray['data_comparacao'] = $date->format('d/m/Y');
+                }
+            }
+            return $comparacaoArray;
+        });
+
+        return response()->json($comparacoesFormatadas);
     }
 }
