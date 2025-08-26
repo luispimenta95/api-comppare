@@ -1,0 +1,30 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('usuarios', function (Blueprint $table) {
+            // Alterar o campo idAssinatura de integer para string
+            $table->string('idAssinatura', 100)->nullable()->change();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('usuarios', function (Blueprint $table) {
+            // Reverter para integer caso necessário
+            $table->integer('idAssinatura')->nullable()->change();
+        });
+    }
+};
