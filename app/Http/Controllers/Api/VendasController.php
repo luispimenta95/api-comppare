@@ -266,7 +266,9 @@ class VendasController extends Controller
         if ($usuario) {
             // Buscar informações do plano atual antes do cancelamento            
             $responseApi = json_decode($this->apiEfi->cancelSubscription($usuario->idAssinatura), true);
-
+            Log::info('Resposta da API EFI ao cancelar assinatura', [
+                'response' => $responseApi
+            ]);
             if ($responseApi['code'] == 200) {
                 // Cancelamento bem-sucedido
                 $usuario->status = 0;
