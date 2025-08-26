@@ -18,6 +18,8 @@ use Illuminate\Support\Facades\Mail;
 use App\Enums\MeioPagamentoEnum;
 use App\Mail\EmailPix;
 use App\Models\PagamentoPix;
+use App\Models\Movimentacoes;
+
 
 class VendasController extends Controller
 {
@@ -86,7 +88,8 @@ class VendasController extends Controller
         }
 
         $usuario = Usuarios::find($request->usuario);
-        $plano = Planos::find($request->plano);
+        $planoAtual = Planos::find($usuario->idPlano);
+        $planoNovo = Planos::find($request->plano);
 
         $dadosEmail = [
             'to' => $usuario->email,
@@ -96,7 +99,7 @@ class VendasController extends Controller
         ];
 
         // Verifica se o idHost está definido no plano
-        if ($plano && $plano->idHost !== null) {
+        if ($planoNovo && $planoNovo->idHost !== null) {
 
             // Verificar se o usuário já possui uma assinatura ativa
             if (!empty($usuario->idAssinatura)) {
@@ -106,6 +109,14 @@ class VendasController extends Controller
                 ]);
 
                 try {
+                    if($planoAtual != $planoNovo) {
+                        Movimentacoes::create([
+                            'nome_usuario' => $usuario->primeiroNome . ' ' . $usuario->sobrenome,
+                            'plano_antigo' => $planoAtual->nome,
+                            'plano_novo' => $planoNovo->nome,
+                        ]);
+                    }
+
                     // Cancelar assinatura existente
                     $cancelResponse = json_decode($this->apiEfi->cancelSubscription($usuario->idAssinatura), true);
 
@@ -127,11 +138,11 @@ class VendasController extends Controller
                 }
             }
 
-            $valor = $plano->valor * 100;
+            $valor = $planoNovo->valor * 100;
 
             $data = [
                 "cardToken" => $request->token,
-                "idPlano" => $plano->idHost,
+                "idPlano" => $planoNovo->idHost,
                 "usuario" => [
                     "name" =>  $usuario->primeiroNome . " " . $usuario->sobrenome,
                     "cpf" => $usuario->cpf,
@@ -140,7 +151,7 @@ class VendasController extends Controller
                     "birth" => Carbon::parse($usuario->dataNascimento)->format('Y-m-d')
                 ],
                 "produto" => [
-                    "name" => $plano->nome,
+                    "name" => $planoNovo->nome,
                     "amount" => Helper::QUANTIDADE,
                     "value" => $valor
                 ]
@@ -188,19 +199,19 @@ class VendasController extends Controller
                     $usuario->idAssinatura = $subscriptionId;
                     $usuario->idUltimaCobranca = $chargeId;
                     $usuario->status = 1; // Ativar usuário
-                    $usuario->dataLimiteCompra = Carbon::now()->addDays($plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife')->format('Y-m-d');
+                    $usuario->dataLimiteCompra = Carbon::now()->addDays($planoNovo->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife')->format('Y-m-d');
                     $usuario->dataUltimoPagamento = Carbon::now()->format('Y-m-d H:i:s');
                     $usuario->meioPagamento = MeioPagamentoEnum::CARTAO;
                     $usuario->save();
 
                     //Envia email de confirmação de pagamento
 
-                    Helper::enviarEmailPagamento($usuario, $plano, self::CARTAO);
+                    Helper::enviarEmailPagamento($usuario, $planoNovo, self::CARTAO);
                 }
 
                 // Atualizar dados do usuário
                 TransacaoFinanceira::create([
-                    'idPlano' => $plano->id,
+                    'idPlano' => $planoNovo->id,
                     'idUsuario' => $request->usuario,
                     'formaPagamento' => self::CARTAO,
                     'valorPagamento' => ($chargeTotal / 100),
