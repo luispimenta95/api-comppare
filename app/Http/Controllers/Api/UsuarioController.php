@@ -41,6 +41,50 @@ use Illuminate\Support\Facades\Log;
 class UsuarioController extends Controller
 {
     /**
+     * Recupera as pastas e subpastas do usuário em estrutura hierárquica
+     *
+     * @param Usuarios $user
+     * @param array $limitesInfo
+     * @return array
+     */
+    public function getPastasEstruturadas(int $idUsuario): array
+    {
+        $todasPastas = Pastas::where('idUsuario', $idUsuario)
+            ->with(['photos', 'subpastas.photos'])
+            ->get();
+
+        $pastasPrincipais = $todasPastas->whereNull('idPastaPai');
+
+        $pastas = $pastasPrincipais->map(function ($pasta){
+            $subpastas = Pastas::where('idPastaPai', $pasta->id)
+                ->with('photos')
+                ->get()
+                ->map(function ($subpasta) use ($pasta) {
+                    return [
+                        'id' => $subpasta->id,
+                        'nome' => $subpasta->nome,
+                        'path' => Helper::formatFolderUrl($subpasta),
+                        'idPastaPai' => $subpasta->idPastaPai,
+                        'imagens' => $subpasta->photos->map(fn($photo) => [
+                            'id' => $photo->id,
+                            'path' => Helper::formatImageUrl($photo->path),
+                            'taken_at' => $photo->taken_at
+                        ])->values()
+                    ];
+                })->values();
+
+            return [
+                'nome' => $pasta->nome,
+                'id' => $pasta->id,
+                'path' => Helper::formatFolderUrl($pasta),
+                'idPastaPai' => null,
+                'subpastas' => $subpastas
+            ];
+        })->values();
+
+        return $pastas->toArray();
+    }
+    /**
      * Atualiza os dados pessoais de um usuário
      * 
      * Valida CPF, formata data de nascimento e atualiza informações
@@ -409,7 +453,59 @@ class UsuarioController extends Controller
             return $this->respostaErro(HttpCodesEnum::NotFound);
         }
 
-        return $this->checaPermissoes($user, $request);
+        // Buscar dados do plano do usuário
+        $plano = Planos::find($user->idPlano);
+        $currentMonth = now()->month;
+        $currentYear = now()->year;
+        $limitesInfo = $this->calcularLimitesUsuario($user, $plano, $currentMonth, $currentYear);
+
+        // Recupera as pastas estruturadas
+    $pastas = $this->getPastasEstruturadas($user->id, $limitesInfo);
+
+        // Atualiza último acesso
+        $user->ultimoAcesso = now();
+        $user->save();
+
+        $token = JWTAuth::fromUser($user);
+
+        // Buscar tags associadas ao usuário
+        $tags = Tag::where(function ($query) use ($user) {
+            $query->where('idUsuarioCriador', $user->id)
+                ->where('status', Helper::ATIVO);
+        })->orWhere(function ($query) {
+            $query->whereHas('usuario', function ($q) {
+                $q->where('idPerfil', Helper::ID_PERFIL_ADMIN);
+            })->where('status', Helper::ATIVO);
+        })->select(['id', 'nomeTag', 'idUsuarioCriador', 'created_at'])
+            ->orderBy('nomeTag', 'asc')
+            ->get()
+            ->map(function ($tag) use ($user) {
+                return [
+                    'id' => $tag->id,
+                    'nome' => $tag->nomeTag,
+                    'tipo' => $tag->idUsuarioCriador == $user->id ? 'pessoal' : 'global',
+                    'criada_em' => $tag->created_at->format('Y-m-d H:i:s')
+                ];
+            });
+
+        $dadosUsuario = $user->toArray();
+        unset($dadosUsuario['pastas']);
+        $dadosUsuario['pastas'] = $pastas;
+        $dadosUsuario['tags'] = [
+            'total' => $tags->count(),
+            'pessoais' => $tags->where('tipo', 'pessoal')->count(),
+            'globais' => $tags->where('tipo', 'global')->count(),
+            'lista' => $tags->values()
+        ];
+        $dadosUsuario['regras'] = $limitesInfo['resumo'];
+
+        return response()->json([
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => HttpCodesEnum::OK->description(),
+            'token' => $token,
+            'dados' => $dadosUsuario,
+            'pastas' => $pastas
+        ]);
     }
 
     /**
