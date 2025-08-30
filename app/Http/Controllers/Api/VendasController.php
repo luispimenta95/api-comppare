@@ -310,6 +310,8 @@ class VendasController extends Controller
             if ($responseApi['code'] == 200) {
                 // Cancelamento bem-sucedido
                 $usuario->status = 0;
+                $usuario->idAssinatura = null;
+                $usuario->idUltimaCobranca = null;
                 $usuario->save();
 
                 // Enviar email de cancelamento
