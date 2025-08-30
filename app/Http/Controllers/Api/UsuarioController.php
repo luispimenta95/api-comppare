@@ -467,10 +467,10 @@ class UsuarioController extends Controller
         // Verifica plano pago e dataLimiteCompra
         $plano = Planos::find($user->idPlano);
         $isPlanoPago = $plano && $plano->valor > 0;
-        if ($isPlanoPago && \Carbon\Carbon::parse($user->dataLimiteCompra)->gt(now())) {
+        if ($isPlanoPago && Helper::checkDateIsPassed($user->dataLimiteCompra)) {
             return response()->json([
                 'codRetorno' => HttpCodesEnum::PaymentRequired->value ?? 402,
-                'message' => HttpCodesEnum::ExpiredSubscription->value
+                'message' => HttpCodesEnum::ExpiredSubscription->description()
             ], 402);
         }
 
