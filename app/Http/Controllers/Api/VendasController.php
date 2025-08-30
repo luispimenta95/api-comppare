@@ -619,6 +619,8 @@ class VendasController extends Controller
             ]);
 
             $this->usuario->idAssinatura = $pixData['recId'];
+            $this->usuario->idPlano = $this->plano->id;
+            $this->usuario->dataLimiteCompra = now()->addDays($this->plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife')->format('Y-m-d');
             $this->usuario->save();
 
             $this->pixLog()->info('Pagamento PIX salvo no banco', ['id' => $pagamentoPix->id]);
