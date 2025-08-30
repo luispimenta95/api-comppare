@@ -86,6 +86,7 @@ enum HttpCodesEnum: int
     case PlanNotFoundForUser = -18;
     case SubscriptionCanceled = -19;
     case InvalidPassword = -20;
+    case InvalidLogin = -21;
 
 
     public function description(): string
@@ -171,6 +172,7 @@ enum HttpCodesEnum: int
             self::PlanNotFoundForUser => 'Usuário sem plano associado',
             self::SubscriptionCanceled => 'Assinatura cancelada com sucesso!',
             self::InvalidPassword => 'Senha fora do padrão. A senha deve conter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.',
+            self::InvalidLogin => 'Login inválido. Verifique suas credenciais e tente novamente.',
             default => 'Unknown HTTP Status Code'
         };
     }

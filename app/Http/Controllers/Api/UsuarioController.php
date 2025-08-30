@@ -30,7 +30,6 @@ use App\Mail\EmailForgot;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-
 /**
  * Controller para gerenciamento de usuários
  * 
@@ -449,18 +448,38 @@ class UsuarioController extends Controller
     {
         $user = Usuarios::with(['pastas.photos'])->where('cpf', $request->cpf)->first();
 
-        if (!$user) {
-            return $this->respostaErro(HttpCodesEnum::NotFound);
+        // Verifica se usuário existe e senha está correta
+    if (!$user || !Hash::check($request->senha, $user->senha)) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::Unauthorized->value,
+                'message' => HttpCodesEnum::InvalidLogin->value
+            ], 401);
         }
 
-        // Buscar dados do plano do usuário
+        // Verifica status do usuário
+        if ($user->status === 0) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => 'Usuário bloqueado ou inativo.',
+            ], 400);
+        }
+
+        // Verifica plano pago e dataLimiteCompra
         $plano = Planos::find($user->idPlano);
+        $isPlanoPago = $plano && $plano->valor > 0;
+        if ($isPlanoPago && \Carbon\Carbon::parse($user->dataLimiteCompra)->gt(now())) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::PaymentRequired->value ?? 402,
+                'message' => HttpCodesEnum::ExpiredSubscription->value
+            ], 402);
+        }
+
         $currentMonth = now()->month;
         $currentYear = now()->year;
         $limitesInfo = $this->calcularLimitesUsuario($user, $plano, $currentMonth, $currentYear);
 
         // Recupera as pastas estruturadas
-    $pastas = $this->getPastasEstruturadas($user->id, $limitesInfo);
+        $pastas = $this->getPastasEstruturadas($user->id, $limitesInfo);
 
         // Atualiza último acesso
         $user->ultimoAcesso = now();
