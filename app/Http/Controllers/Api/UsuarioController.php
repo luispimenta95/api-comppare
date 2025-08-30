@@ -452,7 +452,7 @@ class UsuarioController extends Controller
     if (!$user || !Hash::check($request->senha, $user->senha)) {
             return response()->json([
                 'codRetorno' => HttpCodesEnum::Unauthorized->value,
-                'message' => HttpCodesEnum::InvalidLogin->value
+                'message' => HttpCodesEnum::InvalidLogin->description()
             ], 401);
         }
 
@@ -460,7 +460,7 @@ class UsuarioController extends Controller
         if ($user->status === 0) {
             return response()->json([
                 'codRetorno' => HttpCodesEnum::BadRequest->value,
-                'message' => 'Usuário bloqueado ou inativo.',
+                'message' => HttpCodesEnum::UserBlockedDueToInactivity->description()
             ], 400);
         }
 
