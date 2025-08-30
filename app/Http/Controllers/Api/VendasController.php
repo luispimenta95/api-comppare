@@ -305,7 +305,7 @@ class VendasController extends Controller
             Log::info('Resposta da API EFI ao cancelar assinatura', [
                 'response' => $responseApi
             ]);
-            if ($responseApi['code'] == 200) {
+            if (isset($responseApi['body']['code']) && $responseApi['body']['code'] == 200) {
                 // Cancelamento bem-sucedido
                 $usuario->status = 0;
                 $usuario->idAssinatura = null;
@@ -313,7 +313,6 @@ class VendasController extends Controller
                 $usuario->save();
 
                 // Enviar email de cancelamento
-
                 Helper::enviarEmailCancelamento($usuario);
 
                 $response = [
