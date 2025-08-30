@@ -102,7 +102,7 @@ class VendasController extends Controller
         if ($planoNovo && $planoNovo->idHost !== null) {
 
             // Verificar se o usuário já possui uma assinatura ativa
-            if (!empty($usuario->idAssinatura)) {
+            if (!empty($usuario->idAssinatura) && $usuario->meioPagamento != MeioPagamentoEnum::PIX) {
                 Log::info('Usuário possui assinatura ativa, cancelando antes de criar nova', [
                     'usuario_id' => $usuario->id,
                     'assinatura_atual' => $usuario->idAssinatura
@@ -193,6 +193,7 @@ class VendasController extends Controller
                 ]);
                 $usuario->idAssinatura = $subscriptionId;
                 $usuario->idUltimaCobranca = $chargeId;
+                $usuario->meioPagamento = MeioPagamentoEnum::CARTAO;
                 $usuario->save();
 
                 Mail::to($usuario->email)->send(new \App\Mail\EmailAssinatura($dadosEmail));
