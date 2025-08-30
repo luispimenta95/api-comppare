@@ -193,14 +193,12 @@ class VendasController extends Controller
                 $usuario->idAssinatura = $subscriptionId;
                 $usuario->idUltimaCobranca = $chargeId;
                 $usuario->meioPagamento = MeioPagamentoEnum::CARTAO;
+                $usuario->idPlano = $request->plano;
                 $usuario->save();
 
                 Mail::to($usuario->email)->send(new \App\Mail\EmailAssinatura($dadosEmail));
 
                 if ($chargeStatus == Helper::STATUS_APROVADO) {
-                    $usuario->idPlano = $request->plano;
-                    $usuario->idAssinatura = $subscriptionId;
-                    $usuario->idUltimaCobranca = $chargeId;
                     $usuario->status = 1; // Ativar usuário
                     $usuario->dataLimiteCompra = Carbon::now()->addDays($planoNovo->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife')->format('Y-m-d');
                     $usuario->dataUltimoPagamento = Carbon::now()->format('Y-m-d H:i:s');
