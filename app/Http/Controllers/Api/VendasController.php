@@ -109,7 +109,7 @@ class VendasController extends Controller
                 ]);
 
                 try {
-                    if($planoAtual != $planoNovo) {
+                    if ($planoAtual != $planoNovo) {
                         Movimentacoes::create([
                             'nome_usuario' => $usuario->primeiroNome . ' ' . $usuario->sobrenome,
                             'plano_antigo' => $planoAtual->nome,
@@ -191,6 +191,9 @@ class VendasController extends Controller
                     'total' => $total,
                     'payment_method' => $paymentMethod
                 ]);
+                $usuario->idAssinatura = $subscriptionId;
+                $usuario->idUltimaCobranca = $chargeId;
+                $usuario->save();
 
                 Mail::to($usuario->email)->send(new \App\Mail\EmailAssinatura($dadosEmail));
 
@@ -616,6 +619,9 @@ class VendasController extends Controller
                     'qrcode' => $pixData['qrcodeResponse']['data']
                 ]
             ]);
+
+            $this->usuario->idAssinatura = $pixData['recId'];
+            $this->usuario->save();
 
             $this->pixLog()->info('Pagamento PIX salvo no banco', ['id' => $pagamentoPix->id]);
             return $pagamentoPix;
@@ -1177,6 +1183,8 @@ class VendasController extends Controller
 
                                 if ($usuario) {
                                     $usuario->status = 0;
+                                    $usuario->idAssinatura = null;
+                                    $usuario->idUltimaCobranca = null;
                                     $usuario->dataLimiteCompra = Carbon::now()
                                         ->setTimezone('America/Recife')
                                         ->format('Y-m-d');
