@@ -205,7 +205,6 @@ class VendasController extends Controller
                     $usuario->status = 1; // Ativar usuário
                     $usuario->dataLimiteCompra = Carbon::now()->addDays($planoNovo->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife')->format('Y-m-d');
                     $usuario->dataUltimoPagamento = Carbon::now()->format('Y-m-d H:i:s');
-                    $usuario->meioPagamento = MeioPagamentoEnum::CARTAO;
                     $usuario->save();
 
                     //Envia email de confirmação de pagamento
