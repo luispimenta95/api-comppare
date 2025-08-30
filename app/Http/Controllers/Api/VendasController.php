@@ -127,7 +127,6 @@ class VendasController extends Controller
 
                     // Limpar dados da assinatura anterior independente do resultado
                     $usuario->idAssinatura = null;
-                    $usuario->status = 0; // Desativar temporariamente
                     $usuario->save();
                 } catch (\Exception $e) {
                     Log::error('Erro ao cancelar assinatura anterior', [
