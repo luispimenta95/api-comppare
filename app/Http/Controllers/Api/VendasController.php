@@ -40,7 +40,7 @@ class VendasController extends Controller
     private const EXPIRACAO_COB = 3600;
     private const POLITICA_RETENTATIVA = "NAO_PERMITE";
     private const CARTAO = 'Cartão de crédito';
-
+    private const TIMEZONE = 'America/Recife';
     /**
      * Logger específico para PIX
      */
@@ -200,7 +200,7 @@ class VendasController extends Controller
 
                 if ($chargeStatus == Helper::STATUS_APROVADO) {
                     $usuario->status = 1; // Ativar usuário
-                    $usuario->dataLimiteCompra = Carbon::now()->addDays($planoNovo->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife')->format('Y-m-d');
+                    $usuario->dataLimiteCompra = Carbon::now()->addDays($planoNovo->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone(self::TIMEZONE)->format('Y-m-d');
                     $usuario->dataUltimoPagamento = Carbon::now()->format('Y-m-d H:i:s');
                     $usuario->save();
 
@@ -255,7 +255,7 @@ class VendasController extends Controller
                     $plano = Planos::find($usuario->idPlano);
                     $usuario->dataUltimoPagamento = Carbon::parse($item['received_by_bank_at'])->format('Y-m-d');
                     $dataUltimoPagamento = Carbon::parse($item['received_by_bank_at']);
-                    $usuario->dataLimiteCompra = $dataUltimoPagamento->addDays($plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife')->format('Y-m-d');
+                    $usuario->dataLimiteCompra = $dataUltimoPagamento->addDays($plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone(self::TIMEZONE)->format('Y-m-d');
                     $usuario->status = 1;
                     $usuario->save();
 
@@ -310,6 +310,9 @@ class VendasController extends Controller
                 $usuario->status = 0;
                 $usuario->idAssinatura = null;
                 $usuario->idUltimaCobranca = null;
+                $usuario->dataLimiteCompra = Carbon::now()
+                    ->setTimezone(self::TIMEZONE)
+                    ->format('Y-m-d');
                 $usuario->save();
 
                 // Enviar email de cancelamento
@@ -620,7 +623,7 @@ class VendasController extends Controller
 
             $this->usuario->idAssinatura = $pixData['recId'];
             $this->usuario->idPlano = $this->plano->id;
-            $this->usuario->dataLimiteCompra = now()->addDays($this->plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone('America/Recife')->format('Y-m-d');
+            $this->usuario->dataLimiteCompra = now()->addDays($this->plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)->setTimezone(self::TIMEZONE)->format('Y-m-d');
             $this->usuario->save();
 
             $this->pixLog()->info('Pagamento PIX salvo no banco', ['id' => $pagamentoPix->id]);
@@ -1146,7 +1149,7 @@ class VendasController extends Controller
                                         $usuario->status = 1;
                                         $usuario->dataLimiteCompra = Carbon::now()
                                             ->addDays($plano->frequenciaCobranca == 1 ? Helper::TEMPO_RENOVACAO_MENSAL : Helper::TEMPO_RENOVACAO_ANUAL)
-                                            ->setTimezone('America/Recife')
+                                            ->setTimezone(self::TIMEZONE)
                                             ->format('Y-m-d');
                                         $usuario->dataUltimoPagamento = Carbon::now()->format('Y-m-d H:i:s');
                                         $usuario->idPlano = $plano->id;
@@ -1186,7 +1189,7 @@ class VendasController extends Controller
                                     $usuario->idAssinatura = null;
                                     $usuario->idUltimaCobranca = null;
                                     $usuario->dataLimiteCompra = Carbon::now()
-                                        ->setTimezone('America/Recife')
+                                        ->setTimezone(self::TIMEZONE)
                                         ->format('Y-m-d');
                                     $usuario->save();
 
