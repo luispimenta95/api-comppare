@@ -299,7 +299,7 @@ class VendasController extends Controller
 
         $response = [];
 
-        if ($usuario && $usuario->meioPagamento == MeioPagamentoEnum::CARTAO) {
+        if ($usuario) {
 
             // Buscar informações do plano atual antes do cancelamento            
             $responseApi = json_decode($this->apiEfi->cancelSubscription($usuario->idAssinatura), true);
