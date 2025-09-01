@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use App\Models\ComparacaoImagem;
+use Illuminate\Support\Facades\Log;
 
 class PastasController extends Controller
 {
@@ -615,6 +616,7 @@ class PastasController extends Controller
                 'errors' => $e->errors()
             ]);
         } catch (\Exception $e) {
+            Log::error("Erro ao excluir pasta: {$e->getMessage()}");
             return response()->json([
                 'codRetorno' => HttpCodesEnum::InternalServerError->value,
                 'message' => 'Erro interno do servidor ao excluir a pasta.',
