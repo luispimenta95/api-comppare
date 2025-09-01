@@ -299,7 +299,8 @@ class VendasController extends Controller
 
         $response = [];
 
-        if ($usuario) {
+        if ($usuario && $usuario->meioPagamento == MeioPagamentoEnum::CARTAO) {
+
             // Buscar informações do plano atual antes do cancelamento            
             $responseApi = json_decode($this->apiEfi->cancelSubscription($usuario->idAssinatura), true);
             Log::info('Resposta da API EFI ao cancelar assinatura', [
