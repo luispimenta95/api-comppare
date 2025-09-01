@@ -15,7 +15,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use App\Models\ComparacaoImagem;
 use Illuminate\Support\Facades\Log;
-
 class PastasController extends Controller
 {
 
@@ -507,46 +506,51 @@ class PastasController extends Controller
 
             // REGRA 1: Se for pasta principal, excluir TODAS as subpastas primeiro
             if ($isPastaPrincipal) {
-                $subpastasCount = Pastas::where('idPastaPai', $pasta->id)->count();
+                $subpastas = Pastas::where('idPastaPai', $pasta->id)->get();
+                $subpastasCount = $subpastas->count();
 
-                if ($subpastasCount > 0) {
-                    $subpastas = Pastas::where('idPastaPai', $pasta->id)->get();
-
-                    foreach ($subpastas as $subpasta) {
-                        // Excluir fotos da subpasta
-                        Photos::where('pasta_id', $subpasta->id)->delete();
-
-                        // Excluir pasta física da subpasta
-                        $subpastaRelativePath = str_replace(
-                            env('PUBLIC_PATH', '/home/u757410616/domains/comppare.com.br/public_html/api-comppare/storage/app/public/'),
-                            '',
-                            $subpasta->caminho
-                        );
-                        $subpastaRelativePath = trim($subpastaRelativePath, '/');
-
-                        if (Storage::disk('public')->exists($subpastaRelativePath)) {
-                            Storage::disk('public')->deleteDirectory($subpastaRelativePath);
-                        }
-
-                        // Remover associações da subpasta
-                        $subpasta->usuario()->detach();
-
-                        // Excluir registro da subpasta
-                        $subpasta->delete();
+                foreach ($subpastas as $subpasta) {
+                    // Excluir fotos da subpasta e suas comparações
+                    $subpastaPhotos = Photos::where('pasta_id', $subpasta->id)->get();
+                    foreach ($subpastaPhotos as $photo) {
+                        ComparacaoImagem::where('id_photo', $photo->id)->delete();
+                        $photo->delete();
                     }
 
-                    // Atualizar contador de subpastas (todas as subpastas da pasta principal foram removidas)
-                    if ($user->subpastasCriadas >= $subpastasCount) {
-                        $user->decrement('subpastasCriadas', $subpastasCount);
-                    } else {
-                        $user->update(['subpastasCriadas' => 0]);
+                    // Excluir pasta física da subpasta
+                    $subpastaRelativePath = str_replace(
+                        env('PUBLIC_PATH', '/home/u757410616/domains/comppare.com.br/public_html/api-comppare/storage/app/public/'),
+                        '',
+                        $subpasta->caminho
+                    );
+                    $subpastaRelativePath = trim($subpastaRelativePath, '/');
+
+                    if (Storage::disk('public')->exists($subpastaRelativePath)) {
+                        Storage::disk('public')->deleteDirectory($subpastaRelativePath);
                     }
+
+                    // Remover associações da subpasta
+                    $subpasta->usuario()->detach();
+
+                    // Excluir registro da subpasta
+                    $subpasta->delete();
+                }
+
+                // Atualizar contador de subpastas (todas as subpastas da pasta principal foram removidas)
+                if ($user->subpastasCriadas >= $subpastasCount) {
+                    $user->decrement('subpastasCriadas', $subpastasCount);
+                } else {
+                    $user->update(['subpastasCriadas' => 0]);
                 }
             }
 
-            // Remove todas as fotos associadas à pasta principal da tabela photos
-            $photosCount = Photos::where('pasta_id', $pasta->id)->count();
-            Photos::where('pasta_id', $pasta->id)->delete();
+            // Remove todas as fotos associadas à pasta principal da tabela photos e suas comparações
+            $photos = Photos::where('pasta_id', $pasta->id)->get();
+            $photosCount = $photos->count();
+            foreach ($photos as $photo) {
+                \App\Models\ComparacaoImagem::where('id_photo', $photo->id)->delete();
+                $photo->delete();
+            }
 
             // Remove a pasta física do storage
             $relativePath = str_replace(
