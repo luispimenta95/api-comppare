@@ -300,6 +300,13 @@ class VendasController extends Controller
         $response = [];
 
         if ($usuario) {
+            if($usuario->meioPagamento == MeioPagamentoEnum::PIX){
+                $response =   [
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' =>  "Para cancelamento de assinatura via PIX, entre em contato com o suporte do seu banco para solicitar o cancelamento."
+            ];
+            return response()->json($response);
+        }
 
             // Buscar informações do plano atual antes do cancelamento            
             $responseApi = json_decode($this->apiEfi->cancelSubscription($usuario->idAssinatura), true);
