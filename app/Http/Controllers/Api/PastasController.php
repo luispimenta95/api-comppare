@@ -417,9 +417,89 @@ class PastasController extends Controller
      * @param Pastas $pastas
      * @return void
      */
-    public function edit(Pastas $pastas)
+    public function edit(Request $request): JsonResponse
     {
-        //
+        $request->validate([
+            'idUsuario' => 'required|exists:usuarios,id',
+            'idPasta' => 'required|exists:pastas,id',
+            'novoNome' => 'required|string|max:255',
+        ]);
+
+        $user = Usuarios::find($request->idUsuario);
+        $pasta = Pastas::find($request->idPasta);
+
+        if (!$user) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => HttpCodesEnum::UserNotFound->description(),
+            ]);
+        }
+
+        if (!$pasta) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => 'Pasta não encontrada.',
+            ]);
+        }
+
+        if ($pasta->idUsuario !== $user->id) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::Forbidden->value,
+                'message' => 'Você não tem permissão para editar esta pasta.',
+            ]);
+        }
+
+        $novoNomeSanitizado = $this->sanitizeFolderName($request->novoNome);
+
+        // Caminho antigo e novo
+        $caminhoAntigo = $pasta->caminho;
+        $caminhoBase = dirname($caminhoAntigo);
+        $caminhoNovo = $caminhoBase . '/' . $novoNomeSanitizado;
+
+        // Move o diretório físico
+        $publicPath = env('PUBLIC_PATH', storage_path('app/public/'));
+        $caminhoAntigoRelativo = str_replace($publicPath, '', $caminhoAntigo);
+        $caminhoNovoRelativo = str_replace($publicPath, '', $caminhoNovo);
+
+        if (Storage::disk('public')->exists($caminhoAntigoRelativo)) {
+            Storage::disk('public')->move($caminhoAntigoRelativo, $caminhoNovoRelativo);
+        } else {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => 'Diretório físico da pasta não encontrado.',
+            ]);
+        }
+
+        // Atualiza o nome e caminho no banco
+        $pasta->nome = $request->novoNome;
+        $pasta->caminho = $caminhoNovo;
+        $pasta->save();
+
+        // Atualiza subpastas (se for pasta principal)
+        if (is_null($pasta->idPastaPai)) {
+            $subpastas = Pastas::where('idPastaPai', $pasta->id)->get();
+            foreach ($subpastas as $subpasta) {
+                $subCaminhoAntigo = $subpasta->caminho;
+                $subNovoCaminho = str_replace($caminhoAntigo, $caminhoNovo, $subCaminhoAntigo);
+
+                $subAntigoRelativo = str_replace($publicPath, '', $subCaminhoAntigo);
+                $subNovoRelativo = str_replace($publicPath, '', $subNovoCaminho);
+
+                if (Storage::disk('public')->exists($subAntigoRelativo)) {
+                    Storage::disk('public')->move($subAntigoRelativo, $subNovoRelativo);
+                }
+                $subpasta->caminho = $subNovoCaminho;
+                $subpasta->save();
+            }
+        }
+
+        return response()->json([
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => 'Nome da pasta atualizado com sucesso!',
+            'pasta_id' => $pasta->id,
+            'novo_nome' => $pasta->nome,
+            'novo_caminho' => $pasta->caminho,
+        ]);
     }
 
     /**
