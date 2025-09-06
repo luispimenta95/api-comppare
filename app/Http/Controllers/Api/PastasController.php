@@ -423,6 +423,8 @@ class PastasController extends Controller
             'idUsuario' => 'required|exists:usuarios,id',
             'idPasta' => 'required|exists:pastas,id',
             'novoNome' => 'required|string|max:255',
+            'tags' => 'nullable|array',
+            'tags.*' => 'integer|exists:tags,id'
         ]);
 
         $user = Usuarios::find($request->idUsuario);
@@ -474,6 +476,11 @@ class PastasController extends Controller
         $pasta->nome = $request->novoNome;
         $pasta->caminho = $caminhoNovo;
         $pasta->save();
+
+        // Atualiza as tags
+        if (isset($request->tags)) {
+            $pasta->tags()->sync($request->tags);
+        }
 
         // Atualiza subpastas (se for pasta principal)
         if (is_null($pasta->idPastaPai)) {
@@ -1121,15 +1128,6 @@ class PastasController extends Controller
      * @param Usuarios $user - Usuário para listar as pastas
      * @return string - String com nomes das pastas separados por vírgula
      */
-    private function listarPastasDisponiveis(Usuarios $user): string
-    {
-        $pastas = Pastas::where('idUsuario', $user->id)
-            ->whereNull('idPastaPai')
-            ->pluck('nome')
-            ->toArray();
-
-        return empty($pastas) ? 'Nenhuma pasta principal encontrada' : implode(', ', $pastas);
-    }
 
     /**
      * Lista as pastas principais disponíveis do usuário com detalhes para debug avançado
