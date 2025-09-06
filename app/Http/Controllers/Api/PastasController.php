@@ -1087,7 +1087,7 @@ class PastasController extends Controller
                         'tags' => $subpasta->tags ? $subpasta->tags->map(function ($tag) {
                             return [
                                 'id' => $tag->id,
-                                'nome' => $tag->nome ?? $tag->nome
+                                'nome' => $tag->nomeTag ?? $tag->nomeTag
                             ];
                         })->values()->toArray() : [],
                     ];
