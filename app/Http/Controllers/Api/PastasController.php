@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use App\Models\ComparacaoImagem;
 use Illuminate\Support\Facades\Log;
+
 class PastasController extends Controller
 {
 
@@ -1082,7 +1083,8 @@ class PastasController extends Controller
                                 'id' => $photo->id,
                                 'path' => Helper::formatImageUrl($photo->path),
                             ];
-                        })->values()->toArray()
+                        })->values()->toArray(),
+                        'tags' => $subpasta->tags ? $subpasta->tags->pluck('id')->toArray() : [],
                     ];
                 })->values()
             ]
