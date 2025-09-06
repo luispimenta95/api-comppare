@@ -1084,7 +1084,12 @@ class PastasController extends Controller
                                 'path' => Helper::formatImageUrl($photo->path),
                             ];
                         })->values()->toArray(),
-                        'tags' => $subpasta->tags ? $subpasta->tags->pluck('id')->toArray() : [],
+                        'tags' => $subpasta->tags ? $subpasta->tags->map(function ($tag) {
+                            return [
+                                'id' => $tag->id,
+                                'nome' => $tag->nome ?? $tag->nome
+                            ];
+                        })->values()->toArray() : [],
                     ];
                 })->values()
             ]
