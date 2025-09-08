@@ -842,7 +842,7 @@ class UsuarioController extends Controller
      */
     public function index(IndexUsuarioRequest $request): JsonResponse
     {
-        $query = Usuarios::query();
+        $query = Usuarios::with('plano');
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
@@ -852,7 +852,12 @@ class UsuarioController extends Controller
             $query->where('primeiroNome', 'like', '%' . $request->input('nome') . '%');
         }
 
-        $usuarios = $query->get();
+        $usuarios = $query->get()->map(function($usuario) {
+            $usuarioArray = $usuario->toArray();
+            $usuarioArray['plano'] = $usuario->plano ? $usuario->plano->nome : null;
+            $usuarioArray['cadastrado_em'] = $usuario->created_at ? $usuario->created_at->format('d/m/Y H:i') : null;
+            return $usuarioArray;
+        });
 
         $response = [
             'codRetorno' => HttpCodesEnum::OK->value,
