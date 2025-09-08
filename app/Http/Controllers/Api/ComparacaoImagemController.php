@@ -81,9 +81,9 @@ class ComparacaoImagemController extends Controller
             // Verifica se já existe comparação para a foto
             $comparacao = ComparacaoImagem::where('id_photo', $request->id_photo)->first();
             if ($comparacao) {
-                // Atualiza os dados da comparação existente
+                // Atualiza os dados da comparação existente, sempre sobrescrevendo a data
                 $comparacao->id_usuario = $request->id_usuario;
-                $comparacao->data_comparacao = $dataComparacao->format('Y-m-d');
+                $comparacao->data_comparacao = $dataComparacao->format('Y-m-d'); // Sempre usa a data enviada
                 $comparacao->save();
 
                 // Remove as tags antigas
