@@ -45,7 +45,7 @@ class Usuarios extends Authenticatable implements JWTSubject
         'meioPagamento'
     ];
 
-    protected $hidden = ['senha', 'idPerfil', 'created_at', 'updated_at', 'status'];
+    protected $hidden = ['senha', 'idPerfil', 'created_at', 'updated_at', 'status', 'ultimoAcesso', 'idPlano'];
 
     /**
      * Definir casts para conversão automática de tipos

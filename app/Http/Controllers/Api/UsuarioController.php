@@ -857,7 +857,7 @@ class UsuarioController extends Controller
             $usuarioArray['plano'] = Planos::find($usuario->idPlano)->nome ?? null;
             // Formata todas as datas para o padrão brasileiro
             foreach ($usuarioArray as $key => $value) {
-                if ((strpos($key, 'data') !== false || strpos($key, 'created_at') !== false || strpos($key, 'updated_at') !== false) && !empty($value)) {
+                if ((strpos($key, 'data') !== false || strpos($key, 'created_at') !== false || strpos($key, 'updated_at') !== false || $key === 'ultimoAcesso') && !empty($value)) {
                     try {
                         $date = \Carbon\Carbon::parse($value);
                         $usuarioArray[$key] = $date->format('d/m/Y H:i');
