@@ -743,6 +743,7 @@ class PastasController extends Controller
      */
     public function saveImageInFolder(Request $request)
     {
+        dd($request->all());
         try {
             $request->validate([
                 'image' => 'required',
