@@ -867,7 +867,6 @@ class UsuarioController extends Controller
                 }
             }
             $usuarioArray['cadastrado_em'] = $usuario->created_at ? $usuario->created_at->format('d/m/Y H:i') : null;
-            $usuarioArray['ultimoAcesso'] = $usuario->ultimoAcesso ? $usuario->ultimoAcesso->format('d/m/Y H:i') : null;
             $usuarioArray['status'] = $usuario->status ? 'Ativo' : 'Inativo';
 
             return $usuarioArray;
