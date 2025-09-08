@@ -860,13 +860,16 @@ class UsuarioController extends Controller
                 if ((strpos($key, 'data') !== false || strpos($key, 'created_at') !== false || strpos($key, 'updated_at') !== false) && !empty($value)) {
                     try {
                         $date = \Carbon\Carbon::parse($value);
-                        $usuarioArray[$key] = $date->format('d/m/Y H:i:s');
+                        $usuarioArray[$key] = $date->format('d/m/Y H:i');
                     } catch (\Exception $e) {
                         // Se não for data válida, mantém o valor original
                     }
                 }
             }
             $usuarioArray['cadastrado_em'] = $usuario->created_at ? $usuario->created_at->format('d/m/Y H:i') : null;
+            $usuarioArray['ultimoAcesso'] = $usuario->ultimoAcesso ? $usuario->ultimoAcesso->format('d/m/Y H:i') : null;
+            $usuarioArray['status'] = $usuario->status ? 'Ativo' : 'Inativo';
+
             return $usuarioArray;
         });
 
