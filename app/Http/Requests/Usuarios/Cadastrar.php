@@ -15,7 +15,7 @@ class Cadastrar extends FormRequest
         return [
             'senha.required' => 'A senha é obrigatória.',
             'senha.min' => 'A senha deve ter pelo menos 8 caracteres.',
-            'senha.regex' => 'A senha deve conter letras maiúsculas, minúsculas, números e caracteres especiais.',
+            'senha.regex' => ' A senha deve conter: Pelo menos um número; Apresentar pelo menos um caractere especial ($,#,@,!,etc); Ter ao menos uma letra minúscula; Ter ao menos uma letra maiúscula;.',
         ];
     }
     public function authorize(): bool
