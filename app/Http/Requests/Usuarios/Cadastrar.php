@@ -10,6 +10,14 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class Cadastrar extends FormRequest
 {
+    public function messages(): array
+    {
+        return [
+            'senha.required' => 'A senha é obrigatória.',
+            'senha.min' => 'A senha deve ter pelo menos 8 caracteres.',
+            'senha.regex' => 'A senha deve conter letras maiúsculas, minúsculas, números e caracteres especiais.',
+        ];
+    }
     public function authorize(): bool
     {
         return true; // Permitir que qualquer um acesse
@@ -24,7 +32,9 @@ class Cadastrar extends FormRequest
             'cpf' => 'required|string|size:11',
             'senha' => [
                 'required',
-                'string'
+                'string',
+                'min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/'
             ],
             'telefone' => 'required|string|max:20',
             'email' => 'required|email|max:255',
