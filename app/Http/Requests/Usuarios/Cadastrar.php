@@ -35,13 +35,6 @@ class Cadastrar extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'senha.regex' =>  HttpCodesEnum::InvalidPassword->description()
-            
-        ];
-    }
 
     protected function failedValidation(Validator $validator)
 {
