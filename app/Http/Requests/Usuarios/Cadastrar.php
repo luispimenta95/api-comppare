@@ -24,9 +24,7 @@ class Cadastrar extends FormRequest
             'cpf' => 'required|string|size:11',
             'senha' => [
                 'required',
-                'string',
-                'min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/'
+                'string'
             ],
             'telefone' => 'required|string|max:20',
             'email' => 'required|email|max:255',
