@@ -171,7 +171,7 @@ enum HttpCodesEnum: int
             self::UserNotFound => 'Error : Usuário não encontrado',
             self::PlanNotFoundForUser => 'Usuário sem plano associado',
             self::SubscriptionCanceled => 'Assinatura cancelada com sucesso!',
-            self::InvalidPassword => 'Senha fora do padrão. A senha deve conter pelo menos 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais.',
+            self::InvalidPassword => 'Senha fora do padrão. A senha deve conter: Pelo menos um número; Apresentar pelo menos um caractere especial ($,#,@,!,etc); Ter ao menos uma letra minúscula; Ter ao menos uma letra maiúscula; Ter o mínimo de 8 caracteres.',
             self::InvalidLogin => 'Login inválido. Verifique suas credenciais e tente novamente.',
             default => 'Unknown HTTP Status Code'
         };

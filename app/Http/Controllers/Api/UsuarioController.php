@@ -885,11 +885,12 @@ class UsuarioController extends Controller
 
     private function respostaErro(HttpCodesEnum $codigo, array $extras = []): JsonResponse
     {
+        // Se o array $extras tiver uma chave 'message', use ela, senão use a descrição padrão
+        $mensagem = $extras['message'] ?? $codigo->description();
         $resposta = [
             'codRetorno' => $codigo->value,
-            'message' => $codigo->description()
+            'message' => $mensagem
         ];
-
         $statusHttp = $codigo->value > 0 ? $codigo->value : 400;
         return response()->json($resposta, $statusHttp);
     }
