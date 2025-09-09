@@ -555,6 +555,11 @@ class UsuarioController extends Controller
             return $this->respostaErro(HttpCodesEnum::Conflict, [
                 'message' => 'Usuário já cadastrado com os dados informados.',
             ]);
+            if(!$this->validaSenha($request->senha)) {
+                return $this->respostaErro(HttpCodesEnum::BadRequest, [
+                    'message' => HttpCodesEnum::InvalidPassword->description()
+                ]);
+            }
         }
         $limite = Planos::where('id', $request->idPlano)->first()->tempoGratuidade;
 
