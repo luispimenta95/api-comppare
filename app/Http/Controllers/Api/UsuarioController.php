@@ -885,10 +885,10 @@ class UsuarioController extends Controller
 
     private function respostaErro(HttpCodesEnum $codigo, array $extras = []): JsonResponse
     {
-        $resposta = array_merge([
+        $resposta = [
             'codRetorno' => $codigo->value,
             'message' => $codigo->description()
-        ], $extras);
+        ];
 
         $statusHttp = $codigo->value > 0 ? $codigo->value : 400;
         return response()->json($resposta, $statusHttp);
