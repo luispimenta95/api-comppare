@@ -22,7 +22,7 @@ class ComparacaoImagemController extends Controller
             'id_usuario' => 'required|exists:usuarios,id',
             'id_photo' => 'required|exists:photos,id',
             'data_comparacao' => ['required', 'regex:/^\d{2}\/\d{2}\/\d{4}$/'],
-            'tags' => 'required|array',
+            'tags' => 'sometimes|array',
             'tags.*.id_tag' => 'required|exists:tags,id',
             'tags.*.valor' => 'required|string'
         ]);
