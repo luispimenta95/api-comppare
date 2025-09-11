@@ -48,27 +48,30 @@ class ComparacaoImagemController extends Controller
         }
 
         // Validar se todas as tags são globais ou do usuário
-        $tagIds = array_map(function ($tag) {
-            return $tag['id_tag'];
-        }, $request->tags);
-        $tagsValidas = Tag::whereIn('id', $tagIds)
-            ->where(function ($query) use ($request) {
-                $query->where('idUsuarioCriador', $request->id_usuario)
-                    ->orWhere(function ($q) {
-                        $q->whereHas('usuario', function ($u) {
-                            $u->where('idPerfil', Helper::ID_PERFIL_ADMIN);
+        $tagsArray = is_array($request->tags) ? $request->tags : [];
+        if (!empty($tagsArray)) {
+            $tagIds = array_map(function ($tag) {
+                return $tag['id_tag'];
+            }, $tagsArray);
+            $tagsValidas = Tag::whereIn('id', $tagIds)
+                ->where(function ($query) use ($request) {
+                    $query->where('idUsuarioCriador', $request->id_usuario)
+                        ->orWhere(function ($q) {
+                            $q->whereHas('usuario', function ($u) {
+                                $u->where('idPerfil', Helper::ID_PERFIL_ADMIN);
+                            });
                         });
-                    });
-            })
-            ->pluck('id')
-            ->toArray();
+                })
+                ->pluck('id')
+                ->toArray();
 
-        $tagsInvalidas = array_diff($tagIds, $tagsValidas);
-        if (count($tagsInvalidas) > 0) {
-            return response()->json([
-                'message' => 'Uma ou mais tags não são globais nem pertencem ao usuário.',
-                'tags_invalidas' => $tagsInvalidas
-            ], 403);
+            $tagsInvalidas = array_diff($tagIds, $tagsValidas);
+            if (count($tagsInvalidas) > 0) {
+                return response()->json([
+                    'message' => 'Uma ou mais tags não são globais nem pertencem ao usuário.',
+                    'tags_invalidas' => $tagsInvalidas
+                ], 403);
+            }
         }
 
         // Converter data_comparacao do formato brasileiro para Y-m-d
