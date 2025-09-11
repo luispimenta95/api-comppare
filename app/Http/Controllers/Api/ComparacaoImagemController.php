@@ -22,9 +22,10 @@ class ComparacaoImagemController extends Controller
             'id_usuario' => 'required|exists:usuarios,id',
             'id_photo' => 'required|exists:photos,id',
             'data_comparacao' => ['required', 'regex:/^\d{2}\/\d{2}\/\d{4}$/'],
-            'tags' => 'sometimes|array',
+            'tags' => 'nullable|array',
             'tags.*.id_tag' => 'required|exists:tags,id',
-            'tags.*.valor' => 'required|string'
+            'tags.*.id_tag' => 'required_with:tags|exists:tags,id',
+            'tags.*.valor' => 'required_with:tags|string'
         ]);
         Log::info('Store ComparacaoImagem called', [
             'id_usuario' => $request->id_usuario,
