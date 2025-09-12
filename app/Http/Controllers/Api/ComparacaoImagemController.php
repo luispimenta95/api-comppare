@@ -110,12 +110,14 @@ class ComparacaoImagemController extends Controller
                     'data_comparacao' => $dataComparacao->format('Y-m-d')
                 ]);
 
-                foreach ($request->tags as $tagData) {
+                if(isset($request->tags)) {
+                    foreach ($request->tags as $tagData) {
                     ComparacaoImagemTag::create([
                         'id_comparacao' => $comparacao->id,
                         'id_tag' => $tagData['id_tag'],
                         'valor' => $tagData['valor']
                     ]);
+                }
                 }
                 return response()->json(['message' => 'Comparação salva com sucesso.']);
             }
