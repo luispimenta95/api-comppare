@@ -94,13 +94,16 @@ class ComparacaoImagemController extends Controller
                 ComparacaoImagemTag::where('id_comparacao', $comparacao->id)->delete();
 
                 // Adiciona as novas tags
-                foreach ($request->tags as $tagData) {
-                    ComparacaoImagemTag::create([
-                        'id_comparacao' => $comparacao->id,
-                        'id_tag' => $tagData['id_tag'],
-                        'valor' => $tagData['valor']
-                    ]);
+                if (isset($request->tags)) {
+                    foreach ($request->tags as $tagData) {
+                        ComparacaoImagemTag::create([
+                            'id_comparacao' => $comparacao->id,
+                            'id_tag' => $tagData['id_tag'],
+                            'valor' => $tagData['valor']
+                        ]);
+                    }
                 }
+               
                 return response()->json(['message' => 'Comparação atualizada com sucesso.']);
             } else {
                 // Cria nova comparação
@@ -110,15 +113,15 @@ class ComparacaoImagemController extends Controller
                     'data_comparacao' => $dataComparacao->format('Y-m-d')
                 ]);
 
-                if(isset($request->tags)) {
-                    foreach ($request->tags as $tagData) {
+            if (isset($request->tags)) {
+                foreach ($request->tags as $tagData) {
                     ComparacaoImagemTag::create([
                         'id_comparacao' => $comparacao->id,
                         'id_tag' => $tagData['id_tag'],
                         'valor' => $tagData['valor']
                     ]);
                 }
-                }
+            }
                 return response()->json(['message' => 'Comparação salva com sucesso.']);
             }
     }
