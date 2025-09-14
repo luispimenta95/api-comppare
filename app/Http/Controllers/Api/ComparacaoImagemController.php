@@ -132,12 +132,12 @@ class ComparacaoImagemController extends Controller
             ->where('id_photo', $id)
             ->get();
 
-            dd($comparacoes);
 
             $photo = Photos::find($id);
             
 
         if ($comparacoes->isEmpty()) {
+            dd('Nenhuma comparação encontrada para a foto ID ' . $id);
             $photo = Photos::find($id);
             $dataCriacao = null;
             if ($photo && $photo->created_at) {
