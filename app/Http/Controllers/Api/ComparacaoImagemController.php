@@ -136,18 +136,32 @@ class ComparacaoImagemController extends Controller
             
 
         if ($comparacoes->isEmpty()) {
-            return response()->json(['message' => 'Nenhuma comparação encontrada para esta foto.'], 404);
+            $photo = Photos::find($id);
+            $dataCriacao = null;
+            if ($photo && $photo->created_at) {
+                $dataCriacao = \DateTime::createFromFormat('Y-m-d H:i:s', $photo->created_at);
+                $dataCriacao = $dataCriacao ? $dataCriacao->format('d/m/Y') : null;
+            }
+            return response()->json([
+                'message' => 'Nenhuma comparação encontrada para esta foto.',
+                'data_criacao_foto' => $dataCriacao
+            ], 404);
         }
 
         // Ajusta o campo data_comparacao para o padrão brasileiro
-        $comparacoesFormatadas = $comparacoes->map(function ($comparacao) {
+        $photo = Photos::find($id);
+        $comparacoesFormatadas = $comparacoes->map(function ($comparacao) use ($photo) {
             $comparacaoArray = $comparacao->toArray();
             if (!empty($comparacaoArray['data_comparacao'])) {
                 $date = \DateTime::createFromFormat('Y-m-d', $comparacaoArray['data_comparacao']);
-                dd($date);
                 if ($date) {
-                    $comparacaoArray['data_comparacao'] =  \DateTime::createFromFormat('Y-m-d', $photo->created_at)->format('d/m/Y');
+                    $comparacaoArray['data_comparacao'] = $date->format('d/m/Y');
                 }
+            }
+            // Se quiser exibir também a data de criação da foto junto com cada comparação:
+            if ($photo && $photo->created_at) {
+                $dataCriacao = \DateTime::createFromFormat('Y-m-d H:i:s', $photo->created_at);
+                $comparacaoArray['data_criacao_foto'] = $dataCriacao ? $dataCriacao->format('d/m/Y') : null;
             }
             return $comparacaoArray;
         });
