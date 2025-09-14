@@ -118,20 +118,15 @@ class ComparacaoImagemController extends Controller
     }
 
     public function show($id): JsonResponse
-    {
-        
-        $comparacoes = ComparacaoImagem::with('tags')
-            ->where('id_photo', $id)
-            ->get();
+{
+    $photo = Photos::findOrFail($id);
 
-        if ($comparacoes->isEmpty()) {
-            return response()->json([
-                'message' => 'Nenhuma comparação encontrada para esta foto.',
-                'data_comparacao' => '19/09/1995'
-            ]);
-        }
+    $comparacoes = ComparacaoImagem::with('tags')
+        ->where('id_photo', $id)
+        ->get();
 
-        // Ajusta o campo data_comparacao para o padrão brasileiro
+    // Se houver comparações, formata datas
+    if ($comparacoes->isNotEmpty()) {
         $comparacoesFormatadas = $comparacoes->map(function ($comparacao) {
             $comparacaoArray = $comparacao->toArray();
             if (!empty($comparacaoArray['data_comparacao'])) {
@@ -143,8 +138,18 @@ class ComparacaoImagemController extends Controller
             return $comparacaoArray;
         });
 
-        dd($comparacoesFormatadas);
-
         return response()->json($comparacoesFormatadas);
     }
+
+    // Se não houver comparações, retorna mesma estrutura
+    return response()->json([
+        [
+            'id' => null,
+            'id_photo' => $photo->id,
+            'tags' => [],
+            'data_comparacao' => $photo->created_at->format('d/m/Y'),
+        ]
+    ]);
+}
+
 }
