@@ -140,13 +140,15 @@ class ComparacaoImagemController extends Controller
         // Se não houver comparações, retorna um objeto com campos esperados e tags vazio
         if ($comparacoesFormatadas->isEmpty()) {
             return response()->json([
-                'id' => null,
-                'id_usuario' => null,
-                'id_photo' => $photo->id,
-                'created_at' => null,
-                'updated_at' => null,
+                'data' => [
+                    'id' => null,
+                    'id_usuario' => null,
+                    'id_photo' => $photo->id,
+                    'created_at' => null,
+                    'updated_at' => null,
                 'data_comparacao' => $photo->created_at->format('d/m/Y'),
                 'tags' => []
+                ]
             ], 200);
         }
 
