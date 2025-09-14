@@ -141,6 +141,7 @@ class ComparacaoImagemController extends Controller
             $comparacaoArray = $comparacao->toArray();
             if (!empty($comparacaoArray['data_comparacao'])) {
                 $date = \DateTime::createFromFormat('Y-m-d', $comparacaoArray['data_comparacao']);
+                dd($date);
                 if ($date) {
                     $comparacaoArray['data_comparacao'] = $date->format('d/m/Y');
                 }
