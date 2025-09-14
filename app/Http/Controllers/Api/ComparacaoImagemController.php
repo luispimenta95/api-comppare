@@ -39,11 +39,15 @@ class ComparacaoImagemController extends Controller
             'photo' => $photo
         ]);
         if (!$photo || $photo->pasta_id === null) {
-            return response()->json(['message' => 'Foto não encontrada ou sem pasta associada.'], 404);
+            return response()->json(['message' => 'Foto não encontrada ou sem pasta associada.',
+            "codRetorno" => 404,
+        ], 404);
         }
         $pasta = Pastas::find($photo->pasta_id);
         if (!$pasta || $pasta->idUsuario != $request->id_usuario) {
-            return response()->json(['message' => 'A foto não pertence ao usuário informado.'], 403);
+            return response()->json(['message' => 'A foto não pertence ao usuário informado.',
+            "codRetorno" => 403,
+        ], 403);
         }
 
         // Validar se todas as tags são globais ou do usuário
@@ -66,6 +70,7 @@ class ComparacaoImagemController extends Controller
         if (count($tagsInvalidas) > 0) {
             return response()->json([
                 'message' => 'Uma ou mais tags não são globais nem pertencem ao usuário.',
+                'codRetorno' => 403,
                 'tags_invalidas' => $tagsInvalidas
             ], 403);
         }
@@ -74,7 +79,8 @@ class ComparacaoImagemController extends Controller
         $dataComparacao = \DateTime::createFromFormat('d/m/Y', $request->data_comparacao);
         if (!$dataComparacao) {
             return response()->json([
-                'message' => 'Data de comparação inválida. Use o formato dd/mm/yyyy.'
+                'message' => 'Data de comparação inválida. Use o formato dd/mm/yyyy.',
+                'codRetorno' => 422,
             ], 422);
         }
 
@@ -97,7 +103,9 @@ class ComparacaoImagemController extends Controller
                         'valor' => $tagData['valor']
                     ]);
                 }
-                return response()->json(['message' => 'Comparação atualizada com sucesso.']);
+                return response()->json(['message' => 'Comparação atualizada com sucesso.',
+                    'codRetorno' => 200
+                ]);
             } else {
                 // Cria nova comparação
                 $comparacao = ComparacaoImagem::create([
@@ -113,7 +121,9 @@ class ComparacaoImagemController extends Controller
                         'valor' => $tagData['valor']
                     ]);
                 }
-                return response()->json(['message' => 'Comparação salva com sucesso.']);
+                return response()->json(['message' => 'Comparação salva com sucesso.',
+                    'codRetorno' => 200
+                ], 200);
             }
     }
 
