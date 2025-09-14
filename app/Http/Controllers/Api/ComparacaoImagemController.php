@@ -22,10 +22,9 @@ class ComparacaoImagemController extends Controller
             'id_usuario' => 'required|exists:usuarios,id',
             'id_photo' => 'required|exists:photos,id',
             'data_comparacao' => ['required', 'regex:/^\d{2}\/\d{2}\/\d{4}$/'],
-            'tags' => 'nullable|array',
+            'tags' => 'sometimes|array',
             'tags.*.id_tag' => 'required|exists:tags,id',
-            'tags.*.id_tag' => 'required_with:tags|exists:tags,id',
-            'tags.*.valor' => 'required_with:tags|string'
+            'tags.*.valor' => 'required|string'
         ]);
         Log::info('Store ComparacaoImagem called', [
             'id_usuario' => $request->id_usuario,
@@ -48,30 +47,27 @@ class ComparacaoImagemController extends Controller
         }
 
         // Validar se todas as tags são globais ou do usuário
-        $tagsArray = is_array($request->tags) ? $request->tags : [];
-        if (!empty($tagsArray)) {
-            $tagIds = array_map(function ($tag) {
-                return $tag['id_tag'];
-            }, $tagsArray);
-            $tagsValidas = Tag::whereIn('id', $tagIds)
-                ->where(function ($query) use ($request) {
-                    $query->where('idUsuarioCriador', $request->id_usuario)
-                        ->orWhere(function ($q) {
-                            $q->whereHas('usuario', function ($u) {
-                                $u->where('idPerfil', Helper::ID_PERFIL_ADMIN);
-                            });
+        $tagIds = array_map(function ($tag) {
+            return $tag['id_tag'];
+        }, $request->tags);
+        $tagsValidas = Tag::whereIn('id', $tagIds)
+            ->where(function ($query) use ($request) {
+                $query->where('idUsuarioCriador', $request->id_usuario)
+                    ->orWhere(function ($q) {
+                        $q->whereHas('usuario', function ($u) {
+                            $u->where('idPerfil', Helper::ID_PERFIL_ADMIN);
                         });
-                })
-                ->pluck('id')
-                ->toArray();
+                    });
+            })
+            ->pluck('id')
+            ->toArray();
 
-            $tagsInvalidas = array_diff($tagIds, $tagsValidas);
-            if (count($tagsInvalidas) > 0) {
-                return response()->json([
-                    'message' => 'Uma ou mais tags não são globais nem pertencem ao usuário.',
-                    'tags_invalidas' => $tagsInvalidas
-                ], 403);
-            }
+        $tagsInvalidas = array_diff($tagIds, $tagsValidas);
+        if (count($tagsInvalidas) > 0) {
+            return response()->json([
+                'message' => 'Uma ou mais tags não são globais nem pertencem ao usuário.',
+                'tags_invalidas' => $tagsInvalidas
+            ], 403);
         }
 
         // Converter data_comparacao do formato brasileiro para Y-m-d
@@ -94,16 +90,13 @@ class ComparacaoImagemController extends Controller
                 ComparacaoImagemTag::where('id_comparacao', $comparacao->id)->delete();
 
                 // Adiciona as novas tags
-                if (isset($request->tags)) {
-                    foreach ($request->tags as $tagData) {
-                        ComparacaoImagemTag::create([
-                            'id_comparacao' => $comparacao->id,
-                            'id_tag' => $tagData['id_tag'],
-                            'valor' => $tagData['valor']
-                        ]);
-                    }
+                foreach ($request->tags as $tagData) {
+                    ComparacaoImagemTag::create([
+                        'id_comparacao' => $comparacao->id,
+                        'id_tag' => $tagData['id_tag'],
+                        'valor' => $tagData['valor']
+                    ]);
                 }
-               
                 return response()->json(['message' => 'Comparação atualizada com sucesso.']);
             } else {
                 // Cria nova comparação
@@ -113,7 +106,6 @@ class ComparacaoImagemController extends Controller
                     'data_comparacao' => $dataComparacao->format('Y-m-d')
                 ]);
 
-            if (isset($request->tags)) {
                 foreach ($request->tags as $tagData) {
                     ComparacaoImagemTag::create([
                         'id_comparacao' => $comparacao->id,
@@ -121,31 +113,18 @@ class ComparacaoImagemController extends Controller
                         'valor' => $tagData['valor']
                     ]);
                 }
-            }
                 return response()->json(['message' => 'Comparação salva com sucesso.']);
             }
     }
 
-    public function show($id): array | JsonResponse
+    public function show($id): JsonResponse
     {
-        $comparacaoArray = [];
         $comparacoes = ComparacaoImagem::with('tags')
             ->where('id_photo', $id)
             ->get();
 
         if ($comparacoes->isEmpty()) {
-            $photo = Photos::find($id);
-            $dataComparacao = null;
-            if ($photo && $photo->created_at) {
-                $dataObj = \DateTime::createFromFormat('Y-m-d H:i:s', $photo->created_at);
-                $dataComparacao = $dataObj ? $dataObj->format('d/m/Y') : null;
-                $comparacaoArray = [
-                    'data_comparacao' => $dataComparacao
-                ];
-                            return $comparacaoArray;
-
-            }
-      
+            return response()->json(['message' => 'Nenhuma comparação encontrada para esta foto.'], 404);
         }
 
         // Ajusta o campo data_comparacao para o padrão brasileiro
