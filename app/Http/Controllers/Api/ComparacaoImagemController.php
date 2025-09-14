@@ -131,7 +131,9 @@ class ComparacaoImagemController extends Controller
         $comparacoes = ComparacaoImagem::with('tags')
             ->where('id_photo', $id)
             ->get();
-            
+
+            dd($comparacoes);
+
             $photo = Photos::find($id);
             
 
