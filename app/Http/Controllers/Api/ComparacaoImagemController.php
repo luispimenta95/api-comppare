@@ -119,12 +119,16 @@ class ComparacaoImagemController extends Controller
 
     public function show($id): JsonResponse
     {
+        
         $comparacoes = ComparacaoImagem::with('tags')
             ->where('id_photo', $id)
             ->get();
 
         if ($comparacoes->isEmpty()) {
-            return response()->json(['message' => 'Nenhuma comparação encontrada para esta foto.'], 404);
+            return response()->json([
+                'message' => 'Nenhuma comparação encontrada para esta foto.',
+                'data_comparacao' => '19/09/1995'
+            ], 404);
         }
 
         // Ajusta o campo data_comparacao para o padrão brasileiro
