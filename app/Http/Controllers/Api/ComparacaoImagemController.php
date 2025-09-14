@@ -126,14 +126,26 @@ class ComparacaoImagemController extends Controller
             }
     }
 
-    public function show($id): JsonResponse
+    public function show($id): array | JsonResponse
     {
+        $comparacaoArray = [];
         $comparacoes = ComparacaoImagem::with('tags')
             ->where('id_photo', $id)
             ->get();
 
         if ($comparacoes->isEmpty()) {
-            return response()->json(['message' => 'Nenhuma comparação encontrada para esta foto.'], 404);
+            $photo = Photos::find($id);
+            $dataComparacao = null;
+            if ($photo && $photo->created_at) {
+                $dataObj = \DateTime::createFromFormat('Y-m-d H:i:s', $photo->created_at);
+                $dataComparacao = $dataObj ? $dataObj->format('d/m/Y') : null;
+                $comparacaoArray = [
+                    'data_comparacao' => $dataComparacao
+                ];
+                            return $comparacaoArray;
+
+            }
+      
         }
 
         // Ajusta o campo data_comparacao para o padrão brasileiro
@@ -141,7 +153,6 @@ class ComparacaoImagemController extends Controller
             $comparacaoArray = $comparacao->toArray();
             if (!empty($comparacaoArray['data_comparacao'])) {
                 $date = \DateTime::createFromFormat('Y-m-d', $comparacaoArray['data_comparacao']);
-                dd($date);
                 if ($date) {
                     $comparacaoArray['data_comparacao'] = $date->format('d/m/Y');
                 }
