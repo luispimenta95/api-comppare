@@ -143,9 +143,9 @@ class ComparacaoImagemController extends Controller
                 'id' => null,
                 'id_usuario' => null,
                 'id_photo' => $photo->id,
-                'data_comparacao' => \DateTime::createFromFormat('Y-m-d', $photo->created_at)->format('d/m/Y'),
                 'created_at' => null,
                 'updated_at' => null,
+                'data_comparacao' => $photo->created_at->format('d/m/Y'),
                 'tags' => []
             ], 200);
         }
