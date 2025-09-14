@@ -131,6 +131,8 @@ class ComparacaoImagemController extends Controller
         $comparacoes = ComparacaoImagem::with('tags')
             ->where('id_photo', $id)
             ->get();
+            $photo = Photos::find($id);
+            dd($photo);
 
         if ($comparacoes->isEmpty()) {
             return response()->json(['message' => 'Nenhuma comparação encontrada para esta foto.'], 404);
