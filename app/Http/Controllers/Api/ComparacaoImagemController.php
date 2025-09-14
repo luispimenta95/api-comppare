@@ -125,6 +125,7 @@ class ComparacaoImagemController extends Controller
         ->where('id_photo', $id)
         ->get();
 
+    // Ajusta o campo data_comparacao para o padrão brasileiro
     $comparacoesFormatadas = $comparacoes->map(function ($comparacao) {
         $comparacaoArray = $comparacao->toArray();
         if (!empty($comparacaoArray['data_comparacao'])) {
@@ -136,10 +137,19 @@ class ComparacaoImagemController extends Controller
         return $comparacaoArray;
     });
 
-    return response()->json([
-        'data_comparacao' => $photo->created_at->format('d/m/Y'),
-        'comparacoes'     => $comparacoesFormatadas,
-    ]);
+    // Se não houver comparações, retorna mesma estrutura com data da foto
+    if ($comparacoesFormatadas->isEmpty()) {
+        return response()->json([
+            [
+                'id'              => null,
+                'id_photo'        => $photo->id,
+                'tags'            => [],
+                'data_comparacao' => $photo->created_at->format('d/m/Y'),
+            ]
+        ]);
+    }
+
+    return response()->json($comparacoesFormatadas);
 }
 
 }
