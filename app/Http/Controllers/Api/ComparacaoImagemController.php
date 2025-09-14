@@ -117,7 +117,7 @@ class ComparacaoImagemController extends Controller
             }
     }
 
-    public function show($id): JsonResponse
+   public function show($id): JsonResponse
 {
     $photo = Photos::findOrFail($id);
 
@@ -137,21 +137,22 @@ class ComparacaoImagemController extends Controller
         return $comparacaoArray;
     });
 
-    // Se não houver comparações, devolve um array com objeto padrão
+    // Se não houver comparações, cria um "fake" no mesmo formato
     if ($comparacoesFormatadas->isEmpty()) {
         $comparacoesFormatadas = collect([[
             'id'              => null,
             'id_usuario'      => null,
             'id_photo'        => $photo->id,
             'data_comparacao' => $photo->created_at->format('d/m/Y'),
-            'created_at'      => null,
-            'updated_at'      => null,
+            'created_at'      => $photo->created_at->toISOString(),
+            'updated_at'      => $photo->updated_at->toISOString(),
             'tags'            => [],
         ]]);
     }
 
-    return response()->json($comparacoesFormatadas, 200);
+    return response()->json($comparacoesFormatadas->values(), 200);
 }
+
 
 
 }
