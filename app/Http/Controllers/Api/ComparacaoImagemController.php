@@ -137,17 +137,18 @@ class ComparacaoImagemController extends Controller
         return $comparacaoArray;
     });
 
-    // Se não houver comparações, retorna mesma estrutura com data da foto
-    if ($comparacoesFormatadas->isEmpty()) {
-        return response()->json([
-            [
-                'id'              => null,
-                'id_photo'        => $photo->id,
-                'tags'            => [],
-                'data_comparacao' => $photo->created_at->format('d/m/Y'),
-            ]
-        ]);
-    }
+        // Se não houver comparações, retorna um objeto com campos esperados e tags vazio
+        if ($comparacoesFormatadas->isEmpty()) {
+            return response()->json([
+                'id' => null,
+                'id_usuario' => null,
+                'id_photo' => $photo->id,
+                'data_comparacao' => \DateTime::createFromFormat('Y-m-d', $photo->created_at)->format('d/m/Y'),
+                'created_at' => null,
+                'updated_at' => null,
+                'tags' => []
+            ], 200);
+        }
 
     return response()->json($comparacoesFormatadas);
 }
