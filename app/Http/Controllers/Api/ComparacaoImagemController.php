@@ -119,38 +119,77 @@ class ComparacaoImagemController extends Controller
 
    public function show($id): JsonResponse
 {
+    // ajuste o nome do model caso o seu seja Photo (singular)
     $photo = Photos::findOrFail($id);
 
     $comparacoes = ComparacaoImagem::with('tags')
         ->where('id_photo', $id)
         ->get();
 
-    // Ajusta o campo data_comparacao para o padrão brasileiro
-    $comparacoesFormatadas = $comparacoes->map(function ($comparacao) {
-        $comparacaoArray = $comparacao->toArray();
-        if (!empty($comparacaoArray['data_comparacao'])) {
-            $date = \DateTime::createFromFormat('Y-m-d', $comparacaoArray['data_comparacao']);
-            if ($date) {
-                $comparacaoArray['data_comparacao'] = $date->format('d/m/Y');
+    $result = $comparacoes->map(function ($comparacao) use ($photo) {
+        $data = $comparacao->toArray();
+
+        $raw = $data['data_comparacao'] ?? null;
+        $formatted = null;
+
+        if ($raw) {
+            // tenta Y-m-d
+            $dt = \DateTime::createFromFormat('Y-m-d', $raw);
+            if ($dt) {
+                $formatted = $dt->format('d/m/Y');
+            } else {
+                // tenta d/m/Y
+                $dt2 = \DateTime::createFromFormat('d/m/Y', $raw);
+                if ($dt2) {
+                    $formatted = $dt2->format('d/m/Y');
+                } else {
+                    // fallback usando strtotime (trim para evitar lixo)
+                    $ts = strtotime(trim($raw));
+                    if ($ts !== false) {
+                        $formatted = date('d/m/Y', $ts);
+                    }
+                }
             }
         }
-        return $comparacaoArray;
-    });
 
-    // Se não houver comparações, cria um "fake" no mesmo formato
-    if ($comparacoesFormatadas->isEmpty()) {
-        $comparacoesFormatadas = collect([[
-            'id'              => null,
-            'id_usuario'      => null,
-            'id_photo'        => $photo->id,
+        // se não conseguiu formatar, usa a data da foto
+        $data['data_comparacao'] = $formatted ?? $photo->created_at->format('d/m/Y');
+
+        // normalize created_at / updated_at (ISO-like). se faltar, usa a data da foto
+        try {
+            $data['created_at'] = isset($data['created_at'])
+                ? (new \DateTime($data['created_at']))->format('Y-m-d\TH:i:s.u\Z')
+                : $photo->created_at->format('Y-m-d\TH:i:s.u\Z');
+        } catch (\Exception $e) {
+            $data['created_at'] = $photo->created_at->format('Y-m-d\TH:i:s.u\Z');
+        }
+
+        try {
+            $data['updated_at'] = isset($data['updated_at']) && $data['updated_at']
+                ? (new \DateTime($data['updated_at']))->format('Y-m-d\TH:i:s.u\Z')
+                : ($photo->updated_at ? $photo->updated_at->format('Y-m-d\TH:i:s.u\Z') : null);
+        } catch (\Exception $e) {
+            $data['updated_at'] = $photo->updated_at ? $photo->updated_at->format('Y-m-d\TH:i:s.u\Z') : null;
+        }
+
+        $data['tags'] = $data['tags'] ?? [];
+
+        return $data;
+    })->values()->toArray();
+
+    if (empty($result)) {
+        $result = [[
+            'id' => null,
+            'id_usuario' => null,
+            'id_photo' => $photo->id,
             'data_comparacao' => $photo->created_at->format('d/m/Y'),
-            'created_at'      => $photo->created_at->toISOString(),
-            'updated_at'      => $photo->updated_at->toISOString(),
-            'tags'            => [],
-        ]]);
+            'created_at' => $photo->created_at->format('Y-m-d\TH:i:s.u\Z'),
+            'updated_at' => $photo->updated_at ? $photo->updated_at->format('Y-m-d\TH:i:s.u\Z') : null,
+            'tags' => [],
+        ]];
     }
 
-    return response()->json($comparacoesFormatadas->values(), 200);
+    return response()->json($result, 200);
 }
 
 
