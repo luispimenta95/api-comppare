@@ -143,6 +143,8 @@ class ComparacaoImagemController extends Controller
             return $comparacaoArray;
         });
 
+        dd($comparacoesFormatadas);
+
         return response()->json($comparacoesFormatadas);
     }
 }
