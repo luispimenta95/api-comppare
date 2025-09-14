@@ -131,8 +131,9 @@ class ComparacaoImagemController extends Controller
         $comparacoes = ComparacaoImagem::with('tags')
             ->where('id_photo', $id)
             ->get();
+            
             $photo = Photos::find($id);
-            dd($photo);
+            
 
         if ($comparacoes->isEmpty()) {
             return response()->json(['message' => 'Nenhuma comparação encontrada para esta foto.'], 404);
@@ -145,7 +146,7 @@ class ComparacaoImagemController extends Controller
                 $date = \DateTime::createFromFormat('Y-m-d', $comparacaoArray['data_comparacao']);
                 dd($date);
                 if ($date) {
-                    $comparacaoArray['data_comparacao'] = $date->format('d/m/Y');
+                    $comparacaoArray['data_comparacao'] =  \DateTime::createFromFormat('Y-m-d', $photo->created_at)->format('d/m/Y');
                 }
             }
             return $comparacaoArray;
