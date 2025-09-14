@@ -125,30 +125,20 @@ class ComparacaoImagemController extends Controller
         ->where('id_photo', $id)
         ->get();
 
-    // Se houver comparações, formata datas
-    if ($comparacoes->isNotEmpty()) {
-        $comparacoesFormatadas = $comparacoes->map(function ($comparacao) {
-            $comparacaoArray = $comparacao->toArray();
-            if (!empty($comparacaoArray['data_comparacao'])) {
-                $date = \DateTime::createFromFormat('Y-m-d', $comparacaoArray['data_comparacao']);
-                if ($date) {
-                    $comparacaoArray['data_comparacao'] = $date->format('d/m/Y');
-                }
+    $comparacoesFormatadas = $comparacoes->map(function ($comparacao) {
+        $comparacaoArray = $comparacao->toArray();
+        if (!empty($comparacaoArray['data_comparacao'])) {
+            $date = \DateTime::createFromFormat('Y-m-d', $comparacaoArray['data_comparacao']);
+            if ($date) {
+                $comparacaoArray['data_comparacao'] = $date->format('d/m/Y');
             }
-            return $comparacaoArray;
-        });
+        }
+        return $comparacaoArray;
+    });
 
-        return response()->json($comparacoesFormatadas);
-    }
-
-    // Se não houver comparações, retorna mesma estrutura
     return response()->json([
-        [
-            'id' => null,
-            'id_photo' => $photo->id,
-            'tags' => [],
-            'data_comparacao' => $photo->created_at->format('d/m/Y'),
-        ]
+        'data_comparacao' => $photo->created_at->format('d/m/Y'),
+        'comparacoes'     => $comparacoesFormatadas,
     ]);
 }
 
