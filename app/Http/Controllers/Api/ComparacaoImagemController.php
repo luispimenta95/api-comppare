@@ -128,7 +128,7 @@ class ComparacaoImagemController extends Controller
             return response()->json([
                 'message' => 'Nenhuma comparação encontrada para esta foto.',
                 'data_comparacao' => '19/09/1995'
-            ], 404);
+            ]);
         }
 
         // Ajusta o campo data_comparacao para o padrão brasileiro
