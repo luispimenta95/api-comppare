@@ -53,13 +53,13 @@ class UsuarioController extends Controller
             ->with(['photos', 'subpastas.photos'])
             ->get();
 
-        $pastasFormatadas = $todasPastas->map(function ($pasta) {
+        $subpastasFormatadas = $todasPastas->whereNotNull('idPastaPai')->map(function ($subpasta) {
             return [
-                'id' => $pasta->id,
-                'nome' => $pasta->nome,
-                'path' => Helper::formatFolderUrl($pasta),
-                'idPastaPai' => $pasta->idPastaPai,
-                'imagens' => $pasta->photos->map(fn($photo) => [
+                'id' => $subpasta->id,
+                'nome' => $subpasta->nome,
+                'path' => Helper::formatFolderUrl($subpasta),
+                'idPastaPai' => $subpasta->idPastaPai,
+                'imagens' => $subpasta->photos->map(fn($photo) => [
                     'id' => $photo->id,
                     'path' => Helper::formatImageUrl($photo->path),
                     'taken_at' => $photo->taken_at
@@ -67,7 +67,12 @@ class UsuarioController extends Controller
             ];
         })->values();
 
-        return $pastasFormatadas->toArray();
+        if ($subpastasFormatadas->isEmpty()) {
+            return [
+                'message' => 'Nenhuma subpasta encontrada para este usuário.'
+            ];
+        }
+        return $subpastasFormatadas->toArray();
     }
     /**
      * Atualiza os dados pessoais de um usuário
