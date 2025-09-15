@@ -46,33 +46,42 @@ class UsuarioController extends Controller
      * @param array $limitesInfo
      * @return array
      */
-    public function getPastasEstruturadas($idUsuario): array
+    public function getPastasEstruturadas(int $idUsuario): array
     {
-        $idUsuario = (int) $idUsuario;
         $todasPastas = Pastas::where('idUsuario', $idUsuario)
             ->with(['photos', 'subpastas.photos'])
             ->get();
 
-        $subpastasFormatadas = $todasPastas->whereNotNull('idPastaPai')->map(function ($subpasta) {
+        $pastasPrincipais = $todasPastas->whereNull('idPastaPai');
+
+        $pastas = $pastasPrincipais->map(function ($pasta){
+            $subpastas = Pastas::where('idPastaPai', $pasta->id)
+                ->with('photos')
+                ->get()
+                ->map(function ($subpasta) use ($pasta) {
+                    return [
+                        'id' => $subpasta->id,
+                        'nome' => $subpasta->nome,
+                        'path' => Helper::formatFolderUrl($subpasta),
+                        'idPastaPai' => $subpasta->idPastaPai,
+                        'imagens' => $subpasta->photos->map(fn($photo) => [
+                            'id' => $photo->id,
+                            'path' => Helper::formatImageUrl($photo->path),
+                            'taken_at' => $photo->taken_at
+                        ])->values()
+                    ];
+                })->values();
+
             return [
-                'id' => $subpasta->id,
-                'nome' => $subpasta->nome,
-                'path' => Helper::formatFolderUrl($subpasta),
-                'idPastaPai' => $subpasta->idPastaPai,
-                'imagens' => $subpasta->photos->map(fn($photo) => [
-                    'id' => $photo->id,
-                    'path' => Helper::formatImageUrl($photo->path),
-                    'taken_at' => $photo->taken_at
-                ])->values()
+                'nome' => $pasta->nome,
+                'id' => $pasta->id,
+                'path' => Helper::formatFolderUrl($pasta),
+                'idPastaPai' => null,
+                'subpastas' => $subpastas
             ];
         })->values();
 
-        if ($subpastasFormatadas->isEmpty()) {
-            return [
-                'message' => 'Nenhuma subpasta encontrada para este usuário.'
-            ];
-        }
-        return $subpastasFormatadas->toArray();
+        return $pastas->toArray();
     }
     /**
      * Atualiza os dados pessoais de um usuário
