@@ -48,7 +48,7 @@ class UsuarioController extends Controller
      */
     public function getPastasEstruturadas(Usuarios $user): array
     {
-        dd($user->id);
+        dd($user);
         $todasPastas = Pastas::where('idUsuario', $user->id)
             ->with(['photos', 'subpastas.photos'])
             ->get();
