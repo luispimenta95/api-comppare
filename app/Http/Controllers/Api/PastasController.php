@@ -918,8 +918,8 @@ class PastasController extends Controller
                         'imagens' => $subpasta->photos->map(function ($photo) {
                             return [
                                 'id' => $photo->id,
-                                'path' => Helper::formatImageUrl($photo->path), // URL clicável
-                                'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null
+                                'path' => Helper::formatImageUrl($photo->path) // URL clicável
+                                
                             ];
                         })->values()->toArray()
                     ];
@@ -1077,7 +1077,6 @@ class PastasController extends Controller
                             return [
                                 'id' => $photo->id,
                                 'path' => Helper::formatImageUrl($photo->path),
-                                
                             ];
                         })->values()->toArray(),
                         'tags' => $subpasta->tags ? $subpasta->tags->map(function ($tag) {
