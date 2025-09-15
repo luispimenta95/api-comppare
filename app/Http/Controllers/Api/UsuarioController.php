@@ -478,10 +478,10 @@ class UsuarioController extends Controller
         $currentMonth = now()->month;
         $currentYear = now()->year;
         $limitesInfo = $this->calcularLimitesUsuario($user, $plano, $currentMonth, $currentYear);
+dd($user->id);
 
         // Recupera as pastas estruturadas
-        $pastas = $this->getPastasEstruturadas(intval($user->id), $limitesInfo);
-
+        $pastas = $this->getPastasEstruturadas(intval($user->id));
         // Atualiza último acesso
         $user->ultimoAcesso = now();
         $user->save();
