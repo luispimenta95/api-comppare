@@ -1077,8 +1077,7 @@ class PastasController extends Controller
                             return [
                                 'id' => $photo->id,
                                 'path' => Helper::formatImageUrl($photo->path),
-                                'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null
-
+                                
                             ];
                         })->values()->toArray(),
                         'tags' => $subpasta->tags ? $subpasta->tags->map(function ($tag) {
