@@ -46,10 +46,9 @@ class UsuarioController extends Controller
      * @param array $limitesInfo
      * @return array
      */
-    public function getPastasEstruturadas(Usuarios $user): array
+    public function getPastasEstruturadas(int $idUsuario): array
     {
-        dd($user);
-        $todasPastas = Pastas::where('idUsuario', $user->id)
+        $todasPastas = Pastas::where('idUsuario', $idUsuario)
             ->with(['photos', 'subpastas.photos'])
             ->get();
 
@@ -479,9 +478,9 @@ class UsuarioController extends Controller
         $currentYear = now()->year;
         $limitesInfo = $this->calcularLimitesUsuario($user, $plano, $currentMonth, $currentYear);
 
-
         // Recupera as pastas estruturadas
-        $pastas = $this->getPastasEstruturadas($user);
+        $pastas = $this->getPastasEstruturadas($user->id);
+
         // Atualiza último acesso
         $user->ultimoAcesso = now();
         $user->save();
