@@ -479,7 +479,7 @@ class UsuarioController extends Controller
         $limitesInfo = $this->calcularLimitesUsuario($user, $plano, $currentMonth, $currentYear);
 
         // Recupera as pastas estruturadas
-        $pastas = $this->getPastasEstruturadas($user->id);
+        $pastas = $this->getPastasEstruturadas($user->id, $limitesInfo);
 
         // Atualiza último acesso
         $user->ultimoAcesso = now();
