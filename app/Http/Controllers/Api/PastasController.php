@@ -842,6 +842,7 @@ class PastasController extends Controller
         $folder->tags()->sync($request->tags);
 
         return response()->json([
+            'codRetorno' => HttpCodesEnum::OK->value,
             'message' => 'Tags associadas com sucesso!',
             'id_pasta' => $folder->id,
             'tags' => $request->tags,
