@@ -834,7 +834,6 @@ class PastasController extends Controller
             'tags' => 'required|array',
             'tags.*' => 'required|integer|exists:tags,id',
         ]);
-        Log::info('Request para sincronizar tags na pasta: ', $request->all());
 
         $folder = Pastas::findOrFail($request->pasta);
 
