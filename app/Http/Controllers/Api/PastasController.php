@@ -834,6 +834,7 @@ class PastasController extends Controller
             'tags' => 'required|array',
             'tags.*' => 'required|integer|exists:tags,id',
         ]);
+        Log::info('Request para sincronizar tags na pasta: ', $request->all());
 
         $folder = Pastas::findOrFail($request->pasta);
 
@@ -1077,7 +1078,7 @@ class PastasController extends Controller
                             return [
                                 'id' => $photo->id,
                                 'path' => Helper::formatImageUrl($photo->path),
-                                'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null
+                                //'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null
                             ];
                         })->values()->toArray(),
                         'tags' => $subpasta->tags ? $subpasta->tags->map(function ($tag) {
