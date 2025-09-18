@@ -51,9 +51,10 @@ class ComparacaoImagemController extends Controller
         }
 
         // Validar se todas as tags são globais ou do usuário
+        $tagsRequest = $request->tags ?? [];
         $tagIds = array_map(function ($tag) {
             return $tag['id_tag'];
-        }, $request->tags);
+        }, $tagsRequest);
         $tagsValidas = Tag::whereIn('id', $tagIds)
             ->where(function ($query) use ($request) {
                 $query->where('idUsuarioCriador', $request->id_usuario)
