@@ -11,7 +11,7 @@ Route::prefix('pasta')->group(
             Route::get('/recuperar', [PastasController::class, 'getFolder']);
             Route::post('/associar-tags', [PastasController::class, 'syncTagsToFolder']);
             Route::delete('/excluir', [PastasController::class, 'destroy']);
-            Route::post('/remover-tags', [PastasController::class, 'detachTagFromFolder']);
+            Route::post('/excluir-tags', [PastasController::class, 'detachTagFromFolder']);
 
         });
     }
