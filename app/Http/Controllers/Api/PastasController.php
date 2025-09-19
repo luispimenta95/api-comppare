@@ -860,7 +860,7 @@ class PastasController extends Controller
     public function detachTagFromFolder(Request $request)
     {
         $request->validate([
-            'folder_id' => 'required|exists:folders,id',
+            'folder_id' => 'required|exists:pastas,id',
             'tag_id' => 'required|exists:tags,id',
         ]);
 
