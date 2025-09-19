@@ -1161,4 +1161,43 @@ class PastasController extends Controller
 
         return $resultado;
     }
+
+    public function retrieveSubFolderImages(Request $request)
+    {
+        $request->validate([
+            'folder_id' => 'required|exists:pastas,id',
+        ]);
+
+        $folder = Pastas::findOrFail($request->folder_id);
+
+        // Verifica se é uma subpasta
+        if (is_null($folder->idPastaPai)) {
+            return response()->json([
+            'codRetorno' => HttpCodesEnum::BadRequest->value,
+            'message' => 'A pasta informada não é uma subpasta.',
+            ], 400);
+        }
+
+        // Recupera as imagens da subpasta
+        $images = $folder->photos->map(function ($photo) {
+            return [
+            'id' => $photo->id,
+            'path' => Helper::formatImageUrl($photo->path),
+            'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null
+            ];
+        })->values();
+
+        return response()->json([
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => 'Imagens da subpasta recuperadas com sucesso!',
+            'folder_id' => $folder->id,
+            'images' => $images,
+        ]);
+        return response()->json([
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => 'Tag removida da pasta com sucesso!',
+            'folder_id' => $folder->id,
+            'tag_id' => $request->tag_id,
+        ]);
+    }
 }
