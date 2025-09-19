@@ -922,7 +922,7 @@ class PastasController extends Controller
                                 dd($photo),
                                 'id' => $photo->id,
                                 'path' => Helper::formatImageUrl($photo->path), // URL clicável
-                                'taken_at' => $photo->taken_at ? \Carbon\Carbon::parse($photo->taken_at)->format('d/m/Y') : null
+                               'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null, 
                             ];
                         })->values()->toArray()
                     ];

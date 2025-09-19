@@ -18,6 +18,10 @@ class Photos extends Model
         'taken_at'
     ];
 
+      protected $casts = [
+        'taken_at' => 'datetime',
+    ];
+
     /**
      * Relacionamento: uma foto pertence a uma pasta
      * 
