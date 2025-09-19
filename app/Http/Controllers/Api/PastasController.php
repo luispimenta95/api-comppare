@@ -1169,8 +1169,14 @@ class PastasController extends Controller
             'idPasta' => 'required|exists:pastas,id',
         ]);
 
-        $folder = Pastas::findOrFail($request->idPasta);
+        $folder = Pastas::find($request->idPasta);
 
+        if (!$folder) {
+            return response()->json([
+            'codRetorno' => HttpCodesEnum::NotFound->value,
+            'message' => 'Pasta não encontrada.',
+            ], 404);
+        }
         // Verifica se é uma subpasta
         if (is_null($folder->idPastaPai)) {
             return response()->json([
