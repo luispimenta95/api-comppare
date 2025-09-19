@@ -859,7 +859,7 @@ class PastasController extends Controller
      */
     public function detachTagFromFolder(Request $request)
     {
-
+        dd($folder = Pastas::findOrFail($request->folder_id));
         $request->validate([
             'folder_id' => 'required|exists:pastas,id',
             'tag_id' => 'required|exists:tags,id',
@@ -871,7 +871,6 @@ class PastasController extends Controller
         $folder->tags()->detach($request->tag_id);
 
         return response()->json([
-            'codRetorno' => HttpCodesEnum::OK->value,
             'message' => 'Tag removida da pasta com sucesso!',
             'folder_id' => $folder->id,
             'tag_id' => $request->tag_id,
