@@ -1165,10 +1165,10 @@ class PastasController extends Controller
     public function retrieveSubFolderImages(Request $request)
     {
         $request->validate([
-            'folder_id' => 'required|exists:pastas,id',
+            'idPasta' => 'required|exists:pastas,id',
         ]);
 
-        $folder = Pastas::findOrFail($request->folder_id);
+        $folder = Pastas::findOrFail($request->idPasta);
 
         // Verifica se é uma subpasta
         if (is_null($folder->idPastaPai)) {
