@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\Api\UsuarioController;
 use App\Http\Controllers\Api\RankingController;
-
+use App\Http\Controllers\Api\PastasController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('usuarios')->group(
@@ -20,7 +20,8 @@ Route::prefix('usuarios')->group(
             Route::post('/atualizar-plano', [UsuarioController::class, 'atualizarPlanoUsuario']);
             Route::post('/atualizar-dados', [UsuarioController::class, 'atualizarDados']);
             Route::get('/ranking/classificacao', [RankingController::class, 'index']);
-            Route::get('/pastas/{id}', [UsuarioController::class, 'getPastasEstruturadas']);
+            Route::get('/{id}/pastas', [PastasController::class, 'getFoldersByUser']);
+
         });
     }
 );
