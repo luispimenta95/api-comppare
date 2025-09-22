@@ -138,7 +138,7 @@ class ComparacaoImagemController extends Controller
             }
     }
 
-    public function show($id): JsonResponse
+    public function show(int $id): JsonResponse
 {
     $photo = Photos::findOrFail($id);
 

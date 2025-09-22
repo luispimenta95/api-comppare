@@ -885,14 +885,10 @@ class PastasController extends Controller
      * @param Request $request - Deve conter: idUsuario (ID do usuário)
      * @return JsonResponse - Lista de pastas do usuário ou erro se usuário não encontrado
      */
-    public function getFoldersByUser(Request $request)
+    public function getFoldersByUser(int $id): JsonResponse         
     {
-        dd($request->all());
-        $request->validate([
-            'id' => 'required|exists:usuarios,id', // Validar se o id existe
-        ]);
 
-        $user = Usuarios::find($request->id);
+        $user = Usuarios::find($id);
 
         // Verifica se o usuário foi encontrado
         if (!$user) {

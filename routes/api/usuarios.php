@@ -20,7 +20,7 @@ Route::prefix('usuarios')->group(
             Route::post('/atualizar-plano', [UsuarioController::class, 'atualizarPlanoUsuario']);
             Route::post('/atualizar-dados', [UsuarioController::class, 'atualizarDados']);
             Route::get('/ranking/classificacao', [RankingController::class, 'index']);
-            Route::get('/pastas', [PastasController::class, 'getFoldersByUser']);
+            Route::get('/pastas/{id}', [PastasController::class, 'getFoldersByUser']);
 
         });
     }
