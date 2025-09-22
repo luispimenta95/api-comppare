@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
-
+use App\Http\Controllers\Controller;
 use App\Enums\HttpCodesEnum;
 use App\Http\Util\Helper;
 use App\Http\Util\MailHelper;
@@ -29,7 +29,7 @@ class ConviteController extends Controller
      */
     public function create(Request $request): JsonResponse
     {
-        $campos = ['email', 'idUsuario', 'idPasta'];
+        $campos = ['email', 'usuario', 'pasta'];
         $campos = Helper::validarRequest($request, $campos);
 
         if ($campos !== true) {
@@ -40,8 +40,8 @@ class ConviteController extends Controller
             ]);
         }
 
-        $pasta = Pastas::find($request->idPasta);
-        $usuario = Usuarios::find($request->idUsuario);
+        $pasta = Pastas::find($request->pasta);
+        $usuario = Usuarios::find($request->usuario);
 
         if (!$usuario) {
             return response()->json([
@@ -69,7 +69,7 @@ class ConviteController extends Controller
         }
 
         $convite = Convite::create([
-            'idUsuario' => $request->idUsuario,
+            'idUsuario' => $request->usuario,
             'idPasta' => $pasta->id,
             'email' => $request->email,
         ]);
