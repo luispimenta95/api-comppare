@@ -887,9 +887,7 @@ class PastasController extends Controller
      */
     public function getFoldersByUser(Request $request)
     {
-        $request->validate([
-            'idUsuario' => 'required|exists:usuarios,id', // Validar se o idUsuario existe
-        ]);
+      
 
         $user = Usuarios::find($request->idUsuario);
 
