@@ -916,7 +916,6 @@ class PastasController extends Controller
                         'caminho' => Helper::formatFolderUrl($subpasta),
                         'imagens' => $subpasta->photos->map(function ($photo) {
                             return [
-                                dd($photo),
                                 'id' => $photo->id,
                                 'path' => Helper::formatImageUrl($photo->path), // URL clicável
                                'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null, 
