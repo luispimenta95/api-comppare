@@ -93,6 +93,16 @@ class ComparacaoImagemController extends Controller
                 $comparacao->data_comparacao = $dataComparacao->format('Y-m-d'); // Sempre usa a data enviada
                 $comparacao->save();
 
+                Log::info('Atualizando foto', [
+                    'photo' => $photo
+                ]);
+                $photo->taken_at = $dataComparacao->format('Y-m-d');
+                $photo->save();
+
+                Log::info('Foto atualizada', [
+                    'photo' => $photo
+                ]);
+
                 // Remove as tags antigas
                 ComparacaoImagemTag::where('id_comparacao', $comparacao->id)->delete();
 
