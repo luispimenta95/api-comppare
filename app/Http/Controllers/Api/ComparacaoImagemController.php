@@ -103,19 +103,17 @@ class ComparacaoImagemController extends Controller
                     'photo' => $photo
                 ]);
 
-                // Remove as tags antigas
-                ComparacaoImagemTag::where('id_comparacao', $comparacao->id)->delete();
-
-            // Adiciona as novas tags
-            if (isset($request->tags)) {
-                foreach ($request->tags as $tagData) {
-                    ComparacaoImagemTag::create([
-                        'id_comparacao' => $comparacao->id,
-                        'id_tag' => $tagData['id_tag'],
-                        'valor' => $tagData['valor']
-                    ]);
+                // Só remove e recria as tags se o parâmetro 'tags' for enviado
+                if (isset($request->tags)) {
+                    ComparacaoImagemTag::where('id_comparacao', $comparacao->id)->delete();
+                    foreach ($request->tags as $tagData) {
+                        ComparacaoImagemTag::create([
+                            'id_comparacao' => $comparacao->id,
+                            'id_tag' => $tagData['id_tag'],
+                            'valor' => $tagData['valor']
+                        ]);
+                    }
                 }
-            }
                 return response()->json(['message' => 'Comparação atualizada com sucesso.',
                     'codRetorno' => 200
                 ]);
