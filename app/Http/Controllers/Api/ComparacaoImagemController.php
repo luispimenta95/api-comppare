@@ -159,6 +159,7 @@ class ComparacaoImagemController extends Controller
         if (!empty($comparacaoArray['tags'])) {
             $comparacaoArray['tags'] = array_map(function ($tag) {
                 $tagModel = Tag::find($tag['id']);
+                dd($tagModel);
                 $tag['nome'] = $tagModel ? $tagModel->nomeTag : null;
                 return $tag;
             }, $comparacaoArray['tags']);
