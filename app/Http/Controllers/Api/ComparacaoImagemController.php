@@ -157,9 +157,8 @@ class ComparacaoImagemController extends Controller
         }
         // Adiciona nomeTag em cada tag
         if (!empty($comparacaoArray['tags'])) {
-            dd($comparacaoArray['tags']);
             $comparacaoArray['tags'] = array_map(function ($tag) {
-                $tagModel = Tag::find($tag['id']);
+                $tagModel = Tag::find($tag['id_tag']);
                 $tag['nome'] = $tagModel ? $tagModel->nomeTag : null;
                 return $tag;
             }, $comparacaoArray['tags']);
