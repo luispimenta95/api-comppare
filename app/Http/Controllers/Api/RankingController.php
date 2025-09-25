@@ -41,7 +41,7 @@ class RankingController extends Controller
      */
     public function updatePoints(Request $request): JsonResponse
     {
-        $campos = ['pontos', 'usuario'];
+        $campos = ['pontos', 'usuario','acao'];
 
         $campos = Helper::validarRequest($request, $campos);
 
@@ -65,10 +65,11 @@ class RankingController extends Controller
 
         Ponto::create([
             'idUsuario' => $request->usuario,
-            'pontos' => $request->pontos
+            'pontos' => strtolower($request->acao) === 'adicionar' ? $request->pontos : -$request->pontos
         ]);
 
-        $user->pontos = $user->pontos + $request->pontos;
+        $user->pontos = strtolower($request->acao) === 'adicionar' ? $user->pontos + $request->pontos : $user->pontos - $request->pontos;
+        $user->save();
         $response = [
             'codRetorno' => 200,
             'message' => $this->codes[200]

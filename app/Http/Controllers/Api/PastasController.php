@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use App\Models\ComparacaoImagem;
+use App\Models\Convite;
 use Illuminate\Support\Facades\Log;
 
 class PastasController extends Controller
@@ -885,11 +886,11 @@ class PastasController extends Controller
      * @param Request $request - Deve conter: idUsuario (ID do usuário)
      * @return JsonResponse - Lista de pastas do usuário ou erro se usuário não encontrado
      */
-    public function getFoldersByUser(int $id): JsonResponse         
+   public function getFoldersByUser(int $id): JsonResponse         
     {
 
         $user = Usuarios::find($id);
-
+ 
         // Verifica se o usuário foi encontrado
         if (!$user) {
             return response()->json([
@@ -904,27 +905,31 @@ class PastasController extends Controller
             ->whereNull('idPastaPai') // Apenas pastas principais
             ->get();
 
-        $pastasFormatadas = $pastas->map(function ($pasta) {
-            return [
-                'id' => $pasta->id,
-                'nome' => $pasta->nome,
-                'caminho' => Helper::formatFolderUrl($pasta),
-                'subpastas' => $pasta->subpastas->map(function ($subpasta) {
-                    return [
-                        'id' => $subpasta->id,
-                        'nome' => $subpasta->nome,
-                        'caminho' => Helper::formatFolderUrl($subpasta),
-                        'imagens' => $subpasta->photos->map(function ($photo) {
-                            return [
-                                'id' => $photo->id,
-                                'path' => Helper::formatImageUrl($photo->path), // URL clicável
-                               'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null, 
-                            ];
-                        })->values()->toArray()
-                    ];
-                })->values()
-            ];
-        });
+            $pastasFormatadas = $pastas->map(function ($pasta) {
+                // Verifica se existe convite vinculado à pasta principal
+                return [
+                    'id' => $pasta->id,
+                    'nome' => $pasta->nome,
+                    'caminho' => Helper::formatFolderUrl($pasta),
+                    'convite' => $this->checkExistsInviteForFolder($pasta->id),
+                    'subpastas' => $pasta->subpastas->map(function ($subpasta) {
+                        // Verifica se existe convite vinculado à subpasta
+                        return [
+                            'id' => $subpasta->id,
+                            'convite' => $this->checkExistsInviteForFolder($subpasta->id),
+                            'nome' => $subpasta->nome,
+                            'caminho' => Helper::formatFolderUrl($subpasta),
+                            'imagens' => $subpasta->photos->map(function ($photo) {
+                                return [
+                                    'id' => $photo->id,
+                                    'path' => Helper::formatImageUrl($photo->path), // URL clicável
+                                   'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null, 
+                                ];
+                            })->values()->toArray()
+                        ];
+                    })->values()
+                ];
+            });
 
         return response()->json([
             'codRetorno' => HttpCodesEnum::OK->value,
@@ -1203,5 +1208,11 @@ class PastasController extends Controller
                 'message' => 'Pasta não encontrada.',
             ], 404);
         }
+    }
+
+    private function checkExistsInviteForFolder($folderId)
+    {
+        $convite = Convite::where('idPasta', $folderId)->first();
+        return $convite ? true : false;
     }
 }
