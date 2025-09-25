@@ -146,7 +146,7 @@ class ComparacaoImagemController extends Controller
         ->where('id_photo', $id)
         ->get();
 
-    // Ajusta o campo data_comparacao para o padrão brasileiro
+    // Ajusta o campo data_comparacao para o padrão brasileiro e adiciona nomeTag nas tags
     $comparacoesFormatadas = $comparacoes->map(function ($comparacao) {
         $comparacaoArray = $comparacao->toArray();
         if (!empty($comparacaoArray['data_comparacao'])) {
@@ -155,6 +155,14 @@ class ComparacaoImagemController extends Controller
                 $comparacaoArray['data_comparacao'] = $date->format('d/m/Y');
             }
         }
+        // Adiciona nomeTag em cada tag
+        if (!empty($comparacaoArray['tags'])) {
+            $comparacaoArray['tags'] = array_map(function ($tag) {
+                $tagModel = Tag::find($tag['id']);
+                $tag['nome'] = $tagModel ? $tagModel->nomeTag : null;
+                return $tag;
+            }, $comparacaoArray['tags']);
+        }
         return $comparacaoArray;
     });
 
@@ -162,7 +170,7 @@ class ComparacaoImagemController extends Controller
     if ($comparacoesFormatadas->isEmpty()) {
         $comparacoesFormatadas = collect([[
             'id'              => 0,
-            'id_usuario'      => $pasta->idUsuario ?? 0,
+            'id_usuario'      => 0,
             'id_photo'        => $photo->id,
             'data_comparacao' => $photo->created_at->format('d/m/Y'),
             'created_at'      => now()->format('Y-m-d H:i:s'),
