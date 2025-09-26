@@ -85,11 +85,10 @@ class ConviteController extends Controller
         $pasta->usuario()->attach($usuario->id);
         Helper::relacionarPastas($pasta, $usuario);
         if ($convite) {
-            $usuario->convites()->save($convite);
             $usuario->increment('quantidadeConvites');
 
             $dadosEmail = ['nomePasta' => $pasta->nome];
-            MailHelper::confirmacaoAssinatura($dadosEmail, $request->email);
+            //MailHelper::confirmacaoAssinatura($dadosEmail, $request->email);
 
             return response()->json([
                 'codRetorno' => HttpCodesEnum::OK->value,
