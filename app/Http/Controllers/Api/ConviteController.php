@@ -50,6 +50,14 @@ class ConviteController extends Controller
             ]);
         }
 
+        // Verifica se a pasta pertence ao usuário informado
+        if (!$pasta || $pasta->idUsuario != $usuario->id) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => 'A pasta não pertence ao usuário informado.'
+            ]);
+        }
+
         $plano = Planos::find($usuario->idPlano);
 
         if (!$plano) {
@@ -59,7 +67,7 @@ class ConviteController extends Controller
             ]);
         }
 
-        $convitesAtuais = $usuario->convites()->count();
+        $convitesAtuais = $usuario->quantidadeConvites ?? 0;
 
         if ($convitesAtuais >= $plano->quantidadeConvites) {
             return response()->json([
