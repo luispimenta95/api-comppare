@@ -48,29 +48,25 @@ class UsuarioController extends Controller
      */
     public function getPastasEstruturadas(int $idUsuario): array
     {
-        $todasPastas = Pastas::where('idUsuario', $idUsuario)
-            ->with(['photos', 'subpastas.photos'])
-            ->get();
+        $usuario = Usuarios::findOrFail($idUsuario);
+        $todasPastas = $usuario->pastas()->with(['photos', 'subpastas.photos'])->get();
 
         $pastasPrincipais = $todasPastas->whereNull('idPastaPai');
 
         $pastas = $pastasPrincipais->map(function ($pasta){
-            $subpastas = Pastas::where('idPastaPai', $pasta->id)
-                ->with('photos')
-                ->get()
-                ->map(function ($subpasta) use ($pasta) {
-                    return [
-                        'id' => $subpasta->id,
-                        'nome' => $subpasta->nome,
-                        'path' => Helper::formatFolderUrl($subpasta),
-                        'idPastaPai' => $subpasta->idPastaPai,
-                        'imagens' => $subpasta->photos->map(fn($photo) => [
-                            'id' => $photo->id,
-                            'path' => Helper::formatImageUrl($photo->path),
-                            'taken_at' => $photo->taken_at
-                        ])->values()
-                    ];
-                })->values();
+            $subpastas = $pasta->subpastas->map(function ($subpasta) {
+                return [
+                    'id' => $subpasta->id,
+                    'nome' => $subpasta->nome,
+                    'path' => Helper::formatFolderUrl($subpasta),
+                    'idPastaPai' => $subpasta->idPastaPai,
+                    'imagens' => $subpasta->photos->map(fn($photo) => [
+                        'id' => $photo->id,
+                        'path' => Helper::formatImageUrl($photo->path),
+                        'taken_at' => $photo->taken_at
+                    ])->values()
+                ];
+            })->values();
 
             return [
                 'nome' => $pasta->nome,
