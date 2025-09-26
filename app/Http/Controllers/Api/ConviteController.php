@@ -84,25 +84,28 @@ class ConviteController extends Controller
             ]);
         }
 
-        $convite = Convite::create([
-            'idUsuario' => $request->usuario,
-            'idPasta' => $pasta->id,
-            'email' => $request->email,
-        ]);
-
-        $pasta->usuario()->attach($usuario->id);
-        Helper::relacionarPastas($pasta, $usuario);
-        if ($convite) {
-            $usuario->increment('quantidadeConvites');
-
-            $dadosEmail = ['nomePasta' => $pasta->nome];
-            //MailHelper::confirmacaoAssinatura($dadosEmail, $request->email);
-
-            return response()->json([
-                'codRetorno' => HttpCodesEnum::OK->value,
-                'message' => 'Compartilhamento de pasta criado com sucesso.'
+            $convite = Convite::create([
+                'idUsuario' => $request->usuario,
+                'idPasta' => $pasta->id,
+                'email' => $request->email,
             ]);
-        }
+
+            // Evita duplicidade na tabela pasta_usuario
+            if (!$pasta->usuario()->where('usuario_id', $usuario->id)->exists()) {
+                $pasta->usuario()->attach($usuario->id);
+            }
+            Helper::relacionarPastas($pasta, $usuario);
+            if ($convite) {
+                $usuario->increment('quantidadeConvites');
+
+                $dadosEmail = ['nomePasta' => $pasta->nome];
+                //MailHelper::confirmacaoAssinatura($dadosEmail, $request->email);
+
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::OK->value,
+                    'message' => 'Compartilhamento de pasta criado com sucesso.'
+                ]);
+            }
 
         return response()->json([
             'codRetorno' => HttpCodesEnum::BadRequest->value,
