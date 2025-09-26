@@ -175,7 +175,7 @@ enum HttpCodesEnum: int
             self::SubscriptionCanceled => 'Assinatura cancelada com sucesso!',
             self::InvalidPassword => 'Senha fora do padrão. A senha deve conter: Pelo menos um número; Apresentar pelo menos um caractere especial ($,#,@,!,etc); Ter ao menos uma letra minúscula; Ter ao menos uma letra maiúscula; Ter o mínimo de 8 caracteres.',
             self::InvalidLogin => 'Login inválido. Verifique suas credenciais e tente novamente.',
-            self::FolderAlreadyShared => 'A pasta já está compartilhada anteriormente.',
+            self::FolderAlreadyShared => 'A pasta já foi compartilhada anteriormente.',
             self::UserNotFolderOwner => 'Usuário não é o proprietário da pasta.',
             default => 'Unknown HTTP Status Code'
         };

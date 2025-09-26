@@ -100,7 +100,7 @@ class ConviteController extends Controller
 
             return response()->json([
                 'codRetorno' => HttpCodesEnum::OK->value,
-                'message' => HttpCodesEnum::OK->description(),
+                'message' => 'Compartilhamento de pasta criado com sucesso.'
             ]);
         }
 
