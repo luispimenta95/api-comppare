@@ -307,7 +307,7 @@ class Helper
 
         foreach ($subpastas as $subpasta) {
             // Adiciona o usuário à subpasta
-            $subpasta->usuarios()->attach($usuario->id);
+            $subpasta->usuario()->attach($usuario->id);
 
             // Chama a função recursivamente para adicionar as subpastas das subpastas
             self::relacionarPastas($subpasta, $usuario);
