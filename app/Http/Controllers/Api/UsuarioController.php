@@ -40,6 +40,43 @@ use Illuminate\Support\Facades\Log;
 class UsuarioController extends Controller
 {
     /**
+     * Processa convites pendentes para o usuário logado (por e-mail)
+     * Associa as pastas dos convites ao usuário, se houver.
+     * POST /api/usuarios/processar-convites
+     * Body: { "email": "email@dominio.com" }
+     */
+    public function processarConvitesPendentes(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|email|exists:usuarios,email',
+        ]);
+
+        $usuario = Usuarios::where('email', $request->email)->first();
+        if (!$usuario) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => 'Usuário não encontrado.'
+            ], 404);
+        }
+
+        $convites = \App\Models\Convite::where('email', $usuario->email)->get();
+        $pastasVinculadas = [];
+        foreach ($convites as $convite) {
+            $pasta = \App\Models\Pastas::find($convite->idPasta);
+            if ($pasta && !$pasta->usuario()->where('usuario_id', $usuario->id)->exists()) {
+                $pasta->usuario()->attach($usuario->id);
+                $pastasVinculadas[] = $pasta->id;
+            }
+            $convite->delete();
+        }
+
+        return response()->json([
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => count($pastasVinculadas) > 0 ? 'Convites processados e pastas vinculadas.' : 'Nenhum convite pendente encontrado.',
+            'pastas_vinculadas' => $pastasVinculadas
+        ]);
+    }
+    /**
      * Recupera as pastas e subpastas do usuário em estrutura hierárquica
      *
      * @param Usuarios $user
@@ -475,7 +512,7 @@ class UsuarioController extends Controller
         $limitesInfo = $this->calcularLimitesUsuario($user, $plano, $currentMonth, $currentYear);
 
         // Recupera as pastas estruturadas
-        $pastas = $this->getPastasEstruturadas($user->id, $limitesInfo);
+    $pastas = $this->getPastasEstruturadas($user->id);
 
         // Atualiza último acesso
         $user->ultimoAcesso = now();
