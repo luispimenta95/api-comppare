@@ -12,7 +12,6 @@ use App\Models\Planos;
 use App\Models\Usuarios;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use PHPUnit\TextUI\Help;
 
 class ConviteController extends Controller
 {
@@ -54,7 +53,16 @@ class ConviteController extends Controller
         if (!$pasta || $pasta->idUsuario != $usuario->id) {
             return response()->json([
                 'codRetorno' => HttpCodesEnum::BadRequest->value,
-                'message' => 'A pasta não pertence ao usuário informado.'
+                'message' => HttpCodesEnum::UserNotFolderOwner->description()
+            ]);
+        }
+
+        // Verifica se já existe convite para a pasta
+        $conviteExistente = Convite::where('idPasta', $pasta->id)->exists();
+        if ($conviteExistente) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::FolderAlreadyShared->description()
             ]);
         }
 

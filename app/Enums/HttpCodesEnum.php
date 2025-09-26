@@ -87,6 +87,8 @@ enum HttpCodesEnum: int
     case SubscriptionCanceled = -19;
     case InvalidPassword = -20;
     case InvalidLogin = -21;
+    case FolderAlreadyShared = -22;
+    case UserNotFolderOwner = -23;
 
 
     public function description(): string
@@ -173,6 +175,8 @@ enum HttpCodesEnum: int
             self::SubscriptionCanceled => 'Assinatura cancelada com sucesso!',
             self::InvalidPassword => 'Senha fora do padrão. A senha deve conter: Pelo menos um número; Apresentar pelo menos um caractere especial ($,#,@,!,etc); Ter ao menos uma letra minúscula; Ter ao menos uma letra maiúscula; Ter o mínimo de 8 caracteres.',
             self::InvalidLogin => 'Login inválido. Verifique suas credenciais e tente novamente.',
+            self::FolderAlreadyShared => 'A pasta já está compartilhada anteriormente.',
+            self::UserNotFolderOwner => 'Usuário não é o proprietário da pasta.',
             default => 'Unknown HTTP Status Code'
         };
     }
