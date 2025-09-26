@@ -82,7 +82,7 @@ class ConviteController extends Controller
             'email' => $request->email,
         ]);
 
-        $pasta->usuarios()->attach($usuario->id);
+        $pasta->usuario()->attach($usuario->id);
         Helper::relacionarPastas($pasta, $usuario);
         if ($convite) {
             $usuario->convites()->save($convite);
