@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\Log;
 class PastasController extends Controller
 {
 
+    private Usuarios $user;
+
     /**
      * Lista todas as pastas (não implementado)
      * 
@@ -889,10 +891,10 @@ class PastasController extends Controller
    public function getFoldersByUser(int $id): JsonResponse         
     {
 
-        $user = Usuarios::find($id);
+        $this->user = Usuarios::find($id);
  
         // Verifica se o usuário foi encontrado
-        if (!$user) {
+        if (!$this->user) {
             return response()->json([
                 'codRetorno' => HttpCodesEnum::NotFound->value,
                 'message' => HttpCodesEnum::UserNotFound->description(),
@@ -900,7 +902,7 @@ class PastasController extends Controller
         }
 
         // Busca todas as pastas associadas ao usuário (criadas e compartilhadas)
-        $pastas = $user->pastas()->with(['photos', 'subpastas.photos'])
+        $pastas = $this->user->pastas()->with(['photos', 'subpastas.photos'])
             ->whereNull('idPastaPai') // Apenas pastas principais
             ->get();
 
@@ -910,12 +912,11 @@ class PastasController extends Controller
                     'id' => $pasta->id,
                     'nome' => $pasta->nome,
                     'caminho' => Helper::formatFolderUrl($pasta),
-                    'convite' => $this->checkExistsInviteForFolder($pasta->id),
                     'subpastas' => $pasta->subpastas->map(function ($subpasta) {
                         // Verifica se existe convite vinculado à subpasta
                         return [
                             'id' => $subpasta->id,
-                            'convite' => $this->checkExistsInviteForFolder($subpasta->id),
+                            'compartilhada' => $this->checkFolderOwnership($subpasta->id, $this->user->id),
                             'nome' => $subpasta->nome,
                             'caminho' => Helper::formatFolderUrl($subpasta),
                             'imagens' => $subpasta->photos->map(function ($photo) {
@@ -1209,9 +1210,24 @@ class PastasController extends Controller
         }
     }
 
-    private function checkExistsInviteForFolder($folderId)
+    /**
+     * Verifica se a pasta pertence ao usuário informado.
+     * Retorna true se for do usuário, false se for compartilhada (via convite).
+     *
+     * @param int $folderId
+     * @param int $userId
+     * @return bool
+     */
+    private function checkFolderOwnership($folderId, $userId): bool
     {
-        $convite = Convite::where('idPasta', $folderId)->first();
-        return $convite ? true : false;
+        $pasta = Pastas::find($folderId);
+        if (!$pasta) {
+            return false;
+        }
+        // Se o idUsuario da pasta for igual ao userId, é do usuário
+        if (!$pasta->idUsuario == $userId) {
+            return true;
+        }
+        return true;
     }
 }
