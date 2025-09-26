@@ -899,9 +899,8 @@ class PastasController extends Controller
             ]);
         }
 
-        // Busca as pastas do usuário com hierarquia e fotos
-        $pastas = Pastas::with(['photos', 'subpastas.photos'])
-            ->where('idUsuario', $user->id)
+        // Busca todas as pastas associadas ao usuário (criadas e compartilhadas)
+        $pastas = $user->pastas()->with(['photos', 'subpastas.photos'])
             ->whereNull('idPastaPai') // Apenas pastas principais
             ->get();
 

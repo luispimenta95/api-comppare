@@ -597,12 +597,20 @@ class UsuarioController extends Controller
 
     private function associarPastasUsuario(Convite $convite, Usuarios $usuario): void
     {
-        $usuario->idPerfil = Helper::ID_PERFIL_CONVIDADO;
-        $usuario->idPlano = Helper::ID_PLANO_CONVIDADO;
+        // Só define perfil/plano de convidado se o usuário ainda não tiver um plano/perfil definido
+        if (empty($usuario->idPerfil) || $usuario->idPerfil == Helper::ID_PERFIL_CONVIDADO) {
+            $usuario->idPerfil = Helper::ID_PERFIL_CONVIDADO;
+        }
+        if (empty($usuario->idPlano) || $usuario->idPlano == Helper::ID_PLANO_CONVIDADO) {
+            $usuario->idPlano = Helper::ID_PLANO_CONVIDADO;
+        }
         $usuario->save();
 
         $pasta = Pastas::findOrFail($convite->idPasta);
-        Helper::relacionarPastas($pasta, $usuario);
+        // Garante associação direta na tabela de relacionamento
+        if (!$pasta->usuario()->where('usuario_id', $usuario->id)->exists()) {
+            $pasta->usuario()->attach($usuario->id);
+        }
     }
     private function checaPermissoes(Usuarios $user, AutenticarUsuarioRequest $request): JsonResponse
     {
