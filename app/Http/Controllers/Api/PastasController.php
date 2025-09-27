@@ -899,37 +899,36 @@ class PastasController extends Controller
             ]);
         }
 
-        // Busca as pastas do usuário com hierarquia e fotos
-        $pastas = Pastas::with(['photos', 'subpastas.photos'])
-            ->where('idUsuario', $user->id)
-            ->whereNull('idPastaPai') // Apenas pastas principais
-            ->get();
 
-            $pastasFormatadas = $pastas->map(function ($pasta) {
-                // Verifica se existe convite vinculado à pasta principal
+        // Busca todas as pastas associadas ao usuário (criadas e compartilhadas)
+        $pastas = $user->pastas()->with(['photos', 'subpastas.photos'])->get();
+        $pastasPrincipais = $pastas->whereNull('idPastaPai');
+
+        $pastasFormatadas = $pastasPrincipais->map(function ($pasta) {
+            $subpastas = $pasta->subpastas->map(function ($subpasta) {
                 return [
-                    'id' => $pasta->id,
-                    'nome' => $pasta->nome,
-                    'caminho' => Helper::formatFolderUrl($pasta),
-                    'convite' => $this->checkExistsInviteForFolder($pasta->id),
-                    'subpastas' => $pasta->subpastas->map(function ($subpasta) {
-                        // Verifica se existe convite vinculado à subpasta
+                    'id' => $subpasta->id,
+                    'nome' => $subpasta->nome,
+                    'path' => Helper::formatFolderUrl($subpasta),
+                    'idPastaPai' => $subpasta->idPastaPai,
+                    'imagens' => $subpasta->photos->map(function ($photo) {
                         return [
-                            'id' => $subpasta->id,
-                            'convite' => $this->checkExistsInviteForFolder($subpasta->id),
-                            'nome' => $subpasta->nome,
-                            'caminho' => Helper::formatFolderUrl($subpasta),
-                            'imagens' => $subpasta->photos->map(function ($photo) {
-                                return [
-                                    'id' => $photo->id,
-                                    'path' => Helper::formatImageUrl($photo->path), // URL clicável
-                                   'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null, 
-                                ];
-                            })->values()->toArray()
+                            'id' => $photo->id,
+                            'path' => Helper::formatImageUrl($photo->path),
+                            'taken_at' => $photo->taken_at
                         ];
                     })->values()
                 ];
-            });
+            })->values();
+
+            return [
+                'nome' => $pasta->nome,
+                'id' => $pasta->id,
+                'path' => Helper::formatFolderUrl($pasta),
+                'idPastaPai' => null,
+                'subpastas' => $subpastas
+            ];
+        })->values();
 
         return response()->json([
             'codRetorno' => HttpCodesEnum::OK->value,
