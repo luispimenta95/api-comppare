@@ -33,7 +33,6 @@ class ResetRanking implements ShouldQueue
      */
     public function handle()
     {
-        Log::info('Processo iniciado.');
 
         // Resetando o contador de pastas criadas para todos os usuários no mês
         try {
@@ -46,8 +45,7 @@ class ResetRanking implements ShouldQueue
 
             Log::info('Ranking atualizado com pontuação zerada.');
 
-            Log::info('Processo finalizado.');
-
+    
         } catch (\Exception $e) {
             Log::error('Erro ao resetar ranking: ' . $e->getMessage());
         }

@@ -1,54 +1,71 @@
 <?php
-
+// Versao master
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
+/**
+ * Classe base para todos os emails do sistema
+ * 
+ * Define a estrutura comum para envio de emails, incluindo
+ * validação de destinatário, configuração do remetente e
+ * construção padrão do email com template dinâmico.
+ */
 abstract class BaseEmail extends Mailable
 {
-use Queueable, SerializesModels;
+    use Queueable, SerializesModels;
 
-protected $dados;
-protected $sender;
-protected $fromName = 'Comppare'; // Nome padrão do remetente
-public $subject; // O assunto será definido nas subclasses
-public $mailTo; // Destinatário do e-mail
+    protected $dados;
+    protected $sender;
+    protected $fromName = 'Comppare'; // Nome padrão do remetente
+    public $subject; // O assunto será definido nas subclasses
+    public $mailTo; // Destinatário do e-mail
 
-/**
-* Cria uma nova instância do e-mail.
-*
-* @param array $dados
-*/
-public function __construct(array $dados)
-{
-if (!isset($dados['to']) || !filter_var($dados['to'], FILTER_VALIDATE_EMAIL)) {
-throw new \InvalidArgumentException("O campo 'to' deve conter um endereço de e-mail válido.");
-}
+    /**
+     * Cria uma nova instância do e-mail
+     *
+     * Valida o endereço de email do destinatário e inicializa
+     * os dados necessários para construção do email.
+     *
+     * @param array $dados - Array contendo 'to' (destinatário) e 'body' (dados do corpo)
+     * @throws \InvalidArgumentException - Se o email do destinatário for inválido
+     */
+    public function __construct(array $dados)
+    {
+        if (!isset($dados['to']) || !filter_var($dados['to'], FILTER_VALIDATE_EMAIL)) {
+            throw new \InvalidArgumentException("O campo 'to' deve conter um endereço de e-mail válido.");
+        }
 
-$this->dados = $dados['body'] ?? []; // Inicializa os dados do corpo do e-mail
-$this->mailTo = $dados['to']; // Inicializa o destinatário
-$this->sender = env('MAIL_FROM_ADDRESS');
-}
+        $this->dados = $dados['body'] ?? []; // Inicializa os dados do corpo do e-mail
+        $this->mailTo = $dados['to']; // Inicializa o destinatário
+        $this->sender = env('MAIL_FROM_ADDRESS');
+    }
 
-/**
-* Constrói o conteúdo do e-mail.
-*
-* @return $this
-*/
-public function build()
-{
-return $this->from($this->sender, $this->fromName)
-->subject($this->subject) // Subjeto dinâmico
-->view($this->getMarkdownTemplate()) // Template dinâmico
-->with('dados', $this->dados); // Passa os dados ao template
-}
+    /**
+     * Constrói o conteúdo do e-mail
+     *
+     * Define o remetente, assunto, template e dados que serão
+     * passados para a view do email.
+     *
+     * @return $this
+     */
+    public function build()
+    {
+        return $this->from($this->sender, $this->fromName)
+            ->subject($this->subject) // Subjeto dinâmico
+            ->view($this->getMarkdownTemplate()) // Template dinâmico
+            ->with('dados', $this->dados); // Passa os dados ao template
+    }
 
-/**
-* Retorna o template markdown específico para cada e-mail.
-*
-* @return string
-*/
-abstract protected function getMarkdownTemplate();
+    /**
+     * Retorna o template markdown específico para cada e-mail
+     *
+     * Método abstrato que deve ser implementado pelas classes filhas
+     * para definir qual template será usado para o email específico.
+     *
+     * @return string - Caminho para o template do email
+     */
+    abstract protected function getMarkdownTemplate();
 }

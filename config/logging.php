@@ -123,6 +123,14 @@ return [
             'handler' => NullHandler::class,
         ],
 
+        'pix' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/pix.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => env('LOG_PIX_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],

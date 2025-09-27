@@ -14,18 +14,21 @@ return new class extends Migration
     {
         Schema::create('usuarios', function (Blueprint $table) {
             $table->id();
-            $table->string('nome');
+            $table->string('primeiroNome');
+            $table->string('sobrenome');
+            $table->string('apelido')->nullable();
             $table->string('cpf')->unique();
             $table->string('senha');
-            $table->string('email');
-            $table->string('telefone');
+            $table->string('email')->unique();
+            $table->string('telefone')->unique();
             $table->date('dataNascimento');
             $table->boolean('status')->default(true);
             $table->timestamp('dataLimiteCompra');
             $table->timestamp('dataUltimoPagamento')->nullable();
             $table->integer('idUltimaCobranca')->nullable();
-            $table->integer('idAssinatura')->nullable();
+            $table->string('idAssinatura')->nullable();
             $table->integer('pastasCriadas')->default(0);
+            $table->integer('subpastasCriadas')->default(0);
             $table->integer('pontos')->default(0);
             $table->integer('quantidadeConvites')->default(0);
             $table->timestamp('ultimoAcesso')->nullable();

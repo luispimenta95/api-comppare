@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Util\Helper;
 use App\Models\Tag;
+use App\Models\Usuarios;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Enums\HttpCodesEnum;
+use App\Models\Planos;
 
 class TagController extends Controller
 {
@@ -37,33 +39,122 @@ class TagController extends Controller
 
     /**
      * Cadastrar uma nova tag.
+     * 
+     * Verifica se o usuário ainda pode criar tags baseado no limite do plano.
+     * Usuários administrativos não têm limite de tags.
+     * 
+     * Exemplo de request:
+     * {
+     *   "nomeTag": "Nome da Tag",
+     *   "usuario": 1
+     * }
      */
     public function cadastrarTag(Request $request): JsonResponse
     {
-        $campos = ['nome', 'descricao', 'usuario'];
-        $campos = Helper::validarRequest($request, $campos);
-
-        if ($campos !== true) {
-            $response = [
-                'codRetorno' => HttpCodesEnum::BadRequest->value,
-                'message' => HttpCodesEnum::MissingRequiredFields->description(),
-                'campos' => $campos,
-            ];
-            return response()->json($response);
-        }
-
-        Tag::create([
-            'nome' => $request->nome,
-            'descricao' => $request->descricao,
-            'idUsuarioCriador' => $request->usuario,
+        $request->validate([
+            'nomeTag' => 'required|string|max:255',
+            'usuario' => 'required|integer|exists:usuarios,id'
         ]);
 
+        // Buscar o usuário e seu plano
+        $usuario = Usuarios::with('plano')->find($request->usuario);
+
+        if (!$usuario) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => 'Usuário não encontrado.',
+            ], HttpCodesEnum::NotFound->value);
+        }
+
+        if (!$usuario->idPlano) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => 'Usuário não possui plano associado.',
+            ], HttpCodesEnum::BadRequest->value);
+        }
+        $plano = Planos::find($usuario->idPlano);
+
+        // Verificar se o usuário é administrativo
+        $isAdmin = $usuario->idPerfil == Helper::ID_PERFIL_ADMIN;
+
+        // Aplicar limite apenas se o usuário não for administrativo
+        if (!$isAdmin) {
+            // Contar tags pessoais já criadas pelo usuário
+            $tagsPersonaisCriadas = Tag::where('idUsuarioCriador', $request->usuario)
+                ->where('status', Helper::ATIVO)
+                ->count();
+
+            // Verificar se o limite do plano foi atingido
+            if ($tagsPersonaisCriadas >= $plano->quantidadeTags) {
+                return response()->json([
+                    'codRetorno' => HttpCodesEnum::Forbidden->value,
+                    'message' => 'Limite de tags do plano atingido.',
+                    'detalhes' => [
+                        'limite_plano' => $plano->quantidadeTags,
+                        'tags_criadas' => $tagsPersonaisCriadas,
+                        'plano_atual' => $plano->nome,
+                        'sugestao' => 'Faça upgrade do seu plano para criar mais tags.'
+                    ]
+                ], HttpCodesEnum::Forbidden->value);
+            }
+        }
+
+        // Verificar se já existe uma tag com o mesmo nome para este usuário
+        $tagExistente = Tag::where('idUsuarioCriador', $request->usuario)
+            ->where('nomeTag', $request->nomeTag)
+            ->where('status', Helper::ATIVO)
+            ->first();
+
+        if ($tagExistente) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::Conflict->value,
+                'message' => 'Você já possui uma tag com este nome.',
+                'tag_existente' => [
+                    'id' => $tagExistente->id,
+                    'nome' => $tagExistente->nomeTag,
+                    'criada_em' => $tagExistente->created_at->format('Y-m-d H:i:s')
+                ]
+            ], HttpCodesEnum::Conflict->value);
+        }
+
+        // Criar a nova tag
+        $novaTag = Tag::create([
+            'nomeTag' => $request->nomeTag,
+            'idUsuarioCriador' => $request->usuario,
+            'status' => Helper::ATIVO
+        ]);
+
+        // Preparar resposta com informações de limites (apenas para usuários não admin)
+        $limites = null;
+        if (!$isAdmin) {
+            $tagsPersonaisCriadas = Tag::where('idUsuarioCriador', $request->usuario)
+                ->where('status', Helper::ATIVO)
+                ->count();
+
+            $limites = [
+                'usado' => $tagsPersonaisCriadas,
+                'limite' => $plano->quantidadeTags,
+                'restante' => $plano->quantidadeTags - $tagsPersonaisCriadas
+            ];
+        }
+
         $response = [
-            'codRetorno' => HttpCodesEnum::OK->value,
-            'message' => HttpCodesEnum::OK->description(),
+            'codRetorno' => HttpCodesEnum::Created->value,
+            'message' => 'Tag criada com sucesso.',
+            'tag' => [
+                'id' => $novaTag->id,
+                'nome' => $novaTag->nomeTag,
+                'tipo' => $isAdmin ? 'global' : 'pessoal',
+                'criada_em' => $novaTag->created_at->format('Y-m-d H:i:s')
+            ]
         ];
 
-        return response()->json($response);
+        // Adicionar limites apenas se o usuário não for admin
+        if ($limites !== null) {
+            $response['limites'] = $limites;
+        }
+
+        return response()->json($response, HttpCodesEnum::Created->value);
     }
 
     /**
@@ -158,13 +249,14 @@ class TagController extends Controller
             return response()->json($response);
         }
 
-        $tags = Tag::where('idUsuarioCriador', $request->usuario)
-            ->where('status', Helper::ATIVO)
-            ->orWhereHas('usuario', function ($query) {
-                $query->where('idPerfil', Helper::ID_PERFIL_ADMIN);
-            })
-            ->where('status', Helper::ATIVO)
-            ->get();
+        $tags = Tag::where(function ($query) use ($request) {
+            $query->where('idUsuarioCriador', $request->usuario)
+                ->where('status', Helper::ATIVO);
+        })->orWhere(function ($query) {
+            $query->whereHas('usuario', function ($q) {
+                $q->where('idPerfil', Helper::ID_PERFIL_ADMIN);
+            })->where('status', Helper::ATIVO);
+        })->get();
 
         $response = [
             'codRetorno' => HttpCodesEnum::OK->value,
@@ -174,5 +266,149 @@ class TagController extends Controller
         ];
 
         return response()->json($response);
+    }
+
+    /**
+     * Recuperar uma tag específica.
+     */
+    public function getTag(Request $request): JsonResponse
+    {
+        $campos = ['idTag'];
+        $campos = Helper::validarRequest($request, $campos);
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::MissingRequiredFields->description(),
+                'campos' => $campos,
+            ];
+            return response()->json($response);
+        }
+        $tag = Tag::find($request->idTag);
+        if ($tag) {
+            $response = [
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => HttpCodesEnum::OK->description(),
+                'data' => $tag,
+            ];
+        } else {
+            $response = [
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => HttpCodesEnum::NotFound->description(),
+            ];
+        }
+        return response()->json($response);
+    }
+
+    /**
+     * Excluir uma tag (soft delete).
+     * 
+     * Regras de permissão:
+     * - O próprio criador pode excluir sua tag
+     * - Admin pode excluir tag de outro admin
+     * - Admin NÃO pode excluir tag de usuário comum
+     * - Usuário comum só pode excluir suas próprias tags
+     * 
+     * Exemplo de request:
+     * {
+     *   "idTag": 1,
+     *   "usuario": 1
+     * }
+     */
+    public function excluirTag(Request $request): JsonResponse
+    {
+        $request->validate([
+            'idTag' => 'required|integer|exists:tags,id',
+            'usuario' => 'required|integer|exists:usuarios,id'
+        ]);
+
+        // Buscar a tag com informações do criador
+        $tag = Tag::with('usuario')->find($request->idTag);
+
+        if (!$tag) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => 'Tag não encontrada.',
+            ], HttpCodesEnum::NotFound->value);
+        }
+
+        // Verificar se a tag já está inativa
+        if ($tag->status == 0) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => 'Tag já está excluída.',
+            ], HttpCodesEnum::BadRequest->value);
+        }
+
+        // Buscar informações do usuário que está tentando excluir
+        $usuarioSolicitante = Usuarios::find($request->usuario);
+        $isUsuarioAdmin = $usuarioSolicitante->idPerfil == Helper::ID_PERFIL_ADMIN;
+
+        // Buscar informações do criador da tag
+        $criadorTag = $tag->usuario;
+        $isCriadorAdmin = $criadorTag->idPerfil == Helper::ID_PERFIL_ADMIN;
+
+        // Regras de permissão para exclusão:
+        // 1. O próprio criador pode excluir sua tag
+        // 2. Admin pode excluir tag de outro admin
+        // 3. Admin NÃO pode excluir tag de usuário comum
+        // 4. Usuário comum só pode excluir suas próprias tags
+
+        if ($tag->idUsuarioCriador == $request->usuario) {
+            // Regra 1: O próprio criador pode excluir
+        } elseif ($isUsuarioAdmin && $isCriadorAdmin) {
+            // Regra 2: Admin pode excluir tag de outro admin
+        } elseif ($isUsuarioAdmin && !$isCriadorAdmin) {
+            // Regra 3: Admin NÃO pode excluir tag de usuário comum
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::Forbidden->value,
+                'message' => 'Administradores não podem excluir tags de usuários comuns.',
+            ], HttpCodesEnum::Forbidden->value);
+        } else {
+            // Regra 4: Usuário comum só pode excluir suas próprias tags
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::Forbidden->value,
+                'message' => 'Você só pode excluir tags criadas por você.',
+            ], HttpCodesEnum::Forbidden->value);
+        }
+
+        // Buscar o usuário e seu plano para retornar informações atualizadas
+        $usuario = Usuarios::with('plano')->find($request->usuario);
+        $plano = Planos::find($usuario->idPlano);
+
+        // Realizar soft delete (marcar como inativo)
+        $tag->status = 0;
+        $tag->save();
+
+        // Preparar resposta com informações de limites (apenas para usuários não admin)
+        $limites = null;
+        if (!$isUsuarioAdmin) {
+            // Contar tags pessoais ativas restantes
+            $tagsPersonaisRestantes = Tag::where('idUsuarioCriador', $request->usuario)
+                ->where('status', 1)
+                ->count();
+
+            $limites = [
+                'usado' => $tagsPersonaisRestantes,
+                'limite' => $plano->quantidadeTags,
+                'restante' => $plano->quantidadeTags - $tagsPersonaisRestantes
+            ];
+        }
+
+        $response = [
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => 'Tag excluída com sucesso.',
+            'tag_excluida' => [
+                'id' => $tag->id,
+                'nome' => $tag->nomeTag,
+                'excluida_em' => now()->format('Y-m-d H:i:s')
+            ]
+        ];
+
+        // Adicionar limites apenas se o usuário não for admin
+        if ($limites !== null) {
+            $response['limites'] = $limites;
+        }
+
+        return response()->json($response, HttpCodesEnum::OK->value);
     }
 }
