@@ -1,0 +1,8 @@
+# Simulação (recomendado primeiro)
+php artisan usuarios:update-meio-pagamento --dry-run
+
+# Estratégias disponíveis:
+php artisan usuarios:update-meio-pagamento --strategy=auto      # Inteligente
+php artisan usuarios:update-meio-pagamento --strategy=pix       # Todos PIX
+php artisan usuarios:update-meio-pagamento --strategy=cartao    # Todos cartão
+php artisan usuarios:update-meio-pagamento --strategy=historico # Baseado em histórico PIX

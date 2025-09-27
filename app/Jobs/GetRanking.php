@@ -36,7 +36,6 @@ class GetRanking implements ShouldQueue
 
         public function handle()
     {
-        Log::info('Processo iniciado.');
 
         // Obter o ranking
         $ranking = Ponto::selectRaw('idUsuario, SUM(pontos) as total')
@@ -63,7 +62,6 @@ class GetRanking implements ShouldQueue
         // Storage::disk('public')->put('logs/' . $fileName, $content);
         Log::info('Ranking atualizado com pontuação zerada.');
 
-        Log::info('Processo finalizado.');
     }
 
 }

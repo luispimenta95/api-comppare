@@ -13,8 +13,7 @@ return new class extends Migration
     {
         Schema::create('tags', function (Blueprint $table) {
             $table->id();
-            $table->string('nome')->unique();
-            $table->string('descricao');
+            $table->string('nomeTag'); // Nome da tag, ex: "Peso Atual", "Status da Meta"
             $table->boolean('status')->default(true);
             $table->unsignedBigInteger('idUsuarioCriador'); //
             $table->foreign('idUsuarioCriador')->references('id')->on('usuarios');
