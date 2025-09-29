@@ -935,8 +935,9 @@ class PastasController extends Controller
                         'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null,
                     ];
                 })->values()->toArray(),
-                'proprietarioPasta' => $proprietario,
-                'pastaCompartilhada' => $temConvite ? true : false,
+                // Determina se a pasta é compartilhada (existe convite para ela)
+                'proprietarioPasta' => $usuarioId == $pasta->idUsuario,
+                'pastaCompartilhada' => Convite::where('idPasta', $pasta->id)->exists(),
                 'subpastas' => $pasta->subpastas->map(function ($subpasta) use (&$formatarPasta, $usuarioId, $criadorId, $temConvite) {
                     // Para subpastas, pastaCompartilhada deve ser true se a principal for compartilhada
                     return $formatarPasta($subpasta, $usuarioId, $criadorId, $temConvite);
