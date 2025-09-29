@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use App\Models\ComparacaoImagem;
+use App\Models\Convite;
 use Illuminate\Support\Facades\Log;
 
 class PastasController extends Controller
@@ -885,10 +886,12 @@ class PastasController extends Controller
      * @param Request $request - Deve conter: idUsuario (ID do usuário)
      * @return JsonResponse - Lista de pastas do usuário ou erro se usuário não encontrado
      */
-    public function getFoldersByUser(int $id): JsonResponse         
+   public function getFoldersByUser(int $id): JsonResponse         
     {
 
         $user = Usuarios::find($id);
+ 
+        // Verifica se o usuário foi encontrado
         if (!$user) {
             return response()->json([
                 'codRetorno' => HttpCodesEnum::NotFound->value,
@@ -896,53 +899,36 @@ class PastasController extends Controller
             ]);
         }
 
-        // Pastas criadas pelo usuário (apenas principais)
-        $pastasCriadas = Pastas::with(['photos', 'subpastas.photos'])
-            ->where('idUsuario', $user->id)
-            ->whereNull('idPastaPai')
-            ->get();
 
-        // Pastas compartilhadas via convite (pasta_usuario), apenas principais
-        $pastasCompartilhadas = $user->pastas()
-            ->with(['photos', 'subpastas.photos'])
-            ->whereNull('idPastaPai')
-            ->get();
+        // Busca todas as pastas associadas ao usuário (criadas e compartilhadas)
+        $pastas = $user->pastas()->with(['photos', 'subpastas.photos'])->get();
+        $pastasPrincipais = $pastas->whereNull('idPastaPai');
 
-        // Mescla e remove duplicatas por id
-        $todasPastasPrincipais = $pastasCriadas->concat($pastasCompartilhadas)
-            ->unique('id')
-            ->values();
+        $pastasFormatadas = $pastasPrincipais->map(function ($pasta) {
+            $subpastas = $pasta->subpastas->map(function ($subpasta) {
+                return [
+                    'id' => $subpasta->id,
+                    'nome' => $subpasta->nome,
+                    'path' => Helper::formatFolderUrl($subpasta),
+                    'idPastaPai' => $subpasta->idPastaPai,
+                    'imagens' => $subpasta->photos->map(function ($photo) {
+                        return [
+                            'id' => $photo->id,
+                            'path' => Helper::formatImageUrl($photo->path),
+                            'taken_at' => $photo->taken_at
+                        ];
+                    })->values()
+                ];
+            })->values();
 
-        // Coletar todas as subpastas de todas as pastas principais
-        $todasSubpastas = collect();
-        foreach ($todasPastasPrincipais as $pasta) {
-            if ($pasta->subpastas && $pasta->subpastas->count() > 0) {
-                foreach ($pasta->subpastas as $subpasta) {
-                    $todasSubpastas->push($subpasta);
-                }
-            }
-        }
-        // Remover duplicatas de subpastas
-        $todasSubpastas = $todasSubpastas->unique('id')->values();
-
-        // Juntar principais e subpastas para exibir todas no array principal
-        $todasPastasParaExibir = $todasPastasPrincipais->concat($todasSubpastas)->unique('id')->values();
-
-        $pastasFormatadas = $todasPastasParaExibir->map(function ($pasta) {
             return [
-                'id' => $pasta->id,
                 'nome' => $pasta->nome,
-                'caminho' => Helper::formatFolderUrl($pasta),
-                'imagens' => $pasta->photos->map(function ($photo) {
-                    return [
-                        'id' => $photo->id,
-                        'path' => Helper::formatImageUrl($photo->path),
-                        'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null,
-                    ];
-                })->values()->toArray(),
-                // subpastas não são mais exibidas como filhos, pois todas aparecem no array principal
+                'id' => $pasta->id,
+                'path' => Helper::formatFolderUrl($pasta),
+                'idPastaPai' => null,
+                'subpastas' => $subpastas
             ];
-        });
+        })->values();
 
         return response()->json([
             'codRetorno' => HttpCodesEnum::OK->value,
@@ -1221,5 +1207,11 @@ class PastasController extends Controller
                 'message' => 'Pasta não encontrada.',
             ], 404);
         }
+    }
+
+    private function checkExistsInviteForFolder($folderId)
+    {
+        $convite = Convite::where('idPasta', $folderId)->first();
+        return $convite ? true : false;
     }
 }
