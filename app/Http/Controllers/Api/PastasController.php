@@ -917,12 +917,12 @@ class PastasController extends Controller
 
         // Função recursiva para montar subpastas aninhadas com os campos adicionais
         $formatarPasta = function ($pasta, $usuarioId, $criadorId, $pastaCompartilhadaGlobal = null) use (&$formatarPasta) {
-            // Determina se a pasta é compartilhada (existe convite para ela)
-            $temConvite = $pastaCompartilhadaGlobal;
-            if ($temConvite === null) {
-                $temConvite = Convite::where('idPasta', $pasta->id)->exists();
+            // Determina se a pasta é compartilhada (existe mais de um usuário na relação pasta_usuario)
+            $isCompartilhada = $pastaCompartilhadaGlobal;
+            if ($isCompartilhada === null) {
+                $usuariosVinculados = $pasta->usuario()->count();
+                $isCompartilhada = $usuariosVinculados > 1;
             }
-            // Proprietário é quem criou a pasta
             $proprietario = $usuarioId == $criadorId;
             return [
                 'id' => $pasta->id,
@@ -935,12 +935,11 @@ class PastasController extends Controller
                         'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null,
                     ];
                 })->values()->toArray(),
-                // Determina se a pasta é compartilhada (existe convite para ela)
-                'proprietarioPasta' => $usuarioId == $pasta->idUsuario,
-                'pastaCompartilhada' => Convite::where('idPasta', $pasta->id)->exists(),
-                'subpastas' => $pasta->subpastas->map(function ($subpasta) use (&$formatarPasta, $usuarioId, $criadorId, $temConvite) {
+                'proprietarioPasta' => $proprietario,
+                'pastaCompartilhada' => $isCompartilhada ? true : false,
+                'subpastas' => $pasta->subpastas->map(function ($subpasta) use (&$formatarPasta, $usuarioId, $criadorId, $isCompartilhada) {
                     // Para subpastas, pastaCompartilhada deve ser true se a principal for compartilhada
-                    return $formatarPasta($subpasta, $usuarioId, $criadorId, $temConvite);
+                    return $formatarPasta($subpasta, $usuarioId, $criadorId, $isCompartilhada);
                 })->values()->toArray(),
             ];
         };
