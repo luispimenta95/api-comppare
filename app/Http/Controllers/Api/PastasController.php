@@ -913,8 +913,16 @@ class PastasController extends Controller
         // Mescla e remove duplicatas por id
         $todasPrincipais = $pastasCriadas->concat($pastasCompartilhadas)->unique('id')->values();
 
-        // Função recursiva para montar subpastas aninhadas
-        $formatarPasta = function ($pasta) use (&$formatarPasta) {
+
+        // Função recursiva para montar subpastas aninhadas com os campos adicionais
+        $formatarPasta = function ($pasta, $usuarioId, $criadorId, $pastaCompartilhadaGlobal = null) use (&$formatarPasta) {
+            // Determina se a pasta é compartilhada (existe convite para ela)
+            $temConvite = $pastaCompartilhadaGlobal;
+            if ($temConvite === null) {
+                $temConvite = $pasta->convite()->exists();
+            }
+            // Proprietário é quem criou a pasta
+            $proprietario = $usuarioId == $criadorId;
             return [
                 'id' => $pasta->id,
                 'nome' => $pasta->nome,
@@ -926,14 +934,17 @@ class PastasController extends Controller
                         'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null,
                     ];
                 })->values()->toArray(),
-                'subpastas' => $pasta->subpastas->map(function ($subpasta) use (&$formatarPasta) {
-                    return $formatarPasta($subpasta);
+                'proprietarioPasta' => $proprietario,
+                'pastaCompartilhada' => $temConvite ? true : false,
+                'subpastas' => $pasta->subpastas->map(function ($subpasta) use (&$formatarPasta, $usuarioId, $criadorId, $temConvite) {
+                    // Para subpastas, pastaCompartilhada deve ser true se a principal for compartilhada
+                    return $formatarPasta($subpasta, $usuarioId, $criadorId, $temConvite);
                 })->values()->toArray(),
             ];
         };
 
-        $pastasFormatadas = $todasPrincipais->map(function ($pasta) use (&$formatarPasta) {
-            return $formatarPasta($pasta);
+        $pastasFormatadas = $todasPrincipais->map(function ($pasta) use (&$formatarPasta, $user) {
+            return $formatarPasta($pasta, $user->id, $pasta->idUsuario);
         });
 
         return response()->json([
