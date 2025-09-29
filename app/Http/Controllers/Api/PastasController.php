@@ -889,8 +889,6 @@ class PastasController extends Controller
     {
 
         $user = Usuarios::find($id);
-
-        // Verifica se o usuário foi encontrado
         if (!$user) {
             return response()->json([
                 'codRetorno' => HttpCodesEnum::NotFound->value,
@@ -898,31 +896,51 @@ class PastasController extends Controller
             ]);
         }
 
-        // Busca as pastas do usuário com hierarquia e fotos
-        $pastas = Pastas::with(['photos', 'subpastas.photos'])
+        // Pastas criadas pelo usuário (apenas principais)
+        $pastasCriadas = Pastas::with(['photos', 'subpastas.photos'])
             ->where('idUsuario', $user->id)
-            ->whereNull('idPastaPai') // Apenas pastas principais
+            ->whereNull('idPastaPai')
             ->get();
 
-        $pastasFormatadas = $pastas->map(function ($pasta) {
+        // Pastas compartilhadas via convite (pasta_usuario), apenas principais
+        $pastasCompartilhadas = $user->pastas()
+            ->with(['photos', 'subpastas.photos'])
+            ->whereNull('idPastaPai')
+            ->get();
+
+        // Mescla e remove duplicatas por id
+        $todasPastasPrincipais = $pastasCriadas->concat($pastasCompartilhadas)
+            ->unique('id')
+            ->values();
+
+        // Coletar todas as subpastas de todas as pastas principais
+        $todasSubpastas = collect();
+        foreach ($todasPastasPrincipais as $pasta) {
+            if ($pasta->subpastas && $pasta->subpastas->count() > 0) {
+                foreach ($pasta->subpastas as $subpasta) {
+                    $todasSubpastas->push($subpasta);
+                }
+            }
+        }
+        // Remover duplicatas de subpastas
+        $todasSubpastas = $todasSubpastas->unique('id')->values();
+
+        // Juntar principais e subpastas para exibir todas no array principal
+        $todasPastasParaExibir = $todasPastasPrincipais->concat($todasSubpastas)->unique('id')->values();
+
+        $pastasFormatadas = $todasPastasParaExibir->map(function ($pasta) {
             return [
                 'id' => $pasta->id,
                 'nome' => $pasta->nome,
                 'caminho' => Helper::formatFolderUrl($pasta),
-                'subpastas' => $pasta->subpastas->map(function ($subpasta) {
+                'imagens' => $pasta->photos->map(function ($photo) {
                     return [
-                        'id' => $subpasta->id,
-                        'nome' => $subpasta->nome,
-                        'caminho' => Helper::formatFolderUrl($subpasta),
-                        'imagens' => $subpasta->photos->map(function ($photo) {
-                            return [
-                                'id' => $photo->id,
-                                'path' => Helper::formatImageUrl($photo->path), // URL clicável
-                               'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null, 
-                            ];
-                        })->values()->toArray()
+                        'id' => $photo->id,
+                        'path' => Helper::formatImageUrl($photo->path),
+                        'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null,
                     ];
-                })->values()
+                })->values()->toArray(),
+                // subpastas não são mais exibidas como filhos, pois todas aparecem no array principal
             ];
         });
 
