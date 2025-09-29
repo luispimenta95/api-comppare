@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use App\Models\ComparacaoImagem;
+use App\Models\Convite;
 use Illuminate\Support\Facades\Log;
 
 class PastasController extends Controller
@@ -919,7 +920,7 @@ class PastasController extends Controller
             // Determina se a pasta é compartilhada (existe convite para ela)
             $temConvite = $pastaCompartilhadaGlobal;
             if ($temConvite === null) {
-                $temConvite = $pasta->convite()->exists();
+                $temConvite = Convite::where('idPasta', $pasta->id)->exists();
             }
             // Proprietário é quem criou a pasta
             $proprietario = $usuarioId == $criadorId;
