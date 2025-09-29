@@ -913,22 +913,8 @@ class PastasController extends Controller
         // Mescla e remove duplicatas por id
         $todasPrincipais = $pastasCriadas->concat($pastasCompartilhadas)->unique('id')->values();
 
-        // Coletar todas as subpastas de todas as pastas principais
-        $todasSubpastas = collect();
-        foreach ($todasPrincipais as $pasta) {
-            if ($pasta->subpastas && $pasta->subpastas->count() > 0) {
-                foreach ($pasta->subpastas as $subpasta) {
-                    $todasSubpastas->push($subpasta);
-                }
-            }
-        }
-        // Remover duplicatas de subpastas
-        $todasSubpastas = $todasSubpastas->unique('id')->values();
-
-        // Juntar principais e subpastas para exibir todas no array principal
-        $todasPastasParaExibir = $todasPrincipais->concat($todasSubpastas)->unique('id')->values();
-
-        $pastasFormatadas = $todasPastasParaExibir->map(function ($pasta) {
+        // Função recursiva para montar subpastas aninhadas
+        $formatarPasta = function ($pasta) use (&$formatarPasta) {
             return [
                 'id' => $pasta->id,
                 'nome' => $pasta->nome,
@@ -940,7 +926,14 @@ class PastasController extends Controller
                         'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null,
                     ];
                 })->values()->toArray(),
+                'subpastas' => $pasta->subpastas->map(function ($subpasta) use (&$formatarPasta) {
+                    return $formatarPasta($subpasta);
+                })->values()->toArray(),
             ];
+        };
+
+        $pastasFormatadas = $todasPrincipais->map(function ($pasta) use (&$formatarPasta) {
+            return $formatarPasta($pasta);
         });
 
         return response()->json([
