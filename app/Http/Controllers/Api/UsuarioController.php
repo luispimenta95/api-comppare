@@ -918,7 +918,7 @@ class UsuarioController extends Controller
      * @param ValidaExistenciaUsuarioRequest $request - Dados para validação
      * @return JsonResponse - Confirmação da existência ou não do usuário
      */
-    public function validaExistenciaUsuario(ValidaExistenciaUsuarioRequest $request): JsonResponse
+    public function validaExistenciaUsuario(Request $request): JsonResponse
     {
         dd($request->all());
         $existe = $this->confirmaUser($request);
