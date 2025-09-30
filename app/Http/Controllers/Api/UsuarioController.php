@@ -920,6 +920,7 @@ class UsuarioController extends Controller
      */
     public function validaExistenciaUsuario(ValidaExistenciaUsuarioRequest $request): JsonResponse
     {
+        dd($request->all());
         $existe = $this->confirmaUser($request);
 
         return response()->json([
