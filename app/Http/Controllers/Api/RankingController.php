@@ -21,10 +21,8 @@ class RankingController extends Controller
     }
     public function index(): JsonResponse
     {
-        $pontos = Ponto::selectRaw('idUsuario, SUM(pontos) as total')
-            ->groupBy('idUsuario')
-            ->orderByDesc('total')
-            ->with('usuario')
+        $pontos = Usuarios::select('apelido', 'primeiroNome', 'pontos')
+            ->orderByDesc('pontos')
             ->get();
 
         $resultado = $pontos->map(function ($item) {
