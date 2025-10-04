@@ -21,6 +21,7 @@ class RankingController extends Controller
     }
     public function index(): JsonResponse
     {
+        // Obter o ranking de usuários baseado nos pontos do mês atual
         $mesAtual = now()->month;
         $anoAtual = now()->year;
         $pontos = Ponto::selectRaw('idUsuario, SUM(pontos) as total')
@@ -30,6 +31,15 @@ class RankingController extends Controller
             ->orderByDesc('total')
             ->with('usuario')
             ->get();
+
+        /*Pontuação total
+
+$pontos = Ponto::selectRaw('idUsuario, SUM(pontos) as total')
+            ->groupBy('idUsuario')
+            ->orderByDesc('total')
+            ->with('usuario')
+            ->get();
+            */
 
         $resultado = $pontos->map(function ($item) {
             return [
@@ -45,7 +55,7 @@ class RankingController extends Controller
      */
     public function updatePoints(Request $request): JsonResponse
     {
-        $campos = ['pontos', 'usuario','acao'];
+        $campos = ['pontos', 'usuario', 'acao'];
 
         $campos = Helper::validarRequest($request, $campos);
 
@@ -58,7 +68,7 @@ class RankingController extends Controller
             return response()->json($response);
         }
         $user = Usuarios::find($request->usuario);
-        if(!$user){
+        if (!$user) {
             $response = [
                 'codRetorno' => 404,
                 'message' => $this->codes[404],
