@@ -150,4 +150,41 @@ class ConviteController extends Controller
         ]);
     }
 
+    /**
+     * Remove um convite do banco de dados usando o id da pasta
+     * 
+     * Valida os dados de entrada, verifica se o convite existe e o exclui.
+     * Exemplo de request:
+     * Post /api/convite/excluir
+     * Content-Type: application/json
+     * Body:
+     * {
+     *   "idPasta": 10
+     * }
+     * @param Request $request - Deve conter: idPasta
+     * @return JsonResponse - Confirmação da exclusão ou erro
+     */
+    public function destroy(Request $request): JsonResponse
+    {
+        $request->validate([
+            'idPasta' => 'required|exists:convites,idPasta',
+        ]);
+
+        $convite = Convite::where('idPasta', $request->idPasta)->first();
+
+        if (!$convite) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => 'Convite não encontrado para esta pasta.'
+            ], 404);
+        }
+
+        $convite->delete();
+
+        return response()->json([
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => 'Convite excluído com sucesso.'
+        ]);
+    }
+
 }

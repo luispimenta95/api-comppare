@@ -8,5 +8,6 @@ Route::prefix('convite')->group(function () {
     Route::middleware(['jwt.auth'])->group(function () {
         Route::post('/cadastrar', [ConviteController::class, 'create']);
         Route::post('/vincular', [ConviteController::class, 'processarConvitesPendentes']);
+        Route::post('/excluir', [ConviteController::class, 'destroy']);
     });
  });
