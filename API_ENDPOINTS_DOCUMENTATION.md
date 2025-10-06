@@ -14,6 +14,7 @@
 -   [Ranking](#ranking)
 -   [Questões](#questões)
 -   [Admin](#admin)
+-   [Convites](#convites)
 
 ---
 
@@ -841,4 +842,85 @@ O token é obtido através do endpoint `/usuarios/autenticar` e tem validade lim
 
 ---
 
-_Documentação gerada automaticamente - CompPare API v1.0_
+## ✉️ Convites
+
+### 1. Cadastrar Convite
+
+```http
+POST /convite/cadastrar
+Authorization: Bearer {token}
+```
+
+**Body:**
+
+```json
+{
+    "email": "string (required, email)",
+    "usuario": "integer (required, exists:usuarios,id)",
+    "pasta": "integer (required, exists:pastas,id)"
+}
+```
+
+**Response Success:**
+
+```json
+{
+    "codRetorno": 200,
+    "message": "Compartilhamento de pasta criado com sucesso."
+}
+```
+
+---
+
+### 2. Vincular Convite ao Usuário
+
+```http
+POST /convite/vincular
+Authorization: Bearer {token}
+```
+
+**Body:**
+
+```json
+{
+    "email": "string (required, email)"
+}
+```
+
+**Response Success:**
+
+```json
+{
+    "codRetorno": 200,
+    "message": "Convites processados e pastas vinculadas.",
+    "pastas_vinculadas": [1,2,3]
+}
+```
+
+---
+
+### 3. Excluir Convite
+
+```http
+POST /convite/excluir
+Authorization: Bearer {token}
+```
+
+**Body:**
+
+```json
+{
+    "idPasta": "integer (required, exists:convites,idPasta)"
+}
+```
+
+**Response Success:**
+
+```json
+{
+    "codRetorno": 200,
+    "message": "Convite excluído com sucesso."
+}
+```
+
+---
