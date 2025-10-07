@@ -621,9 +621,15 @@ class PastasController extends Controller
                     // Remover associações da subpasta
                     $subpasta->usuario()->detach();
 
+                    // Remover todos os convites ligados à subpasta
+                    Convite::where('idPasta', $subpasta->id)->delete();
+
                     // Excluir registro da subpasta
                     $subpasta->delete();
                 }
+
+                // Remover todos os convites ligados à pasta principal
+                Convite::where('idPasta', $pasta->id)->delete();
 
                 // Atualizar contador de subpastas (todas as subpastas da pasta principal foram removidas)
                 if ($user->subpastasCriadas >= $subpastasCount) {
@@ -631,6 +637,9 @@ class PastasController extends Controller
                 } else {
                     $user->update(['subpastasCriadas' => 0]);
                 }
+            } else {
+                // Se for subpasta, remova também os convites ligados a ela
+                Convite::where('idPasta', $pasta->id)->delete();
             }
 
             // Remove todas as fotos associadas à pasta principal da tabela photos e suas comparações
