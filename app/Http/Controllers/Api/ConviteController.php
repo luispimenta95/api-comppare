@@ -140,7 +140,6 @@ class ConviteController extends Controller
                 $pasta->usuario()->attach($usuario->id);
                 $pastasVinculadas[] = $pasta->id;
             }
-            $convite->delete();
         }
 
         return response()->json([
@@ -177,6 +176,12 @@ class ConviteController extends Controller
                 'codRetorno' => HttpCodesEnum::NotFound->value,
                 'message' => 'Convite não encontrado para esta pasta.'
             ], 404);
+        }
+
+        // Remove o usuário convidado da relação pasta_usuario
+        $pasta = Pastas::find($convite->idPasta);
+        if ($pasta && $convite->idUsuario) {
+            $pasta->usuario()->detach($convite->idUsuario);
         }
 
         $convite->delete();
