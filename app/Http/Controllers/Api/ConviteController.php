@@ -10,6 +10,7 @@ use App\Models\Convite;
 use App\Models\Pastas;
 use App\Models\Planos;
 use App\Models\Usuarios;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -181,7 +182,11 @@ class ConviteController extends Controller
         // Remove o usuário convidado da relação pasta_usuario
         $pasta = Pastas::find($convite->idPasta);
         if ($pasta && $convite->idUsuario) {
-            $pasta->usuario()->detach($convite->idUsuario);
+            // Remove todos os vínculos do usuário convidado com a pasta
+            DB::table('pasta_usuario')
+                ->where('pasta_id', $convite->idPasta)
+                ->where('usuario_id', $convite->idUsuario)
+                ->delete();
         }
 
         $convite->delete();
