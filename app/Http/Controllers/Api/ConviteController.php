@@ -185,7 +185,6 @@ class ConviteController extends Controller
             // Remove todos os vínculos do usuário convidado com a pasta
             DB::table('pasta_usuario')
                 ->where('pasta_id', $convite->idPasta)
-                ->where('usuario_id', $convite->idUsuario)
                 ->delete();
         }
 
