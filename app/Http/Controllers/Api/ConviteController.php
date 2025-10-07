@@ -183,9 +183,18 @@ class ConviteController extends Controller
         $pasta = Pastas::find($convite->idPasta);
         if ($pasta && $convite->idUsuario) {
             // Remove todos os vínculos do usuário convidado com a pasta
+            // Remove todos os vínculos do usuário convidado com a pasta principal
             DB::table('pasta_usuario')
                 ->where('pasta_id', $convite->idPasta)
                 ->delete();
+
+            // Remove vínculos do usuário convidado com subpastas
+            $subpastas = Pastas::where('idPastaPai', $convite->idPasta)->pluck('id');
+            if ($subpastas->count() > 0) {
+                DB::table('pasta_usuario')
+                    ->whereIn('pasta_id', $subpastas)
+                    ->delete();
+            }
         }
 
         $convite->delete();
