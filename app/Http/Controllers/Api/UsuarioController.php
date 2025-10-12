@@ -415,24 +415,42 @@ class UsuarioController extends Controller
         ]);
     }
 
-    /**
-     * Atualiza o status de um usuário
-     * 
-     * Permite ativar ou desativar um usuário no sistema.
-     * 
-     * @param AtualizarStatusRequest $request - ID do usuário e novo status
-     * @return JsonResponse - Confirmação da alteração
-     */
-    public function atualizarStatus(AtualizarStatusRequest $request): JsonResponse
+
+    public function atualizarStatus(Request $request): JsonResponse
     {
+        $campos = ['idUsuario', 'status'];
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::MissingRequiredFields->description(),
+                'campos' => $campos,
+            ];
+            return response()->json($response);
+        }
+
         $usuario = Usuarios::findOrFail($request->idUsuario);
-        $usuario->status = $request->status;
-        $usuario->save();
 
-        return $this->respostaErro(HttpCodesEnum::OK);
+        if (isset($usuario->id)) {
+            $usuario->status = $request->status;
+            $usuario->save();
+
+            $response = [
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => HttpCodesEnum::OK->description(),
+            ];
+        } else {
+            $response = [
+                'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                'message' => HttpCodesEnum::InternalServerError->description(),
+            ];
+        }
+
+        return response()->json($response);
     }
+ /*
 
-    /**
      * Autentica um usuário no sistema
      * 
      * Valida as credenciais e retorna um token JWT para autenticação
