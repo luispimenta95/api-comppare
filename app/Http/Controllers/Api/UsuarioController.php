@@ -418,7 +418,7 @@ class UsuarioController extends Controller
 
     public function atualizarStatus(Request $request): JsonResponse
     {
-        $campos = ['idUsuario', 'status'];
+        $campos = ['idUsuario'];
         $campos = Helper::validarRequest($request, $campos);
 
         if ($campos !== true) {
@@ -433,7 +433,8 @@ class UsuarioController extends Controller
         $usuario = Usuarios::findOrFail($request->idUsuario);
 
         if (isset($usuario->id)) {
-            $usuario->status = $request->status;
+            $currentStatus = $usuario->status;
+            $usuario->status = $currentStatus === 1 ? 0 : 1;
             $usuario->save();
 
             $response = [
