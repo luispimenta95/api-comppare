@@ -871,7 +871,7 @@ class UsuarioController extends Controller
      */
     public function index(IndexUsuarioRequest $request): JsonResponse
     {
-        $query = Usuarios::with('plano');
+    $query = Usuarios::with('plano')->orderBy('primeiroNome', 'asc');
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
