@@ -112,6 +112,107 @@ class UsuarioController extends Controller
     }
 
     /**
+     * Atualiza campos de um usuário (campo por campo, todos opcionais exceto idUsuario)
+     *
+     * Request esperado (exemplos):
+     * {
+     *   "idUsuario": 1,
+     *   "primeiroNome": "NovoNome",
+     *   "sobrenome": "NovoSobrenome",
+     *   "apelido": "novoapelido",
+     *   "cpf": "12345678909",
+     *   "email": "novo@email.com",
+     *   "telefone": "61999999999",
+     *   "nascimento": "01/01/1990",
+     *   "senha": "NovaSenha@123",
+     *   "idPlano": 2
+     * }
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function atualizarUsuario(Request $request): JsonResponse
+    {
+        $request->validate([
+            'idUsuario' => 'required|exists:usuarios,id',
+            'primeiroNome' => 'sometimes|string|max:255',
+            'sobrenome' => 'sometimes|string|max:255',
+            'apelido' => 'sometimes|nullable|string|max:255',
+            'cpf' => 'sometimes|string',
+            'email' => 'sometimes|email|max:255',
+            'telefone' => 'sometimes|string|max:20',
+            'nascimento' => 'sometimes|date_format:d/m/Y',
+            'senha' => 'sometimes|string|min:8',
+            'idPlano' => 'sometimes|integer|exists:planos,id'
+        ]);
+
+        try {
+            $usuario = Usuarios::findOrFail($request->idUsuario);
+
+            // CPF: valida formato e unicidade
+            if ($request->filled('cpf')) {
+                if (!Helper::validaCPF($request->cpf)) {
+                    return $this->respostaErro(HttpCodesEnum::BadRequest, ['message' => HttpCodesEnum::InvalidCPF->description()]);
+                }
+                $existsCpf = Usuarios::where('cpf', $request->cpf)->where('id', '!=', $usuario->id)->exists();
+                if ($existsCpf) {
+                    return $this->respostaErro(HttpCodesEnum::Conflict, ['message' => 'CPF já está em uso por outro usuário.']);
+                }
+                $usuario->cpf = $request->cpf;
+            }
+
+            // Email: unicidade
+            if ($request->filled('email')) {
+                $existsEmail = Usuarios::where('email', $request->email)->where('id', '!=', $usuario->id)->exists();
+                if ($existsEmail) {
+                    return $this->respostaErro(HttpCodesEnum::Conflict, ['message' => 'E-mail já está em uso por outro usuário.']);
+                }
+                $usuario->email = $request->email;
+            }
+
+            if ($request->filled('primeiroNome')) {
+                $usuario->primeiroNome = $request->primeiroNome;
+            }
+            if ($request->filled('sobrenome')) {
+                $usuario->sobrenome = $request->sobrenome;
+            }
+            if ($request->has('apelido')) {
+                $usuario->apelido = $request->apelido;
+            }
+            if ($request->filled('telefone')) {
+                $usuario->telefone = $request->telefone;
+            }
+
+            if ($request->filled('nascimento')) {
+                $usuario->dataNascimento = Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d');
+            }
+
+            if ($request->filled('senha')) {
+                if (!$this->validaSenha($request->senha)) {
+                    return $this->respostaErro(HttpCodesEnum::BadRequest, ['message' => HttpCodesEnum::InvalidPassword->description()]);
+                }
+                $usuario->senha = bcrypt($request->senha);
+            }
+
+            if ($request->filled('idPlano')) {
+                $usuario->idPlano = $request->idPlano;
+            }
+
+            $usuario->save();
+
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => 'Usuário atualizado com sucesso.',
+                'usuario' => $usuario
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao atualizar usuário', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return $this->respostaErro(HttpCodesEnum::InternalServerError, ['message' => 'Erro interno ao atualizar usuário.']);
+        }
+    }
+
+    /**
      * Atualiza o plano de assinatura de um usuário
      * 
      * Altera o plano do usuário e registra a movimentação financeira
