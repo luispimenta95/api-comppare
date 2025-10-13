@@ -645,6 +645,43 @@ class UsuarioController extends Controller
     }
 
     /**
+     * Autentica um usuário administrador
+     *
+     * Semelhante ao método `autenticar`, porém exige que o usuário tenha idPerfil == 2
+     * (administrador). Retorna token JWT e dados do usuário ao sucesso.
+     *
+     * @param AutenticarUsuarioRequest $request
+     * @return JsonResponse
+     */
+    public function autenticarAdmin(AutenticarUsuarioRequest $request): JsonResponse
+    {
+        $user = Usuarios::with(['pastas.photos'])->where('cpf', $request->cpf)->first();
+
+        // Verifica se usuário existe e senha está correta
+        if (!$user || !Hash::check($request->senha, $user->senha)) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::Unauthorized->value,
+                'message' => HttpCodesEnum::InvalidLogin->description()
+            ], 401);
+        }
+
+        if (($user->idPerfil ?? null) != Helper::ID_PERFIL_ADMIN) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::Forbidden->value,
+                'message' => 'Acesso negado: usuário não é administrador.'
+            ], 403);
+        }
+
+       
+
+        return response()->json([
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => HttpCodesEnum::OK->description(),
+            'dados' => $user->toArray(),
+        ]);
+    }
+
+    /**
      * Cadastra um novo usuário no sistema
      * 
      * Valida dados pessoais, cria conta do usuário, envia email de boas-vindas

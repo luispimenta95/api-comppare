@@ -19,6 +19,7 @@ Route::prefix('admin')->group(
         Route::get('/usuarios/listar', [UsuarioController::class, 'index']);
         Route::post('/usuarios/atualizar-status', [UsuarioController::class, 'atualizarStatus']);
         Route::post('/usuarios/atualizar-dados', [UsuarioController::class, 'atualizarUsuario']);
+        Route::post('/usuarios/login-admin', [UsuarioController::class, 'autenticarAdmin']);
 
         Route::get('/planos/recuperar/{id}', [PlanoController::class, 'getPlano']);
         Route::post('/planos/atualizar-status', [PlanoController::class, 'atualizarStatus']);
