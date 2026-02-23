@@ -723,10 +723,10 @@ class UsuarioController extends Controller
             'apelido'          => $request->apelido,
             'cpf'              => $request->cpf,
             'senha'            => bcrypt($request->senha),
-            'telefone'         => $request->telefone,
+            'telefone'         => $request->telefone ?? "",
             'email'            => $request->email,
             'idPlano'          => $request->idPlano,
-            'dataNascimento'   => Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d'),
+            'dataNascimento'   => $request->nascimento ? Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d') : Carnbon::now()->format('Y-m-d'),
             'idPerfil' => Helper::ID_PERFIL_USUARIO,
             'dataLimiteCompra' => Carbon::now()->addDays($limite)->format('Y-m-d')
         ]);
