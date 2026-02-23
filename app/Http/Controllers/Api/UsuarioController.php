@@ -112,6 +112,107 @@ class UsuarioController extends Controller
     }
 
     /**
+     * Atualiza campos de um usuário (campo por campo, todos opcionais exceto idUsuario)
+     *
+     * Request esperado (exemplos):
+     * {
+     *   "idUsuario": 1,
+     *   "primeiroNome": "NovoNome",
+     *   "sobrenome": "NovoSobrenome",
+     *   "apelido": "novoapelido",
+     *   "cpf": "12345678909",
+     *   "email": "novo@email.com",
+     *   "telefone": "61999999999",
+     *   "nascimento": "01/01/1990",
+     *   "senha": "NovaSenha@123",
+     *   "idPlano": 2
+     * }
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function atualizarUsuario(Request $request): JsonResponse
+    {
+        $request->validate([
+            'idUsuario' => 'required|exists:usuarios,id',
+            'primeiroNome' => 'sometimes|string|max:255',
+            'sobrenome' => 'sometimes|string|max:255',
+            'apelido' => 'sometimes|nullable|string|max:255',
+            'cpf' => 'sometimes|string',
+            'email' => 'sometimes|email|max:255',
+            'telefone' => 'sometimes|string|max:20',
+            'nascimento' => 'sometimes|date_format:d/m/Y',
+            'senha' => 'sometimes|string|min:8',
+            'idPlano' => 'sometimes|integer|exists:planos,id'
+        ]);
+
+        try {
+            $usuario = Usuarios::findOrFail($request->idUsuario);
+
+            // CPF: valida formato e unicidade
+            if ($request->filled('cpf')) {
+                if (!Helper::validaCPF($request->cpf)) {
+                    return $this->respostaErro(HttpCodesEnum::BadRequest, ['message' => HttpCodesEnum::InvalidCPF->description()]);
+                }
+                $existsCpf = Usuarios::where('cpf', $request->cpf)->where('id', '!=', $usuario->id)->exists();
+                if ($existsCpf) {
+                    return $this->respostaErro(HttpCodesEnum::Conflict, ['message' => 'CPF já está em uso por outro usuário.']);
+                }
+                $usuario->cpf = $request->cpf;
+            }
+
+            // Email: unicidade
+            if ($request->filled('email')) {
+                $existsEmail = Usuarios::where('email', $request->email)->where('id', '!=', $usuario->id)->exists();
+                if ($existsEmail) {
+                    return $this->respostaErro(HttpCodesEnum::Conflict, ['message' => 'E-mail já está em uso por outro usuário.']);
+                }
+                $usuario->email = $request->email;
+            }
+
+            if ($request->filled('primeiroNome')) {
+                $usuario->primeiroNome = $request->primeiroNome;
+            }
+            if ($request->filled('sobrenome')) {
+                $usuario->sobrenome = $request->sobrenome;
+            }
+            if ($request->has('apelido')) {
+                $usuario->apelido = $request->apelido;
+            }
+            if ($request->filled('telefone')) {
+                $usuario->telefone = $request->telefone;
+            }
+
+            if ($request->filled('nascimento')) {
+                $usuario->dataNascimento = Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d');
+            }
+
+            if ($request->filled('senha')) {
+                if (!$this->validaSenha($request->senha)) {
+                    return $this->respostaErro(HttpCodesEnum::BadRequest, ['message' => HttpCodesEnum::InvalidPassword->description()]);
+                }
+                $usuario->senha = bcrypt($request->senha);
+            }
+
+            if ($request->filled('idPlano')) {
+                $usuario->idPlano = $request->idPlano;
+            }
+
+            $usuario->save();
+
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => 'Usuário atualizado com sucesso.',
+                'usuario' => $usuario
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao atualizar usuário', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return $this->respostaErro(HttpCodesEnum::InternalServerError, ['message' => 'Erro interno ao atualizar usuário.']);
+        }
+    }
+
+    /**
      * Atualiza o plano de assinatura de um usuário
      * 
      * Altera o plano do usuário e registra a movimentação financeira
@@ -415,24 +516,43 @@ class UsuarioController extends Controller
         ]);
     }
 
-    /**
-     * Atualiza o status de um usuário
-     * 
-     * Permite ativar ou desativar um usuário no sistema.
-     * 
-     * @param AtualizarStatusRequest $request - ID do usuário e novo status
-     * @return JsonResponse - Confirmação da alteração
-     */
-    public function atualizarStatus(AtualizarStatusRequest $request): JsonResponse
+
+    public function atualizarStatus(Request $request): JsonResponse
     {
+        $campos = ['idUsuario'];
+        $campos = Helper::validarRequest($request, $campos);
+
+        if ($campos !== true) {
+            $response = [
+                'codRetorno' => HttpCodesEnum::BadRequest->value,
+                'message' => HttpCodesEnum::MissingRequiredFields->description(),
+                'campos' => $campos,
+            ];
+            return response()->json($response);
+        }
+
         $usuario = Usuarios::findOrFail($request->idUsuario);
-        $usuario->status = $request->status;
-        $usuario->save();
 
-        return $this->respostaErro(HttpCodesEnum::OK);
+        if (isset($usuario->id)) {
+            $currentStatus = $usuario->status;
+            $usuario->status = $currentStatus === 1 ? 0 : 1;
+            $usuario->save();
+
+            $response = [
+                'codRetorno' => HttpCodesEnum::OK->value,
+                'message' => HttpCodesEnum::OK->description(),
+            ];
+        } else {
+            $response = [
+                'codRetorno' => HttpCodesEnum::InternalServerError->value,
+                'message' => HttpCodesEnum::InternalServerError->description(),
+            ];
+        }
+
+        return response()->json($response);
     }
+ /*
 
-    /**
      * Autentica um usuário no sistema
      * 
      * Valida as credenciais e retorna um token JWT para autenticação
@@ -525,6 +645,43 @@ class UsuarioController extends Controller
     }
 
     /**
+     * Autentica um usuário administrador
+     *
+     * Semelhante ao método `autenticar`, porém exige que o usuário tenha idPerfil == 2
+     * (administrador). Retorna token JWT e dados do usuário ao sucesso.
+     *
+     * @param AutenticarUsuarioRequest $request
+     * @return JsonResponse
+     */
+    public function autenticarAdmin(AutenticarUsuarioRequest $request): JsonResponse
+    {
+        $user = Usuarios::where('cpf', $request->cpf)->first();
+
+        // Verifica se usuário existe e senha está correta
+        if (!$user || !Hash::check($request->senha, $user->senha)) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::Unauthorized->value,
+                'message' => HttpCodesEnum::InvalidLogin->description()
+            ], 401);
+        }
+
+        if (($user->idPerfil ?? null) != Helper::ID_PERFIL_ADMIN) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::Forbidden->value,
+                'message' => 'Acesso negado: usuário não é administrador.'
+            ], 403);
+        }
+
+       
+
+        return response()->json([
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => HttpCodesEnum::OK->description(),
+            'dados' => $user->toArray(),
+        ]);
+    }
+
+    /**
      * Cadastra um novo usuário no sistema
      * 
      * Valida dados pessoais, cria conta do usuário, envia email de boas-vindas
@@ -560,16 +717,16 @@ class UsuarioController extends Controller
         }
         $limite = Planos::where('id', $request->idPlano)->first()->tempoGratuidade;
 
-        $usuario = Usuarios::create([
+          $usuario = Usuarios::create([
             'primeiroNome'     => $request->primeiroNome,
             'sobrenome'        => $request->sobrenome,
             'apelido'          => $request->apelido,
             'cpf'              => $request->cpf,
             'senha'            => bcrypt($request->senha),
-            'telefone'         => $request->telefone,
+            'telefone'         => $request->telefone ?? "",
             'email'            => $request->email,
             'idPlano'          => $request->idPlano,
-            'dataNascimento'   => Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d'),
+            'dataNascimento'   => $request->nascimento ? Carbon::createFromFormat('d/m/Y', $request->nascimento)->format('Y-m-d') : Carnbon::now()->format('Y-m-d'),
             'idPerfil' => Helper::ID_PERFIL_USUARIO,
             'dataLimiteCompra' => Carbon::now()->addDays($limite)->format('Y-m-d')
         ]);
@@ -852,7 +1009,7 @@ class UsuarioController extends Controller
      */
     public function index(IndexUsuarioRequest $request): JsonResponse
     {
-        $query = Usuarios::with('plano');
+        $query = Usuarios::with('plano')->orderBy('status', 'desc')->orderBy('created_at', 'desc');
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
@@ -918,7 +1075,7 @@ class UsuarioController extends Controller
      * @param ValidaExistenciaUsuarioRequest $request - Dados para validação
      * @return JsonResponse - Confirmação da existência ou não do usuário
      */
-    public function validaExistenciaUsuario(ValidaExistenciaUsuarioRequest $request): JsonResponse
+    public function validaExistenciaUsuario(Request $request): JsonResponse
     {
         $existe = $this->confirmaUser($request);
 

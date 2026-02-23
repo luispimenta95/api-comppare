@@ -55,6 +55,7 @@ class ResetPastasCounter implements ShouldQueue
                 // Resetar contadores de pastas principais e subpastas
                 $usuario->pastasCriadas = 0;
                 $usuario->subpastasCriadas = 0;
+                $usuario->quantidadeConvites = 0; // Resetar convites também
                 $usuario->save();
             }
 
