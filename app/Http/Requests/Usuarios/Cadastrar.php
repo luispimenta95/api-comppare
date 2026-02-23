@@ -36,10 +36,10 @@ class Cadastrar extends FormRequest
                 'min:8',
                 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/'
             ],
-            'telefone' => 'required|string|max:20',
+            'telefone' => 'nullable|string|max:20',
             'email' => 'required|email|max:255',
             'idPlano' => 'required|integer|exists:planos,id',
-            'nascimento' => 'required|date_format:d/m/Y',
+            'nascimento' => 'nullable|date_format:d/m/Y',
         ];
     }
 
