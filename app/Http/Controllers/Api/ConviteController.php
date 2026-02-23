@@ -10,6 +10,7 @@ use App\Models\Convite;
 use App\Models\Pastas;
 use App\Models\Planos;
 use App\Models\Usuarios;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -140,13 +141,67 @@ class ConviteController extends Controller
                 $pasta->usuario()->attach($usuario->id);
                 $pastasVinculadas[] = $pasta->id;
             }
-            $convite->delete();
         }
 
         return response()->json([
             'codRetorno' => HttpCodesEnum::OK->value,
             'message' => count($pastasVinculadas) > 0 ? 'Convites processados e pastas vinculadas.' : 'Nenhum convite pendente encontrado.',
             'pastas_vinculadas' => $pastasVinculadas
+        ]);
+    }
+
+    /**
+     * Remove um convite do banco de dados usando o id da pasta
+     * 
+     * Valida os dados de entrada, verifica se o convite existe e o exclui.
+     * Exemplo de request:
+     * Post /api/convite/excluir
+     * Content-Type: application/json
+     * Body:
+     * {
+     *   "idPasta": 10
+     * }
+     * @param Request $request - Deve conter: idPasta
+     * @return JsonResponse - Confirmação da exclusão ou erro
+     */
+    public function destroy(Request $request): JsonResponse
+    {
+        $request->validate([
+            'idPasta' => 'required|exists:convites,idPasta',
+        ]);
+
+        $convite = Convite::where('idPasta', $request->idPasta)->first();
+
+        if (!$convite) {
+            return response()->json([
+                'codRetorno' => HttpCodesEnum::NotFound->value,
+                'message' => 'Convite não encontrado para esta pasta.'
+            ], 404);
+        }
+
+        // Remove o usuário convidado da relação pasta_usuario
+        $pasta = Pastas::find($convite->idPasta);
+        if ($pasta && $convite->idUsuario) {
+            // Remove todos os vínculos do usuário convidado com a pasta
+            // Remove todos os vínculos do usuário convidado com a pasta principal
+            DB::table('pasta_usuario')
+                ->where('pasta_id', $convite->idPasta)
+                ->delete();
+
+            // Remove vínculos do usuário convidado com subpastas
+            $subpastas = Pastas::where('idPastaPai', $convite->idPasta)->pluck('id');
+            if ($subpastas->count() > 0) {
+                DB::table('pasta_usuario')
+                    ->whereIn('pasta_id', $subpastas)
+                    ->delete();
+            }
+        }
+
+        $convite->delete();
+
+        return response()->json([
+            'codRetorno' => HttpCodesEnum::OK->value,
+            'message' => 'Convite excluído com sucesso.'
         ]);
     }
 

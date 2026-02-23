@@ -621,9 +621,15 @@ class PastasController extends Controller
                     // Remover associações da subpasta
                     $subpasta->usuario()->detach();
 
+                    // Remover todos os convites ligados à subpasta
+                    Convite::where('idPasta', $subpasta->id)->delete();
+
                     // Excluir registro da subpasta
                     $subpasta->delete();
                 }
+
+                // Remover todos os convites ligados à pasta principal
+                Convite::where('idPasta', $pasta->id)->delete();
 
                 // Atualizar contador de subpastas (todas as subpastas da pasta principal foram removidas)
                 if ($user->subpastasCriadas >= $subpastasCount) {
@@ -631,6 +637,9 @@ class PastasController extends Controller
                 } else {
                     $user->update(['subpastasCriadas' => 0]);
                 }
+            } else {
+                // Se for subpasta, remova também os convites ligados a ela
+                Convite::where('idPasta', $pasta->id)->delete();
             }
 
             // Remove todas as fotos associadas à pasta principal da tabela photos e suas comparações
@@ -886,11 +895,11 @@ class PastasController extends Controller
      * @param Request $request - Deve conter: idUsuario (ID do usuário)
      * @return JsonResponse - Lista de pastas do usuário ou erro se usuário não encontrado
      */
-   public function getFoldersByUser(int $id): JsonResponse         
+    public function getFoldersByUser(int $id): JsonResponse         
     {
 
         $user = Usuarios::find($id);
- 
+
         // Verifica se o usuário foi encontrado
         if (!$user) {
             return response()->json([
@@ -899,36 +908,54 @@ class PastasController extends Controller
             ]);
         }
 
+        // Pastas criadas pelo usuário (sempre visíveis para ele)
+        $pastasCriadas = Pastas::with(['photos', 'subpastas.photos'])
+            ->where('idUsuario', $user->id)
+            ->whereNull('idPastaPai')
+            ->get();
 
-        // Busca todas as pastas associadas ao usuário (criadas e compartilhadas)
-        $pastas = $user->pastas()->with(['photos', 'subpastas.photos'])->get();
-        $pastasPrincipais = $pastas->whereNull('idPastaPai');
+        // Pastas compartilhadas via convite (pasta_usuario), apenas principais
+        $pastasCompartilhadas = $user->pastas()
+            ->with(['photos', 'subpastas.photos'])
+            ->whereNull('idPastaPai')
+            ->get();
 
-        $pastasFormatadas = $pastasPrincipais->map(function ($pasta) {
-            $subpastas = $pasta->subpastas->map(function ($subpasta) {
-                return [
-                    'id' => $subpasta->id,
-                    'nome' => $subpasta->nome,
-                    'path' => Helper::formatFolderUrl($subpasta),
-                    'idPastaPai' => $subpasta->idPastaPai,
-                    'imagens' => $subpasta->photos->map(function ($photo) {
-                        return [
-                            'id' => $photo->id,
-                            'path' => Helper::formatImageUrl($photo->path),
-                            'taken_at' => $photo->taken_at
-                        ];
-                    })->values()
-                ];
-            })->values();
+        // Mescla e remove duplicatas por id
+        $todasPrincipais = $pastasCriadas->concat($pastasCompartilhadas)->unique('id')->values();
 
+
+        // Função recursiva para montar subpastas aninhadas com os campos adicionais
+        $formatarPasta = function ($pasta, $usuarioId, $criadorId, $pastaCompartilhadaGlobal = null) use (&$formatarPasta) {
+            // Determina se a pasta é compartilhada (existe mais de um usuário na relação pasta_usuario)
+            $isCompartilhada = $pastaCompartilhadaGlobal;
+            if ($isCompartilhada === null) {
+                $usuariosVinculados = $pasta->usuario()->count();
+                $isCompartilhada = $usuariosVinculados > 1;
+            }
+            $proprietario = $usuarioId == $criadorId;
             return [
-                'nome' => $pasta->nome,
                 'id' => $pasta->id,
-                'path' => Helper::formatFolderUrl($pasta),
-                'idPastaPai' => null,
-                'subpastas' => $subpastas
+                'nome' => $pasta->nome,
+                'caminho' => Helper::formatFolderUrl($pasta),
+                'imagens' => $pasta->photos->map(function ($photo) {
+                    return [
+                        'id' => $photo->id,
+                        'path' => Helper::formatImageUrl($photo->path),
+                        'taken_at' => $photo->taken_at ? $photo->taken_at->format('d/m/Y') : null,
+                    ];
+                })->values()->toArray(),
+                'proprietarioPasta' => $proprietario,
+                'pastaCompartilhada' => $isCompartilhada ? true : false,
+                'subpastas' => $pasta->subpastas->map(function ($subpasta) use (&$formatarPasta, $usuarioId, $criadorId, $isCompartilhada) {
+                    // Para subpastas, pastaCompartilhada deve ser true se a principal for compartilhada
+                    return $formatarPasta($subpasta, $usuarioId, $criadorId, $isCompartilhada);
+                })->values()->toArray(),
             ];
-        })->values();
+        };
+
+        $pastasFormatadas = $todasPrincipais->map(function ($pasta) use (&$formatarPasta, $user) {
+            return $formatarPasta($pasta, $user->id, $pasta->idUsuario);
+        });
 
         return response()->json([
             'codRetorno' => HttpCodesEnum::OK->value,
@@ -1207,11 +1234,5 @@ class PastasController extends Controller
                 'message' => 'Pasta não encontrada.',
             ], 404);
         }
-    }
-
-    private function checkExistsInviteForFolder($folderId)
-    {
-        $convite = Convite::where('idPasta', $folderId)->first();
-        return $convite ? true : false;
     }
 }

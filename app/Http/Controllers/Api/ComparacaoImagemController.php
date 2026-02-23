@@ -142,44 +142,58 @@ class ComparacaoImagemController extends Controller
 {
     $photo = Photos::findOrFail($id);
 
-    $comparacoes = ComparacaoImagem::with('tags')
+    // Buscar a pasta da foto para pegar as tags atuais
+    $pasta = Pastas::with(['tags'])->find($photo->pasta_id);
+
+    // Buscar comparação existente (se houver) para pegar data e valores salvos
+    $comparacao = ComparacaoImagem::with('tags')
         ->where('id_photo', $id)
-        ->get();
+        ->first();
 
-    // Ajusta o campo data_comparacao para o padrão brasileiro e adiciona nomeTag nas tags
-    $comparacoesFormatadas = $comparacoes->map(function ($comparacao) {
-        $comparacaoArray = $comparacao->toArray();
-        if (!empty($comparacaoArray['data_comparacao'])) {
-            $date = \DateTime::createFromFormat('Y-m-d', $comparacaoArray['data_comparacao']);
-            if ($date) {
-                $comparacaoArray['data_comparacao'] = $date->format('d/m/Y');
+    // Monta a resposta usando as tags da pasta (atuais) e os valores da comparação (se existir)
+    $tagsFormatadas = [];
+    
+    if ($pasta && $pasta->tags) {
+        foreach ($pasta->tags as $tag) {
+            $valorSalvo = '';
+            
+            // Se há comparação salva, busca o valor desta tag
+            if ($comparacao) {
+                $tagComparacao = $comparacao->tags->firstWhere('id_tag', $tag->id);
+                if ($tagComparacao) {
+                    $valorSalvo = $tagComparacao->valor;
+                }
             }
+            
+            $tagsFormatadas[] = [
+                'id_tag' => $tag->id,
+                'nome' => $tag->nomeTag,
+                'valor' => $valorSalvo
+            ];
         }
-        // Adiciona nomeTag em cada tag
-        if (!empty($comparacaoArray['tags'])) {
-            $comparacaoArray['tags'] = array_map(function ($tag) {
-                $tagModel = Tag::find($tag['id_tag']);
-                $tag['nome'] = $tagModel ? $tagModel->nomeTag : null;
-                return $tag;
-            }, $comparacaoArray['tags']);
-        }
-        return $comparacaoArray;
-    });
-
-    // Se não houver comparações, devolve um array com objeto padrão
-    if ($comparacoesFormatadas->isEmpty()) {
-        $comparacoesFormatadas = collect([[
-            'id'              => 0,
-            'id_usuario'      => 0,
-            'id_photo'        => $photo->id,
-            'data_comparacao' => $photo->created_at->format('d/m/Y'),
-            'created_at'      => now()->format('Y-m-d H:i:s'),
-            'updated_at'      => now()->format('Y-m-d H:i:s'),
-            'tags'            => [],
-        ]]);
     }
 
-    return response()->json($comparacoesFormatadas, 200);
+    // Formata a data de comparação
+    $dataComparacao = $photo->created_at->format('d/m/Y');
+    if ($comparacao && $comparacao->data_comparacao) {
+        $date = \DateTime::createFromFormat('Y-m-d', $comparacao->data_comparacao);
+        if ($date) {
+            $dataComparacao = $date->format('d/m/Y');
+        }
+    }
+
+    // Monta a resposta
+    $response = [[
+        'id'              => $comparacao ? $comparacao->id : 0,
+        'id_usuario'      => $comparacao ? $comparacao->id_usuario : 0,
+        'id_photo'        => $photo->id,
+        'data_comparacao' => $dataComparacao,
+        'created_at'      => $comparacao ? $comparacao->created_at->format('Y-m-d H:i:s') : now()->format('Y-m-d H:i:s'),
+        'updated_at'      => $comparacao ? $comparacao->updated_at->format('Y-m-d H:i:s') : now()->format('Y-m-d H:i:s'),
+        'tags'            => $tagsFormatadas,
+    ]];
+
+    return response()->json($response, 200);
 }
 
 
