@@ -140,7 +140,7 @@ class UsuarioController extends Controller
             'apelido' => 'sometimes|nullable|string|max:255',
             'cpf' => 'sometimes|string',
             'email' => 'sometimes|email|max:255',
-            'telefone' => 'sometimes|string|max:20',
+            'telefone' => 'sometimes|nullable|string|max:20',
             'nascimento' => 'sometimes|date_format:d/m/Y',
             'senha' => 'sometimes|string|min:8',
             'idPlano' => 'sometimes|integer|exists:planos,id'
