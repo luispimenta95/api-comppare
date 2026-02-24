@@ -17,8 +17,8 @@ class AtualizarDadosRequest extends FormRequest
             'nome' => 'required|string|max:255',
             'email' => 'required|email|unique:usuarios,email',
             'cpf' => 'required|string|cpf|unique:usuarios,cpf',
-            'telefone' => 'required|string|size:11',
-            'nascimento' => 'required|date|before:today',
+            'telefone' => 'nullable|string|size:11',
+            'nascimento' => 'nullable|date|before:today',
             'senha' => 'required|string|min:8',
             'idUsuario' => 'required|exists:usuarios,id',
         ];

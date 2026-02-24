@@ -103,9 +103,9 @@ class UsuarioController extends Controller
         $usuario->nome = $request->nome;
         $usuario->senha = bcrypt($request->senha);
         $usuario->cpf = $request->cpf;
-        $usuario->telefone = $request->telefone;
+        $usuario->telefone = $request->telefone ?? "";
         $usuario->email = $request->email;
-        $usuario->dataNascimento = $dataNascimento;
+        $usuario->dataNascimento = $dataNascimento ?? Carbon::now()->format('Y-m-d');
         $usuario->save();
 
         return $this->respostaErro(HttpCodesEnum::OK);
