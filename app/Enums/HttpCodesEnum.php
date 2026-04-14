@@ -166,7 +166,7 @@ enum HttpCodesEnum: int
             self::PaymentPending => 'O pagamento ainda não foi realizado.',
             self::MonthlyFolderLimitReached => 'Limite de criação de pastas mensal atingido.',
             self::SubscriptionPurchaseError => 'Erro ao realizar venda do plano de assinatura.',
-            self::UserBlockedDueToInactivity => 'Usuário bloqueado por inatividade ou falta de pagamento.',
+            self::UserBlockedDueToInactivity => 'Usuário bloqueado por inatividade, favor entrar em contato com o suporte.',
             self::InactiveTicket => 'Cupom inativo.',
             self::SendInviteError => 'Erro ao enviar o convite.',
             self::InvitesLimit => 'Numero de convites permitidos atingido.',
