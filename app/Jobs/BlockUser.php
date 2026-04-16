@@ -54,7 +54,7 @@ class BlockUser implements ShouldQueue
             $usuarios = Usuarios::all();
 
             foreach ($usuarios as $usuario) {
-                $dataLimiteAcesso = Carbon::parse($usuario->ultimoAcesso)->addDays(Helper::TEMPO_RENOVACAO_SEMESTRAL);
+                $dataLimiteAcesso = Carbon::parse($usuario->ultimoAcesso)->addDays(Helper::TEMPO_RENOVACAO_ANUAL);
                 if (Helper::checkDateIsPassed($dataLimiteAcesso)) {
                     $usuario->status = 0;
                     $usuario->save();
