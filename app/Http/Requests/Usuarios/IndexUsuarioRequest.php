@@ -14,8 +14,7 @@ class IndexUsuarioRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => 'nullable|in:0,1',
-            'nome' => 'nullable|string|max:255',
+            'pesquisa' => 'nullable|string|max:255'
         ];
     }
 }

@@ -1011,12 +1011,21 @@ class UsuarioController extends Controller
     {
         $query = Usuarios::with('plano')->orderBy('status', 'desc')->orderBy('created_at', 'desc');
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
-        }
 
-        if ($request->filled('nome')) {
-            $query->where('primeiroNome', 'like', '%' . $request->input('nome') . '%');
+        $termoPesquisa = trim((string) ($request->input('pesquisa') ?? $request->input('nome') ?? ''));
+
+        if ($termoPesquisa !== '') {
+            $cpfSomenteNumeros = preg_replace('/\D/', '', $termoPesquisa);
+
+            $query->where(function ($subQuery) use ($termoPesquisa, $cpfSomenteNumeros) {
+                $subQuery->where('email', 'like', '%' . $termoPesquisa . '%');
+
+                if (!empty($cpfSomenteNumeros)) {
+                    $subQuery->orWhere('cpf', 'like', '%' . $cpfSomenteNumeros . '%');
+                } else {
+                    $subQuery->orWhere('cpf', 'like', '%' . $termoPesquisa . '%');
+                }
+            });
         }
 
         $usuarios = $query->get()->map(function($usuario) {
