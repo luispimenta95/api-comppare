@@ -1011,7 +1011,6 @@ class UsuarioController extends Controller
     {
         $query = Usuarios::with('plano')->orderBy('status', 'desc')->orderBy('created_at', 'desc');
 
-
         $termoPesquisa = trim((string) ($request->input('pesquisa') ?? $request->input('nome') ?? ''));
 
         if ($termoPesquisa !== '') {
@@ -1021,7 +1020,10 @@ class UsuarioController extends Controller
                 $subQuery->where('email', 'like', '%' . $termoPesquisa . '%');
 
                 if (!empty($cpfSomenteNumeros)) {
-                    $subQuery->orWhere('cpf', 'like', '%' . $cpfSomenteNumeros . '%');
+                    $subQuery->orWhereRaw(
+                        "REPLACE(REPLACE(REPLACE(cpf, '.', ''), '-', ''), ' ', '') like ?",
+                        ['%' . $cpfSomenteNumeros . '%']
+                    );
                 } else {
                     $subQuery->orWhere('cpf', 'like', '%' . $termoPesquisa . '%');
                 }
