@@ -655,7 +655,7 @@ class UsuarioController extends Controller
      */
     public function autenticarAdmin(AutenticarUsuarioRequest $request): JsonResponse
     {
-        $user = Usuarios::where('cpf', $request->cpf)->first();
+        $user = Usuarios::where('cpf', $request->cpf)->where('idPerfil', Helper::ID_PERFIL_ADMIN)->first();
 
         // Verifica se usuário existe e senha está correta
         if (!$user || !Hash::check($request->senha, $user->senha)) {
