@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\VendasController;
 use App\Http\Controllers\Api\RankingController;
 use App\Http\Controllers\Api\QuestoesController;
 use App\Http\Controllers\Api\UsuarioController;
+use App\Http\Controllers\Api\AdminController;
 
 
 
@@ -40,5 +41,7 @@ Route::prefix('admin')->group(
         Route::post('/api/token/salvar', [VendasController::class, 'receberDadosAssinatura']);
 
         Route::post('/api/questoes/salvar', [QuestoesController::class, 'saveQuestion']);
+        Route::get('/importar-usuarios', [AdminController::class, 'importUsersFromCSV']);
+
     }
 );
